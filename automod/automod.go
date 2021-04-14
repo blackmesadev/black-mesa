@@ -1,0 +1,5 @@
+package automod
+
+func Check() {
+
+}
