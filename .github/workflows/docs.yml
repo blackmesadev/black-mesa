@@ -1,12 +1,12 @@
 name: docs deployment
 on:
   push:
-    branches:
-      - master
     paths:
       - docs/**
+      - mkdocs.yml
 jobs:
   deploy:
+    if: ${{ github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
