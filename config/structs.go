@@ -117,7 +117,7 @@ type Modules struct {
 	Moderation *Moderation
 }
 
-type GuildConfig struct {
+type Config struct {
 	Nickname string
 
 	WebAccess *WebAccess        `json:"webAccess" bson:"webAccess"`
