@@ -63,8 +63,8 @@ type censor struct {
 type spam struct {
 	Punishment         string
 	PunishmentDuration int64
-	Count              int64
-	Interval           int64
+	Count              int64 // amount per interval
+	Interval           int64 // seconds
 	MaxMessages        int64
 	MaxMentions        int64
 	MaxLinks           int64
@@ -85,7 +85,18 @@ type Automod struct {
 	SpamChannels *map[string]*spam
 }
 
+type loggingChannel struct {
+	IncludeActions *[]string // list of actions
+	ExcludeActions *[]string // list of actions
+	Timestamps     bool
+	Timezone       string
+}
+
 type Logging struct {
+	IgnoredUsers       *[]string // slice of user ids
+	IgnoredChannels    *[]string // slice of channel ids
+	NewMemberThreshold int64     // seconds
+	Channels           *loggingChannel
 }
 
 type Moderation struct {
