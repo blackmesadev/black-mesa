@@ -38,26 +38,24 @@ type reactRoles struct {
 
 type Guild struct {
 	ConfirmActions      bool
-	RoleAliases         *map[string]string // name: roleid
-	SelfAssignableRoles *map[string]string // name: roleid
-	LockedRoles         *[]string          // slice of ids
+	RoleAliases         map[string]string // name: roleid
+	SelfAssignableRoles map[string]string // name: roleid
+	LockedRoles         *[]string         // slice of ids
 	Persistance         *persistance
 	AutoRole            *[]string // slice of ids
 	ReactRoles          *reactRoles
 }
 
 type censor struct {
-	FilterZalgo           bool
-	FilterInvites         bool
-	InvitesGuildWhitelist *[]string // slice of guildids
-	InvitesGuildBlacklist *[]string // slice of guildids
-	InvitesWhitelist      *[]string // slice of invitelinks
-	InvitesBlacklist      *[]string // slice of invitelinks
-	DomainWhitelist       *[]string // slice of domains
-	DomainBlacklist       *[]string // slice of domains
-	BlockedSubstrings     *[]string // slice of substrings
-	BlockedStrings        *[]string // slice of strings
-	Regex                 string
+	FilterZalgo       bool
+	FilterInvites     bool
+	InvitesWhitelist  *[]string // slice of invitelinks/ids
+	InvitesBlacklist  *[]string // slice of invitelinks/ids
+	DomainWhitelist   *[]string // slice of domains
+	DomainBlacklist   *[]string // slice of domains
+	BlockedSubstrings *[]string // slice of substrings
+	BlockedStrings    *[]string // slice of strings
+	Regex             string
 }
 
 type spam struct {
@@ -78,11 +76,13 @@ type spam struct {
 }
 
 type Automod struct {
-	CensorLevels   *map[int64]*censor
-	CensorChannels *map[string]*censor
+	CensorLevels   map[int64]*censor
+	CensorChannels map[string]*censor
 
-	SpamLevels   *map[int64]*spam
-	SpamChannels *map[string]*spam
+	SpamLevels   map[int64]*spam
+	SpamChannels map[string]*spam
+
+	PublicHumilation bool
 }
 
 type loggingChannel struct {
@@ -120,9 +120,9 @@ type Modules struct {
 type Config struct {
 	Nickname string
 
-	WebAccess *WebAccess        `json:"webAccess" bson:"webAccess"`
-	Commands  *Commands         `json:"commands" bson:"commands"`
-	Levels    *map[string]int64 `json:"levels" bson:"levels"`
+	WebAccess *WebAccess       `json:"webAccess" bson:"webAccess"`
+	Commands  *Commands        `json:"commands" bson:"commands"`
+	Levels    map[string]int64 `json:"levels" bson:"levels"`
 
 	Modules *Modules
 }
