@@ -11,13 +11,14 @@ import (
 var db *mongodb.DB
 
 func StartDB() {
-	db := mongodb.InitDB()
+	db = mongodb.InitDB()
 	db.ConnectDB("mongodb://localhost:27017")
 }
 
-func AddConfig(g *discordgo.Guild, invokedByUserID string) {
+func AddConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	config := MakeConfig(g, invokedByUserID)
 	db.AddConfig(config)
+	return config
 }
 
 func GetConfig(guildid string) *structs.Config {

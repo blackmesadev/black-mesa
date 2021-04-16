@@ -128,6 +128,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	}
 
 	config := &structs.Config{
+		GuildID:  g.ID,
 		Nickname: "Black Mesa",
 
 		WebAccess: wa,

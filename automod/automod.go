@@ -21,6 +21,10 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 
 	conf := config.GetConfig(m.GuildID)
 
+	if conf == nil {
+		return true, ""
+	}
+
 	automod := conf.Modules.Automod
 
 	content := m.Content
@@ -55,7 +59,8 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 	if censorChannel.FilterZalgo {
 		ok := ZalgoCheck(content)
 		if !ok {
-
+			RemoveMessage(s, m)
+			return false, "FilterZalgo"
 		}
 
 	}
@@ -64,13 +69,15 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 	if censorChannel.FilterInvites {
 		ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 		if !ok {
-
+			RemoveMessage(s, m)
+			return false, "FilterZalgo"
 		}
 
 	} else if len(*censorChannel.InvitesBlacklist) != 0 {
 		ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
 		if !ok {
-
+			RemoveMessage(s, m)
+			return false, "FilterZalgo"
 		}
 	}
 

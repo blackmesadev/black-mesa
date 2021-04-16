@@ -86,6 +86,7 @@ func (bot *Bot) initCommandMap() {
 	commands := make(map[string]interface{})
 
 	commands["help"] = misc.Help
+	commands["setup"] = misc.Setup
 
 	bot.Commands = commands
 }
@@ -96,6 +97,5 @@ func (bot *Bot) initHandlers() {
 	bot.Session.AddHandler(bot.messageHandler)
 	bot.Session.AddHandler(bot.messageDeleteHandler)
 	bot.Session.AddHandler(bot.messageUpdateHandler)
-	bot.Session.AddHandler(bot.onAddHandler)
 
 }
