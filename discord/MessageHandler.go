@@ -1,13 +1,14 @@
-package main
+package discord
 
 import (
 	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/trollrocks/black-mesa/automod"
 )
 
-func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+func (bot *Bot) messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
@@ -20,7 +21,9 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		if val, ok := bot.Commands[parameters[0]]; ok {
-			val.(func(s *discordgo.Session, m *discordgo.MessageCreate, parameters []string))(s, m, parameters)
+			go val.(func(s *discordgo.Session, m *discordgo.MessageCreate, parameters []string))(s, m, parameters)
 		}
 	}
+
+	go automod.Process(s, m.Message)
 }

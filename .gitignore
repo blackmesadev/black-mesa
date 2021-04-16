@@ -5,6 +5,7 @@
 *.dll
 *.so
 *.dylib
+black-mesa
 
 # Test binary, built with `go test -c`
 *.test

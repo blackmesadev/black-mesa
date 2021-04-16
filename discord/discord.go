@@ -1,7 +1,9 @@
-package main
+package discord
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -11,21 +13,37 @@ import (
 	"github.com/trollrocks/black-mesa/misc"
 )
 
+var instance *Bot
+
 type Bot struct {
 	Session  *discordgo.Session
 	Token    string `json:"token"`
 	Commands map[string]interface{}
 	Prefix   string
+	Version  string
 }
 
-func startBot() {
+func CreateBot() *Bot {
+	instance = &Bot{}
+	instance.getToken()
+	instance.Version = "16042021Alpha"
+
+	return instance
+}
+
+func GetInstance() *Bot {
+	return instance
+}
+
+func (bot *Bot) Start() {
 	var err error
+
 	bot.Session, err = discordgo.New("Bot " + bot.Token)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	initCommandMap()
-	initHandlers()
+	bot.initCommandMap()
+	bot.initHandlers()
 	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged)
 
 	bot.Prefix = "!"
@@ -45,7 +63,26 @@ func startBot() {
 
 }
 
-func initCommandMap() {
+func (bot *Bot) getToken() {
+	file, err := os.Open("token.json")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	token, err := ioutil.ReadAll(file)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	json.Unmarshal(token, bot)
+}
+
+func (bot *Bot) initCommandMap() {
 	commands := make(map[string]interface{})
 
 	commands["help"] = misc.Help
@@ -53,10 +90,12 @@ func initCommandMap() {
 	bot.Commands = commands
 }
 
-func initHandlers() {
+func (bot *Bot) initHandlers() {
 	//bot.Session.AddHandler()
 
-	// New Message
-	bot.Session.AddHandler(messageHandler)
-	bot.Session.AddHandler(messageDeleteHandler)
+	bot.Session.AddHandler(bot.messageHandler)
+	bot.Session.AddHandler(bot.messageDeleteHandler)
+	bot.Session.AddHandler(bot.messageUpdateHandler)
+	bot.Session.AddHandler(bot.onAddHandler)
+
 }

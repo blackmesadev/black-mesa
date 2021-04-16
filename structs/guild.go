@@ -1,4 +1,4 @@
-package config
+package structs
 
 type WebAccess struct {
 	Admin  *[]string
@@ -7,9 +7,11 @@ type WebAccess struct {
 }
 
 type Permissions struct {
-	Guild      int64
-	Censor     int64
-	Moderation int64
+	Guild          int64
+	Administration int64
+	Moderation     int64
+	Roles          int64
+	Logging        int64
 }
 
 type Commands struct {
@@ -17,23 +19,23 @@ type Commands struct {
 	Permissions *Permissions
 }
 
-type persistance struct {
-	Roles             bool
-	WhitelistedRRoles *[]string // slice of ids
-	Nickname          bool
-	Voice             bool
+type Persistance struct {
+	Roles            bool
+	WhitelistedRoles *[]string // slice of ids
+	Nickname         bool
+	Voice            bool
 }
 
-type reactRoleEmote struct {
+type ReactRoleEmote struct {
 	Role string
 }
 
-type reactRoleChannel struct {
-	Emotes map[string]*reactRoleEmote // emojiID : reactRoleEmote
+type ReactRoleChannel struct {
+	Emotes map[string]*ReactRoleEmote // emojiID : reactRoleEmote
 }
 
-type reactRoles struct {
-	Channel map[string]*reactRoleChannel // channelid : reactRoleChannel
+type ReactRoles struct {
+	Channel map[string]*ReactRoleChannel // channelid : reactRoleChannel
 }
 
 type Guild struct {
@@ -41,12 +43,12 @@ type Guild struct {
 	RoleAliases         map[string]string // name: roleid
 	SelfAssignableRoles map[string]string // name: roleid
 	LockedRoles         *[]string         // slice of ids
-	Persistance         *persistance
+	Persistance         *Persistance
 	AutoRole            *[]string // slice of ids
-	ReactRoles          *reactRoles
+	ReactRoles          *ReactRoles
 }
 
-type censor struct {
+type Censor struct {
 	FilterZalgo       bool
 	FilterInvites     bool
 	InvitesWhitelist  *[]string // slice of invitelinks/ids
@@ -58,7 +60,7 @@ type censor struct {
 	Regex             string
 }
 
-type spam struct {
+type Spam struct {
 	Punishment         string
 	PunishmentDuration int64
 	Count              int64 // amount per interval
@@ -76,27 +78,24 @@ type spam struct {
 }
 
 type Automod struct {
-	CensorLevels   map[int64]*censor
-	CensorChannels map[string]*censor
+	CensorLevels   map[int64]*Censor
+	CensorChannels map[string]*Censor
 
-	SpamLevels   map[int64]*spam
-	SpamChannels map[string]*spam
+	SpamLevels   map[int64]*Spam
+	SpamChannels map[string]*Spam
 
 	PublicHumilation bool
 }
 
-type loggingChannel struct {
-	IncludeActions *[]string // list of actions
-	ExcludeActions *[]string // list of actions
-	Timestamps     bool
-	Timezone       string
-}
-
 type Logging struct {
+	ChannelID          string
+	IncludeActions     *[]string // list of actions
+	ExcludeActions     *[]string // list of actions
+	Timestamps         bool
+	Timezone           string
 	IgnoredUsers       *[]string // slice of user ids
 	IgnoredChannels    *[]string // slice of channel ids
 	NewMemberThreshold int64     // seconds
-	Channels           *loggingChannel
 }
 
 type Moderation struct {
@@ -105,7 +104,7 @@ type Moderation struct {
 	ConfirmActionsReaction      bool
 	MuteRole                    string
 	ReasonEditLevel             int64
-	NotifyActions               *[]string
+	NotifyActions               bool
 	ShowModeratorOnNotify       bool
 	SilenceLevel                int64
 }
