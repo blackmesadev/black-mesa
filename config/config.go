@@ -1,11 +1,13 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/trollrocks/black-mesa/mongodb"
-	"github.com/trollrocks/black-mesa/structs"
+	"github.com/blackmesadev/black-mesa/mongodb"
+	"github.com/blackmesadev/black-mesa/structs"
+	"github.com/blackmesadev/discordgo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var db *mongodb.DB
@@ -15,9 +17,13 @@ func StartDB() {
 	db.ConnectDB("mongodb://localhost:27017")
 }
 
-func AddConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
+func AddGuild(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	config := MakeConfig(g, invokedByUserID)
-	db.AddConfig(config)
+
+	db.AddConfig(&mongodb.MongoGuild{
+		GuildID: g.ID,
+		Config:  config,
+	})
 	return config
 }
 
@@ -27,6 +33,36 @@ func GetConfig(guildid string) *structs.Config {
 		log.Println(err)
 	}
 	return config
+}
+
+func getOne(guildid string, query string) *bson.M {
+	data, err := db.GetConfigProjection(guildid, query)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return data
+}
+
+func GetPrefix(guildid string) string {
+	var prefix string
+
+	data, err := db.GetConfigProjection(guildid, "commands.prefix")
+	if err != nil {
+		log.Println(err)
+		return "!"
+	}
+
+	binData, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return "!"
+	}
+
+	json.Unmarshal(binData, &prefix)
+
+	return prefix
+
 }
 
 func GetLevel(c *structs.Config, s *discordgo.Session, guildid string, userid string) int64 {

@@ -1,7 +1,7 @@
 package automod
 
 import (
-	"github.com/bwmarrin/discordgo"
+	"github.com/blackmesadev/discordgo"
 )
 
 func RemoveMessage(s *discordgo.Session, m *discordgo.Message) bool {

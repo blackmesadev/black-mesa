@@ -5,7 +5,7 @@ import (
 	"log"
 	"runtime"
 
-	"github.com/bwmarrin/discordgo"
+	"github.com/blackmesadev/discordgo"
 )
 
 func (bot *Bot) ErrorHandler(s *discordgo.Session, channelID string, commandError error) {

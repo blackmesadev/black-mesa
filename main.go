@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/trollrocks/black-mesa/config"
-	"github.com/trollrocks/black-mesa/discord"
+	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/discord"
 )
 
 func main() {

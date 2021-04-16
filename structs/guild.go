@@ -117,7 +117,7 @@ type Modules struct {
 }
 
 type Config struct {
-	GuildID  string
+	guildID  string
 	Nickname string
 
 	WebAccess *WebAccess       `json:"webAccess" bson:"webAccess"`

@@ -2,8 +2,8 @@ site_name: Black Mesa
 site_description: >-
   Moderation for the server owner who loves configuration.
 
-repo_name: trollrocks/black-mesa
-repo_url: https://github.com/trollrocks/black-mesa
+repo_name: blackmesadev/black-mesa
+repo_url: https://github.com/blackmesadev/black-mesa
 
 theme:
   name: material

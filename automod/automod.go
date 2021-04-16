@@ -3,8 +3,8 @@ package automod
 import (
 	"fmt"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/trollrocks/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/discordgo"
 )
 
 func Process(s *discordgo.Session, m *discordgo.Message) {

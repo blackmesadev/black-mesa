@@ -1,9 +1,9 @@
 package discord
 
 import (
-	"github.com/bwmarrin/discordgo"
+	"github.com/blackmesadev/discordgo"
 )
 
-func (bot *Bot) messageDeleteHandler(s *discordgo.Session, m *discordgo.MessageDelete) {
+func (bot *Bot) OnMessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	// logging stuff here
 }

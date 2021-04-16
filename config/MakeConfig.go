@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/bwmarrin/discordgo"
-	"github.com/trollrocks/black-mesa/structs"
+	"github.com/blackmesadev/black-mesa/structs"
+	"github.com/blackmesadev/discordgo"
 )
 
 func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
@@ -128,7 +128,6 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	}
 
 	config := &structs.Config{
-		GuildID:  g.ID,
 		Nickname: "Black Mesa",
 
 		WebAccess: wa,

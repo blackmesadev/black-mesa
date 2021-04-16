@@ -9,18 +9,19 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/bwmarrin/discordgo"
-	"github.com/trollrocks/black-mesa/misc"
+	"github.com/blackmesadev/discordgo"
 )
 
 var instance *Bot
+
+var Router = NewRouter()
 
 type Bot struct {
 	Session  *discordgo.Session
 	Token    string `json:"token"`
 	Commands map[string]interface{}
-	Prefix   string
 	Version  string
+	Router   *Mux
 }
 
 func CreateBot() *Bot {
@@ -42,11 +43,15 @@ func (bot *Bot) Start() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	bot.initCommandMap()
-	bot.initHandlers()
-	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged)
 
-	bot.Prefix = "!"
+	// Event listeners
+	bot.Session.AddHandler(bot.OnMessageCreate)
+	bot.Session.AddHandler(bot.OnMessageUpdate)
+	bot.Session.AddHandler(bot.OnMessageDelete)
+
+	bot.Router.InitRouter()
+
+	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged)
 
 	err = bot.Session.Open()
 	if err != nil {
@@ -80,22 +85,4 @@ func (bot *Bot) getToken() {
 	}
 
 	json.Unmarshal(token, bot)
-}
-
-func (bot *Bot) initCommandMap() {
-	commands := make(map[string]interface{})
-
-	commands["help"] = misc.Help
-	commands["setup"] = misc.Setup
-
-	bot.Commands = commands
-}
-
-func (bot *Bot) initHandlers() {
-	//bot.Session.AddHandler()
-
-	bot.Session.AddHandler(bot.messageHandler)
-	bot.Session.AddHandler(bot.messageDeleteHandler)
-	bot.Session.AddHandler(bot.messageUpdateHandler)
-
 }

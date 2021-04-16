@@ -1,8 +1,5 @@
-module github.com/trollrocks/black-mesa
+module github.com/blackmesadev/black-mesa
 
-go 1.16
+go 1.15
 
-require (
-	github.com/bwmarrin/discordgo v0.23.2
-	go.mongodb.org/mongo-driver v1.5.1
-)
+replace github.com/github.com/blackmesadev/discordgo => ./github.com/blackmesadev/discordgo
