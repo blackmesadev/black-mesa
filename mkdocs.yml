@@ -12,7 +12,7 @@ theme:
 
   palette:
     scheme: slate
-    primary: black
+    accent: orange
 
   icon:
     repo: fontawesome/brands/github
@@ -24,19 +24,23 @@ theme:
 extra_css:
   - stylesheets/extra.css
 
-copyright: Copyright &copy; 2021 Tyler#0911 & LewisTehMinerz#1337
+copyright: Copyright &copy; 2021 Black Mesa Development
 
 extra:
   social:
     - icon: fontawesome/brands/discord
-      link: http://test
+      link: https://discord.gg/ZezqXEXBDJ
 
 markdown_extensions:
   - admonition
+  - attr_list
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.highlight:
       linenums: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
 
 
 plugins:
