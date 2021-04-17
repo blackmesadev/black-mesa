@@ -21,7 +21,7 @@ func (db *DB) GetConfig(id string) (*structs.Config, error) {
 
 	result := col.FindOne(ctx, filters)
 	err := result.Decode(&config)
-	if config != nil || err != nil {
+	if config == nil || err != nil {
 		return nil, err
 	}
 
@@ -48,8 +48,8 @@ func (db *DB) SetConfigOne(id string, key string, value string) (*mongo.UpdateRe
 	return results, nil
 }
 
-func (db *DB) GetConfigProjection(id string, projection string) (*bson.M, error) {
-	var data *bson.M
+func (db *DB) GetConfigProjection(id string, projection string) (bson.M, error) {
+	var data bson.M
 	if projection == "" {
 		projection = "config"
 	} else {
@@ -70,8 +70,8 @@ func (db *DB) GetConfigProjection(id string, projection string) (*bson.M, error)
 	return data, nil
 }
 
-func (db *DB) GetConfigMultipleProjection(id string, projection []string) (*bson.M, error) {
-	var data *bson.M
+func (db *DB) GetConfigMultipleProjection(id string, projection []string) (bson.M, error) {
+	var data bson.M
 	var updatedProjections bson.D
 
 	for _, v := range projection {

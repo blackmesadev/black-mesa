@@ -22,6 +22,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 	conf, err := config.GetConfig(m.GuildID)
 
 	if conf == nil || err != nil {
+		fmt.Println(conf, err)
 		return true, ""
 	}
 
@@ -37,20 +38,34 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 	censorChannel := automod.CensorChannels[m.ChannelID]
 
 	// levels take priority
-	userLevel := config.GetLevel(s, m.GuildID, m.Member.User.ID)
+	userLevel := config.GetLevel(s, m.GuildID, m.Author.ID)
 	levelCensor := automod.CensorLevels[userLevel]
 
 	// Censor
 
-	if userLevel > 0 {
-		if levelCensor.FilterZalgo {
-			ok := ZalgoCheck(content)
-			if !ok {
-				RemoveMessage(s, m)
-				return false, "FilterZalgo"
-			}
+	// Zalgo
+	if levelCensor.FilterZalgo {
+		ok := ZalgoCheck(content)
+		if !ok {
+			RemoveMessage(s, m)
+			return false, "FilterZalgo"
+		}
+	}
+
+	// Invites
+	if levelCensor.FilterInvites {
+		ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
+		if !ok {
+			RemoveMessage(s, m)
+			return false, "InvitesWhitelist"
 		}
 
+	} else if len(*censorChannel.InvitesBlacklist) != 0 {
+		ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
+		if !ok {
+			RemoveMessage(s, m)
+			return false, "InvitesBlacklist"
+		}
 	}
 
 	// Censor
@@ -70,14 +85,14 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 		ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 		if !ok {
 			RemoveMessage(s, m)
-			return false, "FilterZalgo"
+			return false, "InvitesWhitelist"
 		}
 
 	} else if len(*censorChannel.InvitesBlacklist) != 0 {
 		ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
 		if !ok {
 			RemoveMessage(s, m)
-			return false, "FilterZalgo"
+			return false, "InvitesBlacklist"
 		}
 	}
 

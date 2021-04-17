@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 
@@ -15,65 +16,84 @@ import (
 // If moderation is not defined, if modules.guild.unsafePermissions is false then access will be
 // denied, otherwise access will be granted.
 
-func GetPermissions(s *discordgo.Session, guildid string, permission string) (int64, bool) {
+func GetPermission(s *discordgo.Session, guildid string, permission string) (int64, error) {
 
-	projection := make([]string, 1)
+	permissionTree := make([]string, 0)
 
-	permissionTree := strings.Split(permission, ".")
+	tempTree := strings.Split(permission, ".")
 
-	projection[0] = "permissions." + permissionTree[0] // get the lowest node in the tree, makes it easier to step forward.
-
-	data, err := db.GetConfigMultipleProjection(guildid, projection)
-	if err != nil {
-		return 0, false
+	for pk := range tempTree {
+		node := tempTree[0]
+		for i := 1; i <= pk; i++ {
+			node += fmt.Sprintf(".%v", tempTree[i])
+		}
+		permissionTree = append(permissionTree, node)
 	}
 
-	bytesData, err := json.Marshal(data)
+	data, err := db.GetConfigProjection(guildid, "permissions")
 	if err != nil {
-		return 0, false
+		log.Println(err)
+		return 0, err
 	}
 
-	var permissions map[string]int64
+	delete(data, "_id")
 
-	err = json.Unmarshal(bytesData, &permissions)
+	conf := &structs.Config{}
+	confBytes, err := json.Marshal(data["config"])
 	if err != nil {
-		return 0, false
+		log.Println(err)
+		return 0, err
+	}
+
+	err = json.Unmarshal(confBytes, &conf)
+	if err != nil {
+		log.Println(err)
+		return 0, err
 	}
 
 	var permissionValue int64
 	permissionValue = -1
+	// will iterate over the permissionTree in order so the least specific node comes first
+	// and if anything more specific follows, will overwrite the permissionValue
+
 	for _, v := range permissionTree {
-		val, ok := permissions[v]
+		val, ok := conf.Permissions[v]
 		if ok {
 			permissionValue = val
 		}
 	}
 	if permissionValue == -1 {
-		return 0, false
+		return 0, err
 	}
-	return permissionValue, true
+	return permissionValue, nil
 }
 
 func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 
-	var levels map[string]int64
-
 	data, err := db.GetConfigProjection(guildid, "levels")
-	dataBytes, err := json.Marshal(data)
 	if err != nil {
 		log.Println(err)
 		return -1
 	}
 
-	err = json.Unmarshal(dataBytes, &levels)
+	delete(data, "_id")
+
+	conf := &structs.Config{}
+	confBytes, err := json.Marshal(data["config"])
 
 	if err != nil {
 		log.Println(err)
-		return -1
+		return -2
+	}
+	err = json.Unmarshal(confBytes, &conf)
+
+	if err != nil {
+		log.Println(err)
+		return -3
 	}
 
 	// first try userids only
-	for k, v := range levels {
+	for k, v := range conf.Levels {
 		if k == userid {
 			return v
 		}
@@ -84,14 +104,14 @@ func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 	m, err := s.GuildMember(guildid, userid)
 	if err != nil {
 		log.Println(err)
-		return -1
+		return -3
 	}
 
 	var highestLevel int64
 	highestLevel = 0
 
 	for _, role := range m.Roles {
-		level, ok := levels[role]
+		level, ok := conf.Levels[role]
 		if ok {
 			if level > highestLevel {
 				highestLevel = level
@@ -103,8 +123,8 @@ func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 }
 
 func CheckPermission(s *discordgo.Session, guildid string, userid string, permission string) bool {
-	permissionValue, ok := GetPermissions(s, guildid, permission)
-	if !ok {
+	permissionValue, err := GetPermission(s, guildid, permission)
+	if err != nil {
 		data, err := db.GetConfigProjection(guildid, "modules.guild.safePermissions")
 		if err != nil {
 			log.Println(err)
@@ -115,17 +135,14 @@ func CheckPermission(s *discordgo.Session, guildid string, userid string, permis
 			log.Println(err)
 			return false
 		}
-
 		guildStruct := &structs.Guild{}
 		err = json.Unmarshal(dataBytes, &guildStruct)
 		if err != nil {
 			log.Println(err)
 			return false
 		}
-
 		return guildStruct.UnsafePermissions
 	}
-
 	userLevel := GetLevel(s, guildid, userid)
 
 	return userLevel >= permissionValue

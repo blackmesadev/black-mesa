@@ -6,14 +6,6 @@ type WebAccess struct {
 	Viewer *[]string
 }
 
-type Permissions struct {
-	Guild          int64
-	Administration int64
-	Moderation     int64
-	Roles          int64
-	Logging        int64
-}
-
 type Commands struct {
 }
 

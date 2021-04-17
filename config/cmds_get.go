@@ -10,7 +10,7 @@ import (
 )
 
 func GetConfigCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
-	allowed := CheckPermission(s, m.GuildID, m.Member.User.ID, "config.get")
+	allowed := CheckPermission(s, m.GuildID, m.Author.ID, "config.get")
 	if !allowed {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission to `config.get`.")
 		return
@@ -31,7 +31,7 @@ func GetConfigCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 
 	data, err := db.GetConfigMultipleProjection(m.GuildID, projections)
 
-	delete(*data, "_id")
+	delete(data, "_id")
 
 	if err != nil {
 		log.Println(err)
