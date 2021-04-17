@@ -7,7 +7,6 @@ import (
 )
 
 func SetConfigCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
-	fmt.Println("invoked")
 	allowed := CheckPermission(s, m.GuildID, m.Member.User.ID, "config.set")
 	if !allowed {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission to `config.set`.")
