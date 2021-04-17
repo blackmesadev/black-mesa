@@ -2,6 +2,7 @@ package automod
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/discordgo"
@@ -26,9 +27,10 @@ func getClosestLevel(i []int64, targetLevel int64) int64 {
 }
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
+	start := time.Now()
 	ok, reason := Check(s, m)
 	if !ok {
-		msg := fmt.Sprintf(m.Content, ok, reason)
+		msg := fmt.Sprintf("Removed message for %v in %v", reason, time.Since(start))
 		s.ChannelMessageSend(m.ChannelID, msg)
 	}
 }
@@ -61,8 +63,8 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 	i := 0
 	automodCensorLevels := make([]int64, len(automod.CensorLevels))
 	for k := range automod.CensorLevels {
-    	automodCensorLevels[i] = k
-    	i++
+		automodCensorLevels[i] = k
+		i++
 	}
 
 	levelCensor := automod.CensorLevels[getClosestLevel(automodCensorLevels, userLevel)]
@@ -83,7 +85,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 			ok := InvitesWhitelistCheck(content, levelCensor.InvitesWhitelist)
 			if !ok {
 				RemoveMessage(s, m)
-				return false, "InvitesWhitelist"
+				return false, "Invite"
 			}
 		} else if len(*levelCensor.InvitesBlacklist) != 0 {
 			ok := InvitesBlacklistCheck(content, levelCensor.InvitesBlacklist)
