@@ -2,10 +2,27 @@ package automod
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/discordgo"
 )
+
+// Gets the closest level that the ideal level can match in the level -> interface map
+func getClosestLevel(i []int64, targetLevel int64) int64 {
+	var closest int64 = 0
+	for _, level := range i {
+		if level == targetLevel {
+			return targetLevel
+		}
+
+		if math.Abs(float64(targetLevel - level)) < math.Abs(float64(targetLevel - closest)) {
+			closest = level
+		}
+	}
+
+	return closest
+}
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
 	ok, reason := Check(s, m)
@@ -39,60 +56,68 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 
 	// levels take priority
 	userLevel := config.GetLevel(s, m.GuildID, m.Author.ID)
-	levelCensor := automod.CensorLevels[userLevel]
 
-	// Censor
+	i := 0
+	automodCensorLevels := make([]int64, len(automod.CensorLevels))
+	for k := range automod.CensorLevels {
+    	automodCensorLevels[i] = k
+    	i++
+	}
 
-	// Zalgo
-	if levelCensor.FilterZalgo {
-		ok := ZalgoCheck(content)
-		if !ok {
-			RemoveMessage(s, m)
-			return false, "FilterZalgo"
+	levelCensor := automod.CensorLevels[getClosestLevel(automodCensorLevels, userLevel)]
+
+	// Level censors
+	if levelCensor != nil {
+		// Zalgo
+		if levelCensor.FilterZalgo {
+			ok := ZalgoCheck(content)
+			if !ok {
+				RemoveMessage(s, m)
+				return false, "FilterZalgo"
+			}
+		}
+
+		// Invites
+		if levelCensor.FilterInvites {
+			ok := InvitesWhitelistCheck(content, levelCensor.InvitesWhitelist)
+			if !ok {
+				RemoveMessage(s, m)
+				return false, "InvitesWhitelist"
+			}
+		} else if len(*levelCensor.InvitesBlacklist) != 0 {
+			ok := InvitesBlacklistCheck(content, levelCensor.InvitesBlacklist)
+			if !ok {
+				RemoveMessage(s, m)
+				return false, "InvitesBlacklist"
+			}
 		}
 	}
 
-	// Invites
-	if levelCensor.FilterInvites {
-		ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
-		if !ok {
-			RemoveMessage(s, m)
-			return false, "InvitesWhitelist"
+	// Channel censors
+	if censorChannel != nil {
+		// Zalgo
+		if censorChannel.FilterZalgo {
+			ok := ZalgoCheck(content)
+			if !ok {
+				RemoveMessage(s, m)
+				return false, "FilterZalgo"
+			}
 		}
 
-	} else if len(*censorChannel.InvitesBlacklist) != 0 {
-		ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
-		if !ok {
-			RemoveMessage(s, m)
-			return false, "InvitesBlacklist"
-		}
-	}
+		// Invites
+		if censorChannel.FilterInvites {
+			ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
+			if !ok {
+				RemoveMessage(s, m)
+				return false, "InvitesWhitelist"
+			}
 
-	// Censor
-
-	// Zalgo
-	if censorChannel.FilterZalgo {
-		ok := ZalgoCheck(content)
-		if !ok {
-			RemoveMessage(s, m)
-			return false, "FilterZalgo"
-		}
-
-	}
-
-	// Invites
-	if censorChannel.FilterInvites {
-		ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
-		if !ok {
-			RemoveMessage(s, m)
-			return false, "InvitesWhitelist"
-		}
-
-	} else if len(*censorChannel.InvitesBlacklist) != 0 {
-		ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
-		if !ok {
-			RemoveMessage(s, m)
-			return false, "InvitesBlacklist"
+		} else if len(*censorChannel.InvitesBlacklist) != 0 {
+			ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
+			if !ok {
+				RemoveMessage(s, m)
+				return false, "InvitesBlacklist"
+			}
 		}
 	}
 
