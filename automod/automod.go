@@ -19,9 +19,9 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 // This function should be "silent" if a message is okay.
 func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 
-	conf := config.GetConfig(m.GuildID)
+	conf, err := config.GetConfig(m.GuildID)
 
-	if conf == nil {
+	if conf == nil || err != nil {
 		return true, ""
 	}
 
@@ -37,7 +37,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 	censorChannel := automod.CensorChannels[m.ChannelID]
 
 	// levels take priority
-	userLevel := config.GetLevel(conf, s, m.GuildID, m.Member.User.ID)
+	userLevel := config.GetLevel(s, m.GuildID, m.Member.User.ID)
 	levelCensor := automod.CensorLevels[userLevel]
 
 	// Censor

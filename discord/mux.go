@@ -6,7 +6,7 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-// Route hols information about a specific message route handler
+// Route holds information about a specific message route handler
 type Route struct {
 	Pattern     string      // match pattern that should trigger this route handler
 	Description string      // short description of this route
@@ -17,7 +17,7 @@ type Route struct {
 // HandlerFunc is the function signature required for a message route handler.
 type HandlerFunc func(*discordgo.Session, *discordgo.Message, *discordgo.Context)
 
-// Mux is the main struct for all mux methos.
+// Mux is the main struct for all mux methods.
 type Mux struct {
 	Routes  []*Route
 	Default *Route
@@ -26,6 +26,7 @@ type Mux struct {
 // New returns a new Discord message route mux
 func NewRouter() *Mux {
 	m := &Mux{}
+	m.Routes = make([]*Route, 0, 0)
 	return m
 }
 

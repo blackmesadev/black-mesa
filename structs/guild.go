@@ -15,13 +15,11 @@ type Permissions struct {
 }
 
 type Commands struct {
-	Prefix      string
-	Permissions *Permissions
 }
 
 type Persistance struct {
 	Roles            bool
-	WhitelistedRoles *[]string // slice of ids
+	WhitelistedRoles *[]string `json:"whitelistedRoles" bson:"whitelistedRoles"` // slice of ids
 	Nickname         bool
 	Voice            bool
 }
@@ -35,78 +33,77 @@ type ReactRoleChannel struct {
 }
 
 type ReactRoles struct {
-	Channel map[string]*ReactRoleChannel // channelid : reactRoleChannel
+	Channel map[string]*ReactRoleChannel // channelID : reactRoleChannel
 }
 
 type Guild struct {
-	ConfirmActions      bool
-	RoleAliases         map[string]string // name: roleid
-	SelfAssignableRoles map[string]string // name: roleid
-	LockedRoles         *[]string         // slice of ids
-	Persistance         *Persistance
-	AutoRole            *[]string // slice of ids
-	ReactRoles          *ReactRoles
+	ConfirmActions      bool              `json:"confirmActions" bson:"confirmActions"`
+	RoleAliases         map[string]string `json:"roleAliases" bson:"roleAliases"`                 // name: roleid
+	SelfAssignableRoles map[string]string `json:"selfAssignableRoles" bson:"selfAssignableRoles"` // name: roleid
+	LockedRoles         *[]string         `json:"lockedRoles" bson:"lockedRoles"`                 // slice of ids
+	Persistance         *Persistance      `json:"persistance" bson:"persistance"`
+	AutoRole            *[]string         `json:"autoRole" bson:"autoRole"` // slice of ids
+	ReactRoles          *ReactRoles       `json:"reactRoles" bson:"reactRoles"`
+	UnsafePermissions   bool              `json:"unsafePermissions" bson:"unsafePermissions"`
 }
 
 type Censor struct {
-	FilterZalgo       bool
-	FilterInvites     bool
-	InvitesWhitelist  *[]string // slice of invitelinks/ids
-	InvitesBlacklist  *[]string // slice of invitelinks/ids
-	DomainWhitelist   *[]string // slice of domains
-	DomainBlacklist   *[]string // slice of domains
-	BlockedSubstrings *[]string // slice of substrings
-	BlockedStrings    *[]string // slice of strings
-	Regex             string
+	FilterZalgo       bool      `json:"filterZalgo" bson:"filterZalgo"`
+	FilterInvites     bool      `json:"filterInvites" bson:"filterInvites"`
+	InvitesWhitelist  *[]string `json:"invitesWhitelist" bson:"invitesWhitelist"`   // slice of invitelinks/ids
+	InvitesBlacklist  *[]string `json:"invitesBlacklist" bson:"invitesBlacklist"`   // slice of invitelinks/ids
+	DomainWhitelist   *[]string `json:"domainWhitelist" bson:"domainWhitelist"`     // slice of domains
+	DomainBlacklist   *[]string `json:"domainBlacklist" bson:"domainBlacklist"`     // slice of domains
+	BlockedSubstrings *[]string `json:"blockedSubstrings" bson:"blockedSubstrings"` // slice of substrings
+	BlockedStrings    *[]string `json:"blockedStrings" bson:"blockedStrings"`       // slice of strings
+	Regex             string    `json:"regex" bson:"regex"`
 }
 
 type Spam struct {
 	Punishment         string
-	PunishmentDuration int64
-	Count              int64 // amount per interval
-	Interval           int64 // seconds
-	MaxMessages        int64
-	MaxMentions        int64
-	MaxLinks           int64
-	MaxAttachments     int64
-	MaxEmojis          int64
-	MaxNewlines        int64
-	MaxDuplicates      int64
-	Clean              bool
-	CleanCount         int64
-	CleanDuration      int64
+	PunishmentDuration int64 `json:"punishmentDuration" bson:"punishmentDuration"` // seconds
+	Count              int64 `json:"count" bson:"count"`                           // amount per interval
+	Interval           int64 `json:"interval" bson:"interval"`                     // seconds
+	MaxMessages        int64 `json:"maxMessages" bson:"maxMessages"`
+	MaxMentions        int64 `json:"maxMentions" bson:"maxMentions"`
+	MaxLinks           int64 `json:"maxLinks" bson:"maxLinks"`
+	MaxAttachments     int64 `json:"maxAttachments" bson:"maxAttachments"`
+	MaxEmojis          int64 `json:"maxEmojis" bson:"maxEmojis"`
+	MaxNewlines        int64 `json:"maxNewlines" bson:"maxNewlines"`
+	MaxDuplicates      int64 `json:"maxDuplicates" bson:"maxDuplicates"`
+	Clean              bool  `json:"clean" bson:"clean"`
+	CleanCount         int64 `json:"cleanCount" bson:"cleanCount"`
+	CleanDuration      int64 `json:"cleanDuration" bson:"cleanDuration"`
 }
 
 type Automod struct {
-	CensorLevels   map[int64]*Censor
-	CensorChannels map[string]*Censor
-
-	SpamLevels   map[int64]*Spam
-	SpamChannels map[string]*Spam
-
-	PublicHumilation bool
+	CensorLevels     map[int64]*Censor  `json:"censorLevels" bson:"censorLevels"`
+	CensorChannels   map[string]*Censor `json:"censorChannels" bson:"censorChannels"`
+	SpamLevels       map[int64]*Spam    `json:"spamLevels" bson:"spamLevels"`
+	SpamChannels     map[string]*Spam   `json:"spamChannels" bson:"spamChannels"`
+	PublicHumilation bool               `json:"publicHumilation" bson:"publicHumilation"`
 }
 
 type Logging struct {
-	ChannelID          string
-	IncludeActions     *[]string // list of actions
-	ExcludeActions     *[]string // list of actions
-	Timestamps         bool
-	Timezone           string
-	IgnoredUsers       *[]string // slice of user ids
-	IgnoredChannels    *[]string // slice of channel ids
-	NewMemberThreshold int64     // seconds
+	ChannelID          string    `json:"channelID" bson:"channelID"`
+	IncludeActions     *[]string `json:"includeActions" bson:"includeActions"` // list of actions
+	ExcludeActions     *[]string `json:"excludeActions" bson:"excludeActions"` // list of actions
+	Timestamps         bool      `json:"timestamps" bson:"timestamps"`
+	Timezone           string    `json:"timezone" bson:"timezone"`
+	IgnoredUsers       *[]string `json:"ignoredUsers" bson:"ignoredUsers"`             // slice of user ids
+	IgnoredChannels    *[]string `json:"ignoredChannels" bson:"ignoredChannels"`       // slice of channel ids
+	NewMemberThreshold int64     `json:"newMemberThreshold" bson:"newMemberThreshold"` // seconds
 }
 
 type Moderation struct {
-	ConfirmActionsMessage       bool
-	ConfirmActionsMessageExpiry int64
-	ConfirmActionsReaction      bool
-	MuteRole                    string
-	ReasonEditLevel             int64
-	NotifyActions               bool
-	ShowModeratorOnNotify       bool
-	SilenceLevel                int64
+	ConfirmActionsMessage       bool   `json:"confirmActionsMessage" bson:"confirmActionsMessage"`
+	ConfirmActionsMessageExpiry int64  `json:"confirmActionsMessageExpiry" bson:"confirmActionsMessageExpiry"`
+	ConfirmActionsReaction      bool   `json:"confirmActionsReaction" bson:"confirmActionsReaction"`
+	MuteRole                    string `json:"muteRole" bson:"muteRole"`
+	ReasonEditLevel             int64  `json:"reasonEditLevel" bson:"reasonEditLevel"`
+	NotifyActions               bool   `json:"notifyActions" bson:"notifyActions"`
+	ShowModeratorOnNotify       bool   `json:"showModeratorOnNotify" bson:"showModeratorOnNotify"`
+	SilenceLevel                int64  `json:"silenceLevel" bson:"silenceLevel"`
 }
 
 type Modules struct {
@@ -117,12 +114,11 @@ type Modules struct {
 }
 
 type Config struct {
-	guildID  string
-	Nickname string
-
-	WebAccess *WebAccess       `json:"webAccess" bson:"webAccess"`
-	Commands  *Commands        `json:"commands" bson:"commands"`
-	Levels    map[string]int64 `json:"levels" bson:"levels"`
-
-	Modules *Modules
+	guildID     string
+	Nickname    string           `json:"nickname" bson:"nickname"`
+	WebAccess   *WebAccess       `json:"webAccess" bson:"webAccess"`
+	Prefix      string           `json:"prefix" bson:"prefix"`
+	Permissions map[string]int64 `json:"permissions" bson:"permissions"`
+	Levels      map[string]int64 `json:"levels" bson:"levels"`
+	Modules     *Modules         `json:"modules" bson:"modules"`
 }

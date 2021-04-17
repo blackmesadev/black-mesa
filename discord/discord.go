@@ -14,8 +14,6 @@ import (
 
 var instance *Bot
 
-var Router = NewRouter()
-
 type Bot struct {
 	Session  *discordgo.Session
 	Token    string `json:"token"`
@@ -49,6 +47,7 @@ func (bot *Bot) Start() {
 	bot.Session.AddHandler(bot.OnMessageUpdate)
 	bot.Session.AddHandler(bot.OnMessageDelete)
 
+	bot.Router = NewRouter()
 	bot.Router.InitRouter()
 
 	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged)
@@ -59,7 +58,7 @@ func (bot *Bot) Start() {
 		return
 	}
 
-	fmt.Printf("Bot started. Press CTRL-C to exit")
+	fmt.Println("Bot started. Press CTRL-C to exit")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc

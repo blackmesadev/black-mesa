@@ -8,7 +8,7 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-func SetupCmd(s *discordgo.Session, m *discordgo.MessageCreate, parameters []string) {
+func SetupCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
 	g, err := s.Guild(m.GuildID)
 	if err != nil {
 		log.Println(err)

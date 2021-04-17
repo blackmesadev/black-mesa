@@ -31,7 +31,7 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 	var c *discordgo.Channel
 	c, err = s.State.Channel(mc.ChannelID)
 	if err != nil {
-		// Try fetching via REST API
+		// Try fetchin  via REST API
 		c, err = s.Channel(mc.ChannelID)
 		if err != nil {
 			log.Printf("unable to fetch Channel for Message, %s", err)
@@ -76,7 +76,6 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 	}
 
 	// Detect prefix mention
-
 	prefix := config.GetPrefix(mc.GuildID)
 
 	if !ctx.IsDirected && len(prefix) > 0 {

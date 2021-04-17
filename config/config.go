@@ -7,7 +7,6 @@ import (
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
-	"go.mongodb.org/mongo-driver/bson"
 )
 
 var db *mongodb.DB
@@ -27,27 +26,19 @@ func AddGuild(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	return config
 }
 
-func GetConfig(guildid string) *structs.Config {
+func GetConfig(guildid string) (*structs.Config, error) {
 	config, err := db.GetConfig(guildid)
 	if err != nil {
 		log.Println(err)
+		return nil, err
 	}
-	return config
-}
-
-func getOne(guildid string, query string) *bson.M {
-	data, err := db.GetConfigProjection(guildid, query)
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-	return data
+	return config, nil
 }
 
 func GetPrefix(guildid string) string {
-	var prefix string
+	prefixMap := make(map[string]map[string]string)
 
-	data, err := db.GetConfigProjection(guildid, "commands.prefix")
+	data, err := db.GetConfigProjection(guildid, "prefix")
 	if err != nil {
 		log.Println(err)
 		return "!"
@@ -59,39 +50,8 @@ func GetPrefix(guildid string) string {
 		return "!"
 	}
 
-	json.Unmarshal(binData, &prefix)
+	json.Unmarshal(binData, &prefixMap)
 
-	return prefix
+	return prefixMap["config"]["prefix"]
 
-}
-
-func GetLevel(c *structs.Config, s *discordgo.Session, guildid string, userid string) int64 {
-
-	// first try userids only
-	for k, v := range c.Levels {
-		if k == userid {
-			return v
-		}
-	}
-
-	// get roles instead then
-
-	m, err := s.GuildMember(guildid, userid)
-	if err != nil {
-		log.Println(err)
-	}
-
-	var highestLevel int64
-	highestLevel = 0
-
-	for _, role := range m.Roles {
-		level, ok := c.Levels[role]
-		if ok {
-			if level > highestLevel {
-				highestLevel = level
-			}
-		}
-	}
-
-	return highestLevel
 }

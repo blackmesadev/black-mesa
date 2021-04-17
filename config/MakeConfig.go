@@ -20,18 +20,13 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		lvls[invokedByUserID] = 100
 	}
 
-	perms := &structs.Permissions{
-		Guild:          0,
-		Administration: 100,
-		Moderation:     50,
-		Roles:          100,
-		Logging:        100,
-	}
+	perms := make(map[string]int64)
+	perms["guild"] = 0
+	perms["administration"] = 100
+	perms["moderation"] = 50
+	perms["roles"] = 100
+	perms["logging"] = 100
 
-	cmds := &structs.Commands{
-		Prefix:      "!",
-		Permissions: perms,
-	}
 	emptyMap := make(map[string]string)
 	emptySlice := make([]string, 0, 0)
 
@@ -53,6 +48,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		Persistance:         persist,
 		AutoRole:            &emptySlice,
 		ReactRoles:          reactRoles,
+		UnsafePermissions:   false,
 	}
 	defaultSpam := &structs.Spam{
 		Punishment:         "N0NE",
@@ -130,9 +126,10 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	config := &structs.Config{
 		Nickname: "Black Mesa",
 
-		WebAccess: wa,
-		Commands:  cmds,
-		Levels:    lvls,
+		WebAccess:   wa,
+		Prefix:      "!",
+		Permissions: perms,
+		Levels:      lvls,
 
 		Modules: mods,
 	}
