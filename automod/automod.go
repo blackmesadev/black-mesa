@@ -2,7 +2,6 @@ package automod
 
 import (
 	"fmt"
-	"math"
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/discordgo"
@@ -16,8 +15,10 @@ func getClosestLevel(i []int64, targetLevel int64) int64 {
 			return targetLevel
 		}
 
-		if math.Abs(float64(targetLevel - level)) < math.Abs(float64(targetLevel - closest)) {
+		if level < targetLevel {
 			closest = level
+		} else {
+			return closest // micro optimization; return early if the level is ever higher than the target
 		}
 	}
 
