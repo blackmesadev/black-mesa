@@ -28,22 +28,25 @@ func getClosestLevel(i []int64, targetLevel int64) int64 {
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
 	start := time.Now()
-	ok, reason := Check(s, m)
+	ok, reason, filterProcessingStart := Check(s, m)
 	if !ok {
-		msg := fmt.Sprintf("Removed message for %v in %v", reason, time.Since(start))
+		filtersDone := time.Since(filterProcessingStart)
+		RemoveMessage(s, m)
+		msg := fmt.Sprintf("Removed message for %v in %v (filters done in %v)", reason, time.Since(start), filtersDone)
 		s.ChannelMessageSend(m.ChannelID, msg)
 	}
 }
 
 // Return true if all is okay, return false if not.
 // This function should be "silent" if a message is okay.
-func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
+func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time) {
+	filterProcessingStart := time.Now()
 
 	conf, err := config.GetConfig(m.GuildID)
 
 	if conf == nil || err != nil {
 		fmt.Println(conf, err)
-		return true, ""
+		return true, "", filterProcessingStart
 	}
 
 	automod := conf.Modules.Automod
@@ -52,7 +55,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 
 	if len(automod.SpamLevels) == 0 && len(automod.SpamChannels) == 0 &&
 		len(automod.CensorLevels) == 0 && len(automod.SpamChannels) == 0 {
-		return true, ""
+		return true, "", filterProcessingStart
 	}
 
 	censorChannel := automod.CensorChannels[m.ChannelID]
@@ -75,8 +78,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 		if levelCensor.FilterZalgo {
 			ok := ZalgoCheck(content)
 			if !ok {
-				RemoveMessage(s, m)
-				return false, "FilterZalgo"
+				return false, "FilterZalgo", filterProcessingStart
 			}
 		}
 
@@ -84,14 +86,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 		if levelCensor.FilterInvites {
 			ok := InvitesWhitelistCheck(content, levelCensor.InvitesWhitelist)
 			if !ok {
-				RemoveMessage(s, m)
-				return false, "Invite"
+				return false, "Invite", filterProcessingStart
 			}
 		} else if len(*levelCensor.InvitesBlacklist) != 0 {
 			ok := InvitesBlacklistCheck(content, levelCensor.InvitesBlacklist)
 			if !ok {
-				RemoveMessage(s, m)
-				return false, "InvitesBlacklist"
+				return false, "InvitesBlacklist", filterProcessingStart
 			}
 		}
 	}
@@ -102,8 +102,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 		if censorChannel.FilterZalgo {
 			ok := ZalgoCheck(content)
 			if !ok {
-				RemoveMessage(s, m)
-				return false, "FilterZalgo"
+				return false, "FilterZalgo", filterProcessingStart
 			}
 		}
 
@@ -111,20 +110,18 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string) {
 		if censorChannel.FilterInvites {
 			ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 			if !ok {
-				RemoveMessage(s, m)
-				return false, "InvitesWhitelist"
+				return false, "InvitesWhitelist", filterProcessingStart
 			}
 
 		} else if len(*censorChannel.InvitesBlacklist) != 0 {
 			ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
 			if !ok {
-				RemoveMessage(s, m)
-				return false, "InvitesBlacklist"
+				return false, "InvitesBlacklist", filterProcessingStart
 			}
 		}
 	}
 
 	// Domains
 
-	return true, ""
+	return true, "", filterProcessingStart
 }
