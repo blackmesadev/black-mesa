@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-var domainsRegex = regexp.MustCompile(`^(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)`)
+var domainsRegex = regexp.MustCompile(`(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)`)
 
 func DomainsWhitelistCheck(m string, whitelist *[]string) bool {
 	ok := false
