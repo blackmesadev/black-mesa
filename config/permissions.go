@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -63,6 +64,7 @@ func GetPermission(s *discordgo.Session, guildid string, permission string) (int
 		}
 	}
 	if permissionValue == -1 {
+		err = errors.New("no data found")
 		return 0, err
 	}
 	return permissionValue, nil
