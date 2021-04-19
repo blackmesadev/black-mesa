@@ -73,7 +73,7 @@ func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 	data, err := db.GetConfigProjection(guildid, "levels")
 	if err != nil {
 		log.Println(err)
-		return -1
+		return 0
 	}
 
 	delete(data, "_id")
@@ -83,13 +83,13 @@ func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 
 	if err != nil {
 		log.Println(err)
-		return -2
+		return 0
 	}
 	err = json.Unmarshal(confBytes, &conf)
 
 	if err != nil {
 		log.Println(err)
-		return -3
+		return 0
 	}
 
 	// first try userids only
@@ -104,7 +104,7 @@ func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 	m, err := s.GuildMember(guildid, userid)
 	if err != nil {
 		log.Println(err)
-		return -3
+		return 0
 	}
 
 	var highestLevel int64
