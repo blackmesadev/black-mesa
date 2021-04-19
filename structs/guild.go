@@ -6,9 +6,6 @@ type WebAccess struct {
 	Viewer *[]string
 }
 
-type Commands struct {
-}
-
 type Persistance struct {
 	Roles            bool
 	WhitelistedRoles *[]string `json:"whitelistedRoles" bson:"whitelistedRoles"` // slice of ids
@@ -42,6 +39,9 @@ type Guild struct {
 type Censor struct {
 	FilterZalgo       bool      `json:"filterZalgo" bson:"filterZalgo"`
 	FilterInvites     bool      `json:"filterInvites" bson:"filterInvites"`
+	FilterDomains     bool      `json:"FilterDomains" bson:"FilterDomains"`
+	FilterStrings     bool      `json:"FilterStrings" bson:"FilterStrings"`
+	FilterRegex       bool      `json:"FilterRegex" bson:"FilterRegex"`
 	InvitesWhitelist  *[]string `json:"invitesWhitelist" bson:"invitesWhitelist"`   // slice of invitelinks/ids
 	InvitesBlacklist  *[]string `json:"invitesBlacklist" bson:"invitesBlacklist"`   // slice of invitelinks/ids
 	DomainWhitelist   *[]string `json:"domainWhitelist" bson:"domainWhitelist"`     // slice of domains
