@@ -70,12 +70,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		i++
 	}
 
-	levelCensor := automod.CensorLevels[getClosestLevel(automodCensorLevels, userLevel)]
+	censorLevel := automod.CensorLevels[getClosestLevel(automodCensorLevels, userLevel)]
 
 	// Level censors
-	if levelCensor != nil {
+	if censorLevel != nil {
 		// Zalgo
-		if levelCensor.FilterZalgo {
+		if censorLevel.FilterZalgo {
 			ok := ZalgoCheck(content)
 			if !ok {
 				return false, "FilterZalgo", filterProcessingStart
@@ -83,15 +83,38 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		}
 
 		// Invites
-		if levelCensor.FilterInvites {
-			ok := InvitesWhitelistCheck(content, levelCensor.InvitesWhitelist)
+		if censorLevel.FilterInvites {
+			ok := InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
 			if !ok {
 				return false, "Invite", filterProcessingStart
 			}
-		} else if len(*levelCensor.InvitesBlacklist) != 0 {
-			ok := InvitesBlacklistCheck(content, levelCensor.InvitesBlacklist)
+		} else if len(*censorLevel.InvitesBlacklist) != 0 {
+			ok := InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
 			if !ok {
 				return false, "InvitesBlacklist", filterProcessingStart
+			}
+		}
+
+		// Domains
+
+		if censorLevel.FilterDomains {
+			ok := DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
+			if !ok {
+				return false, "Domain", filterProcessingStart
+			}
+		} else if len(*censorLevel.DomainBlacklist) != 0 {
+			ok := DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
+			if !ok {
+				return false, "DomainsBlacklist", filterProcessingStart
+			}
+		}
+
+		// Strings / Substrings
+
+		if censorLevel.FilterStrings {
+			ok := StringsCheck(content, censorLevel.BlockedStrings)
+			if !ok {
+				return false, "BlockedString", filterProcessingStart
 			}
 		}
 	}
@@ -110,7 +133,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorChannel.FilterInvites {
 			ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 			if !ok {
-				return false, "InvitesWhitelist", filterProcessingStart
+				return false, "Invite", filterProcessingStart
 			}
 
 		} else if len(*censorChannel.InvitesBlacklist) != 0 {
@@ -119,9 +142,30 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 				return false, "InvitesBlacklist", filterProcessingStart
 			}
 		}
-	}
 
-	// Domains
+		// Domains
+
+		if censorChannel.FilterDomains {
+			ok := DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
+			if !ok {
+				return false, "Domain", filterProcessingStart
+			}
+		} else if len(*censorChannel.DomainBlacklist) != 0 {
+			ok := DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
+			if !ok {
+				return false, "DomainsBlacklist", filterProcessingStart
+			}
+		}
+
+		// Strings / Substrings
+
+		if censorChannel.FilterStrings {
+			ok := StringsCheck(content, censorChannel.BlockedStrings)
+			if !ok {
+				return false, "BlockedString", filterProcessingStart
+			}
+		}
+	}
 
 	return true, "", filterProcessingStart
 }
