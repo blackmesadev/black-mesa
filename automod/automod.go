@@ -169,12 +169,59 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 	}
 
 	// Spam
-	{ // max messages
+	{ // messages
 		ten, _ := time.ParseDuration("10s")
 		limit := 5
 		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
-			return false, fmt.Sprintf("Spam->MaxMessages(%v/%v)", limit, ten), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Messages(%v/%v)", limit, ten), filterProcessingStart
+		}
+	}
+	{ // newlines
+		limit := 10
+		ok := spam.ProcessMaxNewlines(m.Content, limit)
+		if !ok {
+			return false, fmt.Sprintf("Spam->NewLines(>%v)", limit), filterProcessingStart
+		}
+	}
+	{ // mentions
+		limit := 2
+		ok := spam.ProcessMaxMentions(m, limit)
+		if !ok {
+			return false, fmt.Sprintf("Spam->Mentions(>%v)", limit), filterProcessingStart
+		}
+		ok = spam.ProcessMaxRoleMentions(m, limit)
+		if !ok {
+			return false, fmt.Sprintf("Spam->RoleMentions(>%v)", limit), filterProcessingStart
+		}
+	}
+	{ // links
+		limit := 2
+		ok := spam.ProcessMaxLinks(m.Content, limit)
+		if !ok {
+			return false, fmt.Sprintf("Spam->Links(>%v)", limit), filterProcessingStart
+		}
+	}
+	{ // uppercase
+		limit := 50.0
+		minLength := 20
+		ok := spam.ProcessMaxUppercase(m.Content, limit, minLength)
+		if !ok {
+			return false, fmt.Sprintf("Spam->Uppercase(>%v%%)", limit), filterProcessingStart
+		}
+	}
+	{ // emoji
+		limit := 10
+		ok := spam.ProcessMaxEmojis(m, limit)
+		if !ok {
+			return false, fmt.Sprintf("Spam->Emojis(>%v)", limit), filterProcessingStart
+		}
+	}
+	{ // attachments
+		limit := 2
+		ok := spam.ProcessMaxAttachments(m, limit)
+		if !ok {
+			return false, fmt.Sprintf("Spam->Attachments(>%v)", limit), filterProcessingStart
 		}
 	}
 
