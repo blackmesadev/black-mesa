@@ -70,6 +70,9 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	defaultCensor := &structs.Censor{
 		FilterZalgo:       true,
 		FilterInvites:     true,
+		FilterDomains:     false,
+		FilterStrings:     true,
+		FilterRegex:       false,
 		InvitesWhitelist:  &emptySlice,
 		InvitesBlacklist:  &emptySlice,
 		DomainWhitelist:   &emptySlice,
