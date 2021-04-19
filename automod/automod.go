@@ -171,9 +171,10 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 	// Spam
 	{ // max messages
 		ten, _ := time.ParseDuration("10s")
-		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, 5, ten, false)
+		limit := 5
+		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
-			return false, "Spam->MaxMessages", filterProcessingStart
+			return false, fmt.Sprintf("Spam->MaxMessages(%v/%v)", limit, ten), filterProcessingStart
 		}
 	}
 
