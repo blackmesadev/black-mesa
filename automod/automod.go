@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/automod/censor"
 	"github.com/blackmesadev/black-mesa/automod/spam"
+	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -77,7 +78,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 	if censorLevel != nil {
 		// Zalgo
 		if censorLevel.FilterZalgo {
-			ok := ZalgoCheck(content)
+			ok := censor.ZalgoCheck(content)
 			if !ok {
 				return false, "FilterZalgo", filterProcessingStart
 			}
@@ -85,12 +86,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 
 		// Invites
 		if censorLevel.FilterInvites {
-			ok := InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
+			ok := censor.InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
 			if !ok {
 				return false, "Invite", filterProcessingStart
 			}
 		} else if len(*censorLevel.InvitesBlacklist) != 0 {
-			ok := InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
+			ok := censor.InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
 			if !ok {
 				return false, "InvitesBlacklist", filterProcessingStart
 			}
@@ -99,12 +100,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		// Domains
 
 		if censorLevel.FilterDomains {
-			ok := DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
+			ok := censor.DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
 			if !ok {
 				return false, "Domain", filterProcessingStart
 			}
 		} else if len(*censorLevel.DomainBlacklist) != 0 {
-			ok := DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
+			ok := censor.DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
 			if !ok {
 				return false, "DomainsBlacklist", filterProcessingStart
 			}
@@ -113,7 +114,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		// Strings / Substrings
 
 		if censorLevel.FilterStrings {
-			ok := StringsCheck(content, censorLevel.BlockedStrings)
+			ok := censor.StringsCheck(content, censorLevel.BlockedStrings)
 			if !ok {
 				return false, "BlockedString", filterProcessingStart
 			}
@@ -124,7 +125,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 	if censorChannel != nil {
 		// Zalgo
 		if censorChannel.FilterZalgo {
-			ok := ZalgoCheck(content)
+			ok := censor.ZalgoCheck(content)
 			if !ok {
 				return false, "FilterZalgo", filterProcessingStart
 			}
@@ -132,13 +133,13 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 
 		// Invites
 		if censorChannel.FilterInvites {
-			ok := InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
+			ok := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 			if !ok {
 				return false, "Invite", filterProcessingStart
 			}
 
 		} else if len(*censorChannel.InvitesBlacklist) != 0 {
-			ok := InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
+			ok := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
 			if !ok {
 				return false, "InvitesBlacklist", filterProcessingStart
 			}
@@ -147,12 +148,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		// Domains
 
 		if censorChannel.FilterDomains {
-			ok := DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
+			ok := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
 			if !ok {
 				return false, "Domain", filterProcessingStart
 			}
 		} else if len(*censorChannel.DomainBlacklist) != 0 {
-			ok := DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
+			ok := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
 			if !ok {
 				return false, "DomainsBlacklist", filterProcessingStart
 			}
@@ -161,7 +162,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		// Strings / Substrings
 
 		if censorChannel.FilterStrings {
-			ok := StringsCheck(content, censorChannel.BlockedStrings)
+			ok := censor.StringsCheck(content, censorChannel.BlockedStrings)
 			if !ok {
 				return false, "BlockedString", filterProcessingStart
 			}
