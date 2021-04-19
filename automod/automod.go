@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/automod/spam"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -164,6 +165,15 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 			if !ok {
 				return false, "BlockedString", filterProcessingStart
 			}
+		}
+	}
+
+	// Spam
+	{ // max messages
+		ten, _ := time.ParseDuration("10s")
+		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, 5, ten, false)
+		if !ok {
+			return false, "Spam->MaxMessages", filterProcessingStart
 		}
 	}
 
