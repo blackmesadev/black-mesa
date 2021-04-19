@@ -4,14 +4,12 @@ import (
 	"regexp"
 )
 
-const inviteRegex = `discord(?:\.com|app\.com|\.gg)[\/invite\/]?(?:[a-zA-Z0-9\-]{2,32})`
+var inviteRegex = regexp.MustCompile(`discord(?:\.com|app\.com|\.gg)[\/invite\/]?(?:[a-zA-Z0-9\-]{2,32})`)
 
 func InvitesWhitelistCheck(m string, whitelist *[]string) bool {
 	ok := false
 
-	r := regexp.MustCompile(inviteRegex)
-
-	invites := r.FindAllString(m, -1)
+	invites := inviteRegex.FindAllString(m, -1)
 
 	if len(invites) == 0 {
 		return true
@@ -22,7 +20,7 @@ func InvitesWhitelistCheck(m string, whitelist *[]string) bool {
 			if invite == whitelistedInvite {
 				ok = true
 			} else {
-				ok = false
+				return false
 			}
 		}
 	}
@@ -33,9 +31,7 @@ func InvitesWhitelistCheck(m string, whitelist *[]string) bool {
 func InvitesBlacklistCheck(m string, blacklist *[]string) bool {
 	ok := true
 
-	r := regexp.MustCompile(inviteRegex)
-
-	invites := r.FindAllString(m, -1)
+	invites := inviteRegex.FindAllString(m, -1)
 
 	if len(invites) == 0 {
 		return true
@@ -44,7 +40,7 @@ func InvitesBlacklistCheck(m string, blacklist *[]string) bool {
 	for _, invite := range invites {
 		for _, blacklistedInvite := range *blacklist {
 			if invite == blacklistedInvite {
-				ok = false
+				return false
 			} else {
 				ok = true
 			}
