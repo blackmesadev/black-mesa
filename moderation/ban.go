@@ -31,7 +31,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		idList = append(idList, id)
 	}
 
-	if len(idList) == 0 || durationOrReasonStart == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
+	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `ban <target:user[]> [time:duration] [reason:string...]`")
 		return
 	}
@@ -43,6 +43,12 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		permBan = true
 		reason = fmt.Sprintf("%v %v", args[durationOrReasonStart], reason) // append start of reason to reason
 	}
+
+	if durationOrReasonStart == 0 { // fixes broken reasons
+		reason = ""
+	}
+
+	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
 	parse := time.Since(start)
 
