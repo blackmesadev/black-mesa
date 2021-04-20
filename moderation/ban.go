@@ -21,7 +21,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) 
 
 	parse := time.Since(start)
 
-	msg := "Successfully banned "
+	msg := "<:mesaBan:832350526690820146> Successfully banned "
 
 	dstart := time.Now()
 	unableBan := make([]string, 0)

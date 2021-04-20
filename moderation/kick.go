@@ -25,7 +25,7 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context)
 
 	reason = strings.TrimSpace(reason)
 
-	msg := "Successfully removed "
+	msg := "<:mesaKick:832350526778900571> Successfully kicked "
 
 	unableKick := make([]string, 0)
 	for _, id := range idList {
@@ -42,7 +42,7 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context)
 	}
 
 	if len(unableKick) != 0 {
-		msg += fmt.Sprintf("\nCould not remove %v", unableKick)
+		msg += fmt.Sprintf("\nCould not kick %v", unableKick)
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)
