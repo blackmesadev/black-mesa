@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -14,6 +15,11 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context)
 	start := time.Now()
 
 	idList := snowflakeRegex.FindAllString(m.Content, -1)
+
+	if len(idList) == 0 {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `kick <target:user[]> [reason:string...]`")
+		return
+	}
 
 	reasonSearch := snowflakeRegex.Split(m.Content, -1)
 
@@ -25,7 +31,7 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context)
 
 	reason = strings.TrimSpace(reason)
 
-	msg := "<:mesaKick:832350526778900571> Successfully kicked "
+	msg := "<:mesaCheck:832350526729224243> Successfully kicked "
 
 	unableKick := make([]string, 0)
 	for _, id := range idList {
@@ -42,11 +48,12 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context)
 	}
 
 	if len(unableKick) != 0 {
-		msg += fmt.Sprintf("\nCould not kick %v", unableKick)
+		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not kick %v", unableKick)
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v", time.Since(start)))
-
+	if util.IsDevInstance(s) {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v", time.Since(start)))
+	}
 }

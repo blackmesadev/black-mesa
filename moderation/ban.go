@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -15,13 +16,18 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) 
 
 	idList, duration, reason := parseCommand(m.Content)
 
+	if len(idList) == 0 {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `ban <target:user[]> [time:duration] [reason:string...]`")
+		return
+	}
+
 	if duration == 0 {
 		permBan = true
 	}
 
 	parse := time.Since(start)
 
-	msg := "<:mesaBan:832350526690820146> Successfully banned "
+	msg := "<:mesaCheck:832350526729224243> Successfully banned "
 
 	dstart := time.Now()
 	unableBan := make([]string, 0)
@@ -47,12 +53,14 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) 
 	}
 
 	if len(unableBan) != 0 {
-		msg += fmt.Sprintf("\nCould not ban %v", unableBan)
+		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not ban %v", unableBan)
 	}
 
 	msgsTotal := time.Since(msgs)
 	go s.ChannelMessageSend(m.ChannelID, msg)
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v (%v parsing, %v discordapi, %v message creation)",
-		time.Since(start), parse, discord, msgsTotal))
+	if util.IsDevInstance(s) {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v (%v parsing, %v discordapi, %v message creation)",
+			time.Since(start), parse, discord, msgsTotal))
+	}
 }
