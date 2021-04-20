@@ -9,7 +9,7 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-func GetConfigCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
+func GetConfigCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	allowed := CheckPermission(s, m.GuildID, m.Author.ID, "config.get")
 	if !allowed {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission to `config.get`.")

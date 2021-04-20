@@ -94,10 +94,10 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 	}
 
 	// Try to find the "best match" command out of the message.
-	r, params := bot.Router.Match(ctx.Content)
+	r, params, args := bot.Router.Match(ctx.Content)
 	if r != nil {
 		ctx.Fields = params
-		r.Run(s, mc.Message, ctx)
+		r.Run(s, mc.Message, ctx, args)
 		return
 	}
 
@@ -108,6 +108,6 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 		// or should the ratelimit be inside the cmd handler?..
 		// In the case of "talking" to another bot, this can create an endless
 		// loop.  Probably most common in private messages.
-		bot.Router.Default.Run(s, mc.Message, ctx)
+		bot.Router.Default.Run(s, mc.Message, ctx, make([]string, 0))
 	}
 }

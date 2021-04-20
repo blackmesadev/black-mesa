@@ -9,7 +9,7 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
+func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	var reason string
 
 	start := time.Now()

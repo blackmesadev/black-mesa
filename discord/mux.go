@@ -15,7 +15,7 @@ type Route struct {
 }
 
 // HandlerFunc is the function signature required for a message route handler.
-type HandlerFunc func(*discordgo.Session, *discordgo.Message, *discordgo.Context)
+type HandlerFunc func(*discordgo.Session, *discordgo.Message, *discordgo.Context, []string)
 
 // Mux is the main struct for all mux methods.
 type Mux struct {
@@ -41,12 +41,12 @@ func (m *Mux) Route(pattern string, handler HandlerFunc) (*Route, error) {
 	return &r, nil
 }
 
-func (m *Mux) Match(msg string) (*Route, []string) {
+func (m *Mux) Match(msg string) (*Route, []string, []string) {
 
 	fields := strings.Fields(msg)
 
 	if len(fields) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	var r *Route
 
@@ -55,9 +55,9 @@ func (m *Mux) Match(msg string) (*Route, []string) {
 
 		for _, route := range m.Routes {
 			if route.Pattern == field {
-				return route, fields[fieldCount:]
+				return route, fields[fieldCount:], fields[1:]
 			}
 		}
 	}
-	return r, fields[fieldCount:]
+	return r, fields[fieldCount:], fields[1:]
 }

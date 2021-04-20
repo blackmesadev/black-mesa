@@ -2,27 +2,46 @@ package moderation
 
 import (
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
-func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
+var userIdRegex = regexp.MustCompile(`^(?:<@!?)?\d+>?$`)
+
+func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 
 	start := time.Now()
 
 	var permBan bool
 
-	idList, duration, reason := parseCommand(m.Content)
+	//idList, duration, reason := parseCommand(m.Content)
+	idList := make([]string, 0)
+	durationOrReasonStart := 0
 
-	if len(idList) == 0 {
+	for i, possibleId := range args {
+		if !userIdRegex.MatchString(possibleId) {
+			durationOrReasonStart = i
+			break
+		}
+		id := userIdRegex.FindStringSubmatch(possibleId)[0]
+		idList = append(idList, id)
+	}
+
+	if len(idList) == 0 || durationOrReasonStart == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `ban <target:user[]> [time:duration] [reason:string...]`")
 		return
 	}
 
-	if duration == 0 {
+	duration, durationErr := time.ParseDuration(args[durationOrReasonStart])
+	reason := strings.Join(args[(durationOrReasonStart + 1):], " ")
+
+	if durationErr != nil { // must be part of the reason
 		permBan = true
+		reason = fmt.Sprintf("%v %v", args[durationOrReasonStart], reason) // append start of reason to reason
 	}
 
 	parse := time.Since(start)
@@ -49,7 +68,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) 
 		msg += "lasting `Forever`."
 
 	} else {
-		msg += fmt.Sprintf("expiring `%v`.", time.Unix(duration, 0))
+		msg += fmt.Sprintf("expiring `%v`.", time.Unix(time.Now().Add(duration).Unix(), 0))
 	}
 
 	if len(unableBan) != 0 {

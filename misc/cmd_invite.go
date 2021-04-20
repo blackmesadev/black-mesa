@@ -6,6 +6,6 @@ import (
 
 const botInvite string = "The Official Bot can be invited at "
 
-func InviteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
+func InviteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	s.ChannelMessageSend(m.ChannelID, botInvite)
 }
