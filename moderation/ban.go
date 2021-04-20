@@ -2,37 +2,28 @@ package moderation
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/blackmesadev/discordgo"
 )
 
 func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
-	var permBan bool
-	var reason string
-	var duration time.Duration
 
 	start := time.Now()
 
-	idList := snowflakeRegex.FindAllString(m.Content, -1)
-	params := snowflakeRegex.Split(m.Content, -1)
+	var permBan bool
 
-	reason = params[len(params)-1]
-	durationString := params[len(params)-2]
+	idList, duration, reason := parseCommand(m.Content)
 
-	if strings.Contains(durationString, "ban") {
+	if duration == 0 {
 		permBan = true
 	}
 
-	duration, err := time.ParseDuration(durationString)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, err.Error())
-		permBan = true
-	}
+	parse := time.Since(start)
 
 	msg := "Successfully banned "
 
+	dstart := time.Now()
 	unableBan := make([]string, 0)
 	for _, id := range idList {
 		err := s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
@@ -42,19 +33,26 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) 
 			msg += fmt.Sprintf("<@%v> ", id)
 		}
 	}
+	discord := time.Since(dstart)
+	msgs := time.Now()
+	if len(reason) != 0 {
+		msg += fmt.Sprintf("for reason `%v` ", reason)
+	}
 
 	if permBan {
-		msg += fmt.Sprintf("for reason `%v` lasting `Forever`.", reason)
+		msg += "lasting `Forever`."
 
 	} else {
-		msg += fmt.Sprintf("for reason `%v` lasting `%v`.", reason, duration.String())
+		msg += fmt.Sprintf("expiring `%v`.", time.Unix(duration, 0))
 	}
 
 	if len(unableBan) != 0 {
 		msg += fmt.Sprintf("\nCould not ban %v", unableBan)
 	}
 
+	msgsTotal := time.Since(msgs)
 	s.ChannelMessageSend(m.ChannelID, msg)
 
-	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v", time.Since(start)))
+	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v (%v parsing, %v discordapi, %v message creation)",
+		time.Since(start), parse, discord, msgsTotal))
 }
