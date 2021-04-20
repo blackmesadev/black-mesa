@@ -51,7 +51,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) 
 	}
 
 	msgsTotal := time.Since(msgs)
-	s.ChannelMessageSend(m.ChannelID, msg)
+	go s.ChannelMessageSend(m.ChannelID, msg)
 
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v (%v parsing, %v discordapi, %v message creation)",
 		time.Since(start), parse, discord, msgsTotal))
