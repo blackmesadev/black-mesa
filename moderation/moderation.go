@@ -52,9 +52,6 @@ func parseCommand(cmd string) ([]string, int64, string) {
 }
 
 // returns a int64 unix timestamp representative of when the punishment can be lifted
-// also returns the last regex that works so that we can split the command with an already compiled
-// regex which will give us the reason at the end! (if it doesnt its because the reason consisted of someone
-// slamming their head against their keyboard for the reason and at that point i dont give a fuck)
 func parseTime(strTime string) int64 {
 	var unixTime int64
 
