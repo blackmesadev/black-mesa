@@ -59,3 +59,24 @@ func GetPrefix(guildid string) string {
 	return prefixMap["config"]["prefix"]
 
 }
+
+func GetMutedRole(guildid string) string {
+	prefixMap := make(map[string]map[string]string)
+
+	data, err := db.GetConfigProjection(guildid, "muteRole")
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+
+	binData, err := json.Marshal(data)
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+
+	json.Unmarshal(binData, &prefixMap)
+
+	return prefixMap["moderation"]["muteRole"]
+
+}
