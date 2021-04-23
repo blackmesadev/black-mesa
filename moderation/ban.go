@@ -37,7 +37,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 	}
 
 	duration, durationErr := time.ParseDuration(args[durationOrReasonStart])
-	reason := strings.Join(args[(durationOrReasonStart + 1):], " ")
+	reason := strings.Join(args[(durationOrReasonStart+1):], " ")
 
 	if durationErr != nil { // must be part of the reason
 		permBan = true
