@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var userIdRegex = regexp.MustCompile(`^(?:<@!?)?(\d+)>?$`)
+
 var snowflakeRegex = regexp.MustCompile(`([0-9]{17,18})`)
 
 var numberRegex = regexp.MustCompile(`[0-9]*[.]?[0-9]+`)

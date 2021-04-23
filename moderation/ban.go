@@ -2,15 +2,12 @@ package moderation
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
-
-var userIdRegex = regexp.MustCompile(`^(?:<@!?)?(\d+)>?$`)
 
 func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 
