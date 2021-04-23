@@ -10,7 +10,7 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-var userIdRegex = regexp.MustCompile(`^(?:<@!?)?\d+>?$`)
+var userIdRegex = regexp.MustCompile(`^(?:<@!?)?(\d+)>?$`)
 
 func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 
@@ -27,7 +27,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 			durationOrReasonStart = i
 			break
 		}
-		id := userIdRegex.FindStringSubmatch(possibleId)[0]
+		id := userIdRegex.FindStringSubmatch(possibleId)[1]
 		idList = append(idList, id)
 	}
 
@@ -36,10 +36,10 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		return
 	}
 
-	duration, durationErr := time.ParseDuration(args[durationOrReasonStart])
+	duration := parseTime(args[durationOrReasonStart])
 	reason := strings.Join(args[(durationOrReasonStart+1):], " ")
 
-	if durationErr != nil { // must be part of the reason
+	if duration == 0 { // must be part of the reason
 		permBan = true
 		reason = fmt.Sprintf("%v %v", args[durationOrReasonStart], reason) // append start of reason to reason
 	}
@@ -74,7 +74,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		msg += "lasting `Forever`."
 
 	} else {
-		msg += fmt.Sprintf("expiring `%v`.", time.Unix(time.Now().Add(duration).Unix(), 0))
+		msg += fmt.Sprintf("expiring `%v`.", time.Unix(duration, 0))
 	}
 
 	if len(unableBan) != 0 {

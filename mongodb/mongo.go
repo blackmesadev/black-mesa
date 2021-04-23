@@ -41,3 +41,7 @@ func (db *DB) ConnectDB(connectionString string) {
 
 	log.Println("Mongo Connected.")
 }
+
+func (db *DB) GetMongoClient() *mongo.Client {
+	return db.client
+}

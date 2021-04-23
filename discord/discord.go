@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,8 +9,12 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/discordgo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var instance *Bot
@@ -58,6 +63,8 @@ func (bot *Bot) Start() {
 		return
 	}
 
+	go punishmentExpiryGoroutine()
+
 	fmt.Println("Bot started. Press CTRL-C to exit")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
@@ -84,4 +91,44 @@ func (bot *Bot) getToken() {
 	}
 
 	json.Unmarshal(token, bot)
+}
+
+func punishmentExpiryGoroutine() {
+	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("timedPunishments")
+
+	log.Println("punishment expiry ready")
+	for {
+		time.Sleep(time.Second)
+
+		timeSec := time.Now().Unix()
+		query := bson.M{
+			"expires": bson.M{
+				"$lte": timeSec,
+			},
+		}
+
+		cursor, err := db.Find(context.TODO(), query)
+
+		if err != nil {
+			log.Println("error whilst dealing with expiring punishments", err)
+			continue
+		}
+
+		for cursor.Next(context.TODO()) {
+			doc := mongodb.MongoExpiringPunishment{}
+			cursor.Decode(doc)
+			go func() {
+				switch doc.PunishmentType {
+				case "ban":
+					GetInstance().Session.GuildBanDelete(doc.GuildID, doc.UserID)
+				default:
+					fmt.Println("unknown punishment type", doc.PunishmentType)
+				}
+			}()
+		}
+
+		cursor.Close(context.TODO())
+
+		db.DeleteMany(context.TODO(), query)
+	}
 }

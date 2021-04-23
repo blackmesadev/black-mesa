@@ -16,6 +16,10 @@ func StartDB() {
 	db.ConnectDB("mongodb://localhost:27017")
 }
 
+func GetDB() *mongodb.DB {
+	return db
+}
+
 func AddGuild(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	config := MakeConfig(g, invokedByUserID)
 
