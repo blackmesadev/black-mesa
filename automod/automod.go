@@ -8,7 +8,7 @@ import (
 	"github.com/blackmesadev/black-mesa/automod/censor"
 	"github.com/blackmesadev/black-mesa/automod/spam"
 	"github.com/blackmesadev/black-mesa/config"
-	"github.com/blackmesadev/black-mesa/moderation"
+	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -37,9 +37,9 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		//filtersDone := time.Since(filterProcessingStart)
 		RemoveMessage(s, m)
 		if strings.HasPrefix(reason, "Censor") {
-			moderation.LogMessageCensor(s, m, reason)
+			logging.LogMessageCensor(s, m, reason)
 		} else {
-			moderation.LogMessageViolation(s, m, reason)
+			logging.LogMessageViolation(s, m, reason)
 		}
 		//msg := fmt.Sprintf("Removed message for %v in %v (filters done in %v)", reason, time.Since(start), filtersDone)
 		//s.ChannelMessageSend(m.ChannelID, msg)
