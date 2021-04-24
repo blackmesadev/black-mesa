@@ -23,10 +23,14 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 	reasonSearch := snowflakeRegex.Split(m.Content, -1)
 
-	if reasonSearch[len(reasonSearch)-1][:1] == ">" {
-		reason = reasonSearch[len(reasonSearch)-1][1:]
-	} else {
-		reason = reasonSearch[len(reasonSearch)-1]
+	search := reasonSearch[len(reasonSearch)-1]
+
+	if search != "" {
+		if search[:1] == ">" {
+			reason = reasonSearch[len(reasonSearch)-1][1:]
+		} else {
+			reason = reasonSearch[len(reasonSearch)-1]
+		}
 	}
 
 	reason = strings.TrimSpace(reason)
