@@ -11,21 +11,41 @@ import (
 )
 
 func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	var reason string
-
 	start := time.Now()
 
-	idList := snowflakeRegex.FindAllString(m.Content, -1)
+	var permMute bool
 
-	reasonSearch := snowflakeRegex.Split(m.Content, -1)
+	//idList, duration, reason := parseCommand(m.Content)
+	idList := make([]string, 0)
+	durationOrReasonStart := 0
 
-	if reasonSearch[len(reasonSearch)-1][:1] == ">" {
-		reason = reasonSearch[len(reasonSearch)-1][1:]
-	} else {
-		reason = reasonSearch[len(reasonSearch)-1]
+	for i, possibleId := range args {
+		if !userIdRegex.MatchString(possibleId) {
+			durationOrReasonStart = i
+			break
+		}
+		id := userIdRegex.FindStringSubmatch(possibleId)[1]
+		idList = append(idList, id)
 	}
 
-	reason = strings.TrimSpace(reason)
+	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `mute <target:user[]> [time:duration] [reason:string...]`")
+		return
+	}
+
+	duration := parseTime(args[durationOrReasonStart])
+	reason := strings.Join(args[(durationOrReasonStart+1):], " ")
+
+	if duration == 0 { // must be part of the reason
+		permMute = true
+		reason = fmt.Sprintf("%v %v", args[durationOrReasonStart], reason) // append start of reason to reason
+	}
+
+	if durationOrReasonStart == 0 { // fixes broken reasons
+		reason = ""
+	}
+
+	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
 	roleid := config.GetMutedRole(m.GuildID)
 	if roleid == "" {
@@ -43,11 +63,17 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 			unableMute = append(unableMute, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
+			AddTimedRole(m.GuildID, id, roleid, duration)
 		}
 	}
-
 	if len(reason) != 0 {
 		msg += fmt.Sprintf("for reason `%v` ", reason)
+	}
+	if permMute {
+		msg += "lasting `Forever`."
+
+	} else {
+		msg += fmt.Sprintf("expiring `%v`.", time.Unix(duration, 0))
 	}
 
 	if len(unableMute) != 0 {
