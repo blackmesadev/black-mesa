@@ -21,4 +21,5 @@ func (r *Mux) InitRouter() {
 	// moderation
 	r.Route("kick", moderation.KickCmd)
 	r.Route("ban", moderation.BanCmd)
+	r.Route("softban", moderation.SoftBanCmd)
 }
