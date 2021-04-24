@@ -40,7 +40,7 @@ func GetConfig(guildid string) (*structs.Config, error) {
 }
 
 func GetPrefix(guildid string) string {
-	prefixMap := make(map[string]map[string]string)
+	tempStruct := &mongodb.MongoGuild{}
 
 	data, err := db.GetConfigProjection(guildid, "prefix")
 	if err != nil {
@@ -54,14 +54,14 @@ func GetPrefix(guildid string) string {
 		return "!"
 	}
 
-	json.Unmarshal(binData, &prefixMap)
+	json.Unmarshal(binData, &tempStruct)
 
-	return prefixMap["config"]["prefix"]
+	return tempStruct.Config.Prefix
 
 }
 
 func GetMutedRole(guildid string) string {
-	prefixMap := make(map[string]map[string]string)
+	tempStruct := &mongodb.MongoGuild{}
 
 	data, err := db.GetConfigProjection(guildid, "muteRole")
 	if err != nil {
@@ -75,8 +75,8 @@ func GetMutedRole(guildid string) string {
 		return ""
 	}
 
-	json.Unmarshal(binData, &prefixMap)
+	json.Unmarshal(binData, &tempStruct)
 
-	return prefixMap["moderation"]["muteRole"]
+	return tempStruct.Config.Modules.Moderation.MuteRole
 
 }
