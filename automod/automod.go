@@ -43,9 +43,6 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		}
 		//msg := fmt.Sprintf("Removed message for %v in %v (filters done in %v)", reason, time.Since(start), filtersDone)
 		//s.ChannelMessageSend(m.ChannelID, msg)
-
-		a, _ := time.ParseDuration("12h")
-		moderation.LogTempMute(s, m.GuildID, "AutoMod", m.Author, a, "Max violations reached", m.ChannelID)
 	}
 }
 
