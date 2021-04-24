@@ -2,9 +2,10 @@ package spam
 
 import "github.com/blackmesadev/discordgo"
 
-func ProcessMaxEmojis(message *discordgo.Message, limit int) bool {
-	if len(message.GetCustomEmojis()) > limit { // micro optimization; don't even bother with unicode if customs are over
-		return false
+func ProcessMaxEmojis(message *discordgo.Message, limit int) (bool, int) {
+	customEmojis := len(message.GetCustomEmojis())
+	if customEmojis > limit { // micro optimization; don't even bother with unicode if customs are over
+		return false, customEmojis
 	}
 
 	unicodeEmojis := 0
@@ -21,9 +22,11 @@ func ProcessMaxEmojis(message *discordgo.Message, limit int) bool {
 		}
 	}
 
-	if (len(message.GetCustomEmojis()) + unicodeEmojis) > limit {
-		return false
+	total := customEmojis + unicodeEmojis
+
+	if total > limit {
+		return false, total
 	}
 
-	return true
+	return true, 0
 }

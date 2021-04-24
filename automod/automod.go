@@ -2,11 +2,13 @@ package automod
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/automod/censor"
 	"github.com/blackmesadev/black-mesa/automod/spam"
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/moderation"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -29,13 +31,21 @@ func getClosestLevel(i []int64, targetLevel int64) int64 {
 }
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
-	start := time.Now()
-	ok, reason, filterProcessingStart := Check(s, m)
+	//start := time.Now()
+	ok, reason, _ := Check(s, m)
 	if !ok {
-		filtersDone := time.Since(filterProcessingStart)
+		//filtersDone := time.Since(filterProcessingStart)
 		RemoveMessage(s, m)
-		msg := fmt.Sprintf("Removed message for %v in %v (filters done in %v)", reason, time.Since(start), filtersDone)
-		s.ChannelMessageSend(m.ChannelID, msg)
+		if strings.HasPrefix(reason, "Censor") {
+			moderation.LogMessageCensor(s, m, reason)
+		} else {
+			moderation.LogMessageViolation(s, m, reason)
+		}
+		//msg := fmt.Sprintf("Removed message for %v in %v (filters done in %v)", reason, time.Since(start), filtersDone)
+		//s.ChannelMessageSend(m.ChannelID, msg)
+
+		a, _ := time.ParseDuration("12h")
+		moderation.LogTempMute(s, m.GuildID, "AutoMod", m.Author, a, "Max violations reached", m.ChannelID)
 	}
 }
 
@@ -80,43 +90,43 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorLevel.FilterZalgo {
 			ok := censor.ZalgoCheck(content)
 			if !ok {
-				return false, "FilterZalgo", filterProcessingStart
+				return false, "Censor->Zalgo", filterProcessingStart
 			}
 		}
 
 		// Invites
 		if censorLevel.FilterInvites {
-			ok := censor.InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
+			ok, invite := censor.InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
 			if !ok {
-				return false, "Invite", filterProcessingStart
+				return false, fmt.Sprintf("Censor->Invite (%v)", invite), filterProcessingStart
 			}
 		} else if len(*censorLevel.InvitesBlacklist) != 0 {
-			ok := censor.InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
+			ok, invite := censor.InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
 			if !ok {
-				return false, "InvitesBlacklist", filterProcessingStart
+				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), filterProcessingStart
 			}
 		}
 
 		// Domains
 
 		if censorLevel.FilterDomains {
-			ok := censor.DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
+			ok, domain := censor.DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
 			if !ok {
-				return false, "Domain", filterProcessingStart
+				return false, fmt.Sprintf("Censor->Domain (%v)", domain), filterProcessingStart
 			}
 		} else if len(*censorLevel.DomainBlacklist) != 0 {
-			ok := censor.DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
+			ok, domain := censor.DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
 			if !ok {
-				return false, "DomainsBlacklist", filterProcessingStart
+				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), filterProcessingStart
 			}
 		}
 
 		// Strings / Substrings
 
 		if censorLevel.FilterStrings {
-			ok := censor.StringsCheck(content, censorLevel.BlockedStrings)
+			ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
 			if !ok {
-				return false, "BlockedString", filterProcessingStart
+				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), filterProcessingStart
 			}
 		}
 	}
@@ -127,44 +137,44 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorChannel.FilterZalgo {
 			ok := censor.ZalgoCheck(content)
 			if !ok {
-				return false, "FilterZalgo", filterProcessingStart
+				return false, "Censor->FilterZalgo", filterProcessingStart
 			}
 		}
 
 		// Invites
 		if censorChannel.FilterInvites {
-			ok := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
+			ok, invite := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 			if !ok {
-				return false, "Invite", filterProcessingStart
+				return false, fmt.Sprintf("Censor->Invite (%v)", invite), filterProcessingStart
 			}
 
 		} else if len(*censorChannel.InvitesBlacklist) != 0 {
-			ok := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
+			ok, invite := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
 			if !ok {
-				return false, "InvitesBlacklist", filterProcessingStart
+				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), filterProcessingStart
 			}
 		}
 
 		// Domains
 
 		if censorChannel.FilterDomains {
-			ok := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
+			ok, domain := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
 			if !ok {
-				return false, "Domain", filterProcessingStart
+				return false, fmt.Sprintf("Censor->Domain (%v)", domain), filterProcessingStart
 			}
 		} else if len(*censorChannel.DomainBlacklist) != 0 {
-			ok := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
+			ok, domain := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
 			if !ok {
-				return false, "DomainsBlacklist", filterProcessingStart
+				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), filterProcessingStart
 			}
 		}
 
 		// Strings / Substrings
 
 		if censorChannel.FilterStrings {
-			ok := censor.StringsCheck(content, censorChannel.BlockedStrings)
+			ok, str := censor.StringsCheck(content, censorChannel.BlockedStrings)
 			if !ok {
-				return false, "BlockedString", filterProcessingStart
+				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), filterProcessingStart
 			}
 		}
 	}
@@ -175,54 +185,54 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		limit := 5
 		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Messages(%v/%v)", limit, ten), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Messages (%v/%v)", limit, ten), filterProcessingStart
 		}
 	}
 	{ // newlines
 		limit := 10
-		ok := spam.ProcessMaxNewlines(m.Content, limit)
+		ok, count := spam.ProcessMaxNewlines(m.Content, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->NewLines(>%v)", limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), filterProcessingStart
 		}
 	}
 	{ // mentions
 		limit := 2
-		ok := spam.ProcessMaxMentions(m, limit)
+		ok, count := spam.ProcessMaxMentions(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Mentions(>%v)", limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Mentions (%v > %v)", count, limit), filterProcessingStart
 		}
-		ok = spam.ProcessMaxRoleMentions(m, limit)
+		ok, count = spam.ProcessMaxRoleMentions(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->RoleMentions(>%v)", limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), filterProcessingStart
 		}
 	}
 	{ // links
 		limit := 2
-		ok := spam.ProcessMaxLinks(m.Content, limit)
+		ok, count := spam.ProcessMaxLinks(m.Content, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Links(>%v)", limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), filterProcessingStart
 		}
 	}
 	{ // uppercase
 		limit := 50.0
 		minLength := 20
-		ok := spam.ProcessMaxUppercase(m.Content, limit, minLength)
+		ok, percent := spam.ProcessMaxUppercase(m.Content, limit, minLength)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Uppercase(>%v%%)", limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Uppercase (%v%% > %v%%)", percent, limit), filterProcessingStart
 		}
 	}
 	{ // emoji
 		limit := 10
-		ok := spam.ProcessMaxEmojis(m, limit)
+		ok, count := spam.ProcessMaxEmojis(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Emojis(>%v)", limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), filterProcessingStart
 		}
 	}
 	{ // attachments
 		limit := 2
-		ok := spam.ProcessMaxAttachments(m, limit)
+		ok, count := spam.ProcessMaxAttachments(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Attachments(>%v)", limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), filterProcessingStart
 		}
 	}
 
