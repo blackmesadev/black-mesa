@@ -59,6 +59,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 			unableBan = append(unableBan, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
+			AddTimedBan(m.GuildID, id, duration)
 		}
 	}
 	discord := time.Since(dstart)

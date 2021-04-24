@@ -43,7 +43,7 @@ func GetPrefix(guildid string) string {
 	tempStruct := &mongodb.MongoGuild{}
 
 	data, err := db.GetConfigProjection(guildid, "prefix")
-	if err != nil {
+	if err != nil || len(data) == 0 {
 		log.Println(err)
 		return "!"
 	}
@@ -64,7 +64,7 @@ func GetMutedRole(guildid string) string {
 	tempStruct := &mongodb.MongoGuild{}
 
 	data, err := db.GetConfigProjection(guildid, "muteRole")
-	if err != nil {
+	if err != nil || len(data) == 0 {
 		log.Println(err)
 		return ""
 	}

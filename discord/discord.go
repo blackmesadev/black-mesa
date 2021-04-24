@@ -115,12 +115,15 @@ func punishmentExpiryGoroutine() {
 		}
 
 		for cursor.Next(context.TODO()) {
+			log.Println("next")
 			doc := mongodb.MongoExpiringPunishment{}
 			cursor.Decode(doc)
 			go func() {
 				switch doc.PunishmentType {
 				case "ban":
 					GetInstance().Session.GuildBanDelete(doc.GuildID, doc.UserID)
+				case "role":
+					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
 				default:
 					fmt.Println("unknown punishment type", doc.PunishmentType)
 				}

@@ -64,12 +64,18 @@ func parseTime(strTime string) int64 {
 		if timeValStrSlice != nil {
 			timeVal, err := strconv.ParseInt(numberRegex.FindAllString(timeValStrSlice[0], 1)[0], 10, 32) // will be cast to uint32 so needs to be int32 at heart in an int64 body
 			if err != nil {
+				fmt.Println(err)
 				if strings.Contains(err.Error(), "strconv.ParseInt: parsing") {
 					return 0
 				}
 			}
 			unixTime += timeVal * multiplier
 		}
+	}
+
+	// fallback
+	if unixTime == time.Now().Unix() {
+		return 0
 	}
 
 	return unixTime

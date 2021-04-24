@@ -104,3 +104,23 @@ func (db *DB) AddConfig(config *MongoGuild) (*mongo.InsertOneResult, error) {
 	}
 	return result, nil
 }
+
+func (db *DB) AddPunishment(punishment *MongoExpiringPunishment) (*mongo.InsertOneResult, error) {
+	col := db.client.Database("black-mesa").Collection("punishments")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	insert, err := bson.Marshal(punishment)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	results, err := col.InsertOne(ctx, insert)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return results, nil
+}

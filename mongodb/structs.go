@@ -8,8 +8,9 @@ type MongoGuild struct {
 }
 
 type MongoExpiringPunishment struct {
-	GuildID string `bson:"guildID"`
-	UserID string `bson:"userID"`
+	GuildID        string `bson:"guildID"`
+	UserID         string `bson:"userID"`
+	RoleID         string `bson:"roleID,omitempty"`
 	PunishmentType string `bson:"punishmentType"`
-	Expires int64 `bson:"expires"`
+	Expires        int64  `bson:"expires"`
 }

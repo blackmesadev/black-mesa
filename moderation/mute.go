@@ -9,7 +9,7 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context) {
+func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	var reason string
 
 	start := time.Now()
