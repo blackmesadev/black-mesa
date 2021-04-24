@@ -11,7 +11,7 @@ import (
 func addLog(s *discordgo.Session, guildId string, emoji string, line string, public bool, channelId string) {
 	cfg, err := config.GetConfig(guildId)
 	if err != nil {
-		fmt.Println("couldn't add log for %v: %v", guildId, err)
+		fmt.Printf("couldn't add log for %v: %v\n", guildId, err)
 		return
 	}
 
@@ -29,7 +29,9 @@ func addLog(s *discordgo.Session, guildId string, emoji string, line string, pub
 func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason string) {
 	fullName := message.Author.Username + "#" + message.Author.Discriminator
 	channel, err := s.Channel(message.ChannelID)
-	if err != nil { return } // ?
+	if err != nil {
+		return
+	} // ?
 
 	addLog(s,
 		message.GuildID,
@@ -43,7 +45,9 @@ func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason s
 func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reason string) {
 	fullName := message.Author.Username + "#" + message.Author.Discriminator
 	channel, err := s.Channel(message.ChannelID)
-	if err != nil { return } // ?
+	if err != nil {
+		return
+	} // ?
 
 	addLog(s,
 		message.GuildID,
