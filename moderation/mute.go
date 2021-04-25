@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -55,6 +56,7 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 	msg := "Successfully muted "
 
+	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableMute := make([]string, 0)
 	for _, id := range idList {
 
@@ -64,6 +66,13 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
 			AddTimedRole(m.GuildID, id, roleid, duration)
+
+			member, _ := s.State.Member(m.GuildID, id)
+			if duration == 0 {
+				logging.LogMute(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+			} else {
+				logging.LogTempMute(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+			}
 		}
 	}
 	if len(reason) != 0 {

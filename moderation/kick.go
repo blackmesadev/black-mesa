@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -37,6 +38,7 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 	msg := "<:mesaCheck:832350526729224243> Successfully kicked "
 
+	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableKick := make([]string, 0)
 	for _, id := range idList {
 		err := s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
@@ -44,6 +46,9 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 			unableKick = append(unableKick, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
+
+			member, _ := s.State.Member(m.GuildID, id)
+			logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 		}
 	}
 

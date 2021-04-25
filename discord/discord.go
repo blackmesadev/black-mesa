@@ -55,7 +55,9 @@ func (bot *Bot) Start() {
 	bot.Router = NewRouter()
 	bot.Router.InitRouter()
 
-	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAllWithoutPrivileged)
+	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
+
+	bot.Session.State.MaxMessageCount = 5000
 
 	err = bot.Session.Open()
 	if err != nil {

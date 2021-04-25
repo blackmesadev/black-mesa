@@ -93,3 +93,49 @@ func LogTempMute(s *discordgo.Session, guildId string, actor string, target *dis
 		location,
 	)
 }
+
+func LogKick(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	addLog(s,
+		guildId,
+		"<:mesaKick:832350526778900571>",
+		fmt.Sprintf("%v kicked %v (`%v`): %v", actor, fullName, target.ID, reason),
+		actor == "AutoMod",
+		location,
+	)
+}
+
+func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
+	fullName := message.Author.Username + "#" + message.Author.Discriminator
+
+	channel, err := s.Channel(message.ChannelID)
+	if err != nil {
+		return
+	} // ?
+
+	addLog(s,
+		message.GuildID,
+		"<:mesaMessageDelete:832350526917312562>",
+		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content),
+		false,
+		"",
+	)
+}
+
+func LogMessageUpdate(s *discordgo.Session, message *discordgo.Message, before string) {
+	fullName := message.Author.Username + "#" + message.Author.Discriminator
+
+	channel, err := s.Channel(message.ChannelID)
+	if err != nil {
+		return
+	} // ?
+
+	addLog(s,
+		message.GuildID,
+		"<:mesaMessageEdit:832350527009849344>",
+		fmt.Sprintf("Message by %v (`%v`) in #%v (`%v`) was updated\n**Before**\n`%v`\n**After**\n`%v`", fullName, message.Author.ID, channel.Name, channel.ID, before, message.Content),
+		false,
+		"",
+	)
+}
