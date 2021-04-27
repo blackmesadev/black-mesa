@@ -19,6 +19,6 @@ type MongoPunishment struct {
 	RoleID         string `bson:"roleID,omitempty"`
 
 	// strikes
-	Weight         int    `bson:"weight,omitempty"`
+	Weight         int64  `bson:"weight,omitempty"`
 	Reason         string `bson:"reason,omitempty"`
 }

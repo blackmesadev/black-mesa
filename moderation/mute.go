@@ -59,7 +59,6 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableMute := make([]string, 0)
 	for _, id := range idList {
-
 		err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
 		if err != nil {
 			unableMute = append(unableMute, id)

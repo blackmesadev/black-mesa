@@ -10,26 +10,9 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/moderation"
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
-
-// Gets the closest level that the ideal level can match in the level -> interface map
-func getClosestLevel(i []int64, targetLevel int64) int64 {
-	var closest int64 = 0
-	for _, level := range i {
-		if level == targetLevel {
-			return targetLevel
-		}
-
-		if level < targetLevel {
-			closest = level
-		} else {
-			return closest // micro optimization; return early if the level is ever higher than the target
-		}
-	}
-
-	return closest
-}
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
 	ok, reason, weight, _ := Check(s, m)
@@ -78,7 +61,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int, time.
 		i++
 	}
 
-	censorLevel := automod.CensorLevels[getClosestLevel(automodCensorLevels, userLevel)]
+	censorLevel := automod.CensorLevels[util.GetClosestLevel(automodCensorLevels, userLevel)]
 
 	// Level censors
 	if censorLevel != nil {

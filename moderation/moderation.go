@@ -1,6 +1,7 @@
 package moderation
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -10,7 +11,9 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/mongodb"
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var userIdRegex = regexp.MustCompile(`^(?:<@!?)?(\d+)>?$`)
@@ -98,14 +101,58 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 	_, err := config.AddPunishment(strike)
 
-	if err == nil {
-		member, possibleErr := s.State.Member(guildId, userId)
-		if possibleErr != nil {
-			return possibleErr
-		} // ???
-
-		logging.LogStrike(s, guildId, issuer, member.User, weight, reason, location)
+	if err != nil {
+		return err
 	}
 
-	return err
+	member, err := s.State.Member(guildId, userId)
+	if err != nil {
+		return err
+	} // ???
+
+	logging.LogStrike(s, guildId, issuer, member.User, weight, reason, location)
+
+	// escalate punishments
+	guildConfig, err := config.GetConfig(guildId)
+	if err != nil {
+		return err
+	} // ???????
+
+	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("punishments")
+
+	strikeDocs, err := db.Find(context.TODO(), bson.M{
+		"guildID": guildId,
+		"userID": userId,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	strikes := make([]mongodb.MongoPunishment, 0)
+	strikeDocs.All(context.TODO(), strikes)
+
+	strikeTotalWeight := int64(0)
+
+	for _, v := range strikes {
+		strikeTotalWeight += v.Weight
+	}
+
+	strikeEscalationConfig := guildConfig.Modules.Moderation.StrikeEscalation
+
+	i := 0
+	strikeEscalationLevels := make([]int64, len(strikeEscalationConfig))
+	for k := range strikeEscalationConfig {
+		strikeEscalationLevels[i] = k
+		i++
+	}
+
+	if escalatingTo, ok := strikeEscalationConfig[util.GetClosestLevel(strikeEscalationLevels, strikeTotalWeight)]; ok {
+		switch (escalatingTo.Type) {
+		case "mute":
+			
+		}
+	}
+
+	return nil
 }

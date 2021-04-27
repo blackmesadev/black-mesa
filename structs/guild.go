@@ -88,14 +88,20 @@ type Logging struct {
 }
 
 type Moderation struct {
-	ConfirmActionsMessage       bool   `json:"confirmActionsMessage" bson:"confirmActionsMessage"`
-	ConfirmActionsMessageExpiry int64  `json:"confirmActionsMessageExpiry" bson:"confirmActionsMessageExpiry"`
-	ConfirmActionsReaction      bool   `json:"confirmActionsReaction" bson:"confirmActionsReaction"`
-	MuteRole                    string `json:"muteRole" bson:"muteRole"`
-	ReasonEditLevel             int64  `json:"reasonEditLevel" bson:"reasonEditLevel"`
-	NotifyActions               bool   `json:"notifyActions" bson:"notifyActions"`
-	ShowModeratorOnNotify       bool   `json:"showModeratorOnNotify" bson:"showModeratorOnNotify"`
-	SilenceLevel                int64  `json:"silenceLevel" bson:"silenceLevel"`
+	ConfirmActionsMessage       bool                       `json:"confirmActionsMessage" bson:"confirmActionsMessage"`
+	ConfirmActionsMessageExpiry int64                      `json:"confirmActionsMessageExpiry" bson:"confirmActionsMessageExpiry"`
+	ConfirmActionsReaction      bool                       `json:"confirmActionsReaction" bson:"confirmActionsReaction"`
+	MuteRole                    string                     `json:"muteRole" bson:"muteRole"`
+	ReasonEditLevel             int64                      `json:"reasonEditLevel" bson:"reasonEditLevel"`
+	NotifyActions               bool                       `json:"notifyActions" bson:"notifyActions"`
+	ShowModeratorOnNotify       bool                       `json:"showModeratorOnNotify" bson:"showModeratorOnNotify"`
+	SilenceLevel                int64                      `json:"silenceLevel" bson:"silenceLevel"`
+	StrikeEscalation            map[int64]StrikeEscalation `json:"strikeEscalation" bson:"strikeEscalation"`
+}
+
+type StrikeEscalation struct {
+	Type     string `json:"type" bson:"type"`
+	Duration string `json:"duration" bson:"duration"`
 }
 
 type Modules struct {
