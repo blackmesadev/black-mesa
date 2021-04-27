@@ -30,7 +30,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 
 // Return true if all is okay, return false if not.
 // This function should be "silent" if a message is okay.
-func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int, time.Time) {
+func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, time.Time) {
 	filterProcessingStart := time.Now()
 
 	conf, err := config.GetConfig(m.GuildID)
@@ -172,7 +172,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int, time.
 		ok, count := spam.ProcessMaxNewlines(m.Content, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
-			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), (count / limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
 	{ // mentions
@@ -180,19 +180,19 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int, time.
 		ok, count := spam.ProcessMaxMentions(m, limit)
 		if !ok {
 			//                                                      1 strike for every mention over the limit
-			return false, fmt.Sprintf("Spam->Mentions (%v > %v)", count, limit), (count - limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Mentions (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 		ok, count = spam.ProcessMaxRoleMentions(m, limit)
 		if !ok {
             // see above
-			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), (count - limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
 	{ // links
 		limit := 2
 		ok, count := spam.ProcessMaxLinks(m.Content, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), (count - limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
 	{ // uppercase
@@ -209,7 +209,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int, time.
 		ok, count := spam.ProcessMaxEmojis(m, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
-			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), (count / limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
 	{ // attachments
@@ -217,7 +217,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int, time.
 		ok, count := spam.ProcessMaxAttachments(m, limit)
 		if !ok {
 			//                                                       1 strike per attachment over the limit
-			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), (count - limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
 
