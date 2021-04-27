@@ -89,7 +89,7 @@ func parseTime(strTime string) int64 {
 	return unixTime
 }
 
-func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int, reason string, expiry int64, location string) error {
+func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string) error {
 	strike := &mongodb.MongoPunishment{
 		GuildID: guildId,
 		UserID: userId,
@@ -150,7 +150,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	if escalatingTo, ok := strikeEscalationConfig[util.GetClosestLevel(strikeEscalationLevels, strikeTotalWeight)]; ok {
 		switch (escalatingTo.Type) {
 		case "mute":
-			
+
 		}
 	}
 

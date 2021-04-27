@@ -58,7 +58,7 @@ func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reaso
 	)
 }
 
-func LogStrike(s *discordgo.Session, guildId string, actor string, target *discordgo.User, weight int, reason string, location string) {
+func LogStrike(s *discordgo.Session, guildId string, actor string, target *discordgo.User, weight int64, reason string, location string) {
 	fullName := target.Username + "#" + target.Discriminator
 
 	addLog(s,
