@@ -9,6 +9,7 @@ import (
 	"github.com/blackmesadev/black-mesa/automod/spam"
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/moderation"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -31,31 +32,29 @@ func getClosestLevel(i []int64, targetLevel int64) int64 {
 }
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
-	//start := time.Now()
-	ok, reason, _ := Check(s, m)
+	ok, reason, weight, _ := Check(s, m)
 	if !ok {
-		//filtersDone := time.Since(filterProcessingStart)
-		RemoveMessage(s, m)
-		if strings.HasPrefix(reason, "Censor") {
+		go RemoveMessage(s, m) // remove
+		if strings.HasPrefix(reason, "Censor") { // log
 			logging.LogMessageCensor(s, m, reason)
 		} else {
 			logging.LogMessageViolation(s, m, reason)
 		}
-		//msg := fmt.Sprintf("Removed message for %v in %v (filters done in %v)", reason, time.Since(start), filtersDone)
-		//s.ChannelMessageSend(m.ChannelID, msg)
+		moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
+		// and with that the moderation cycle is complete! :)
 	}
 }
 
 // Return true if all is okay, return false if not.
 // This function should be "silent" if a message is okay.
-func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time) {
+func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int, time.Time) {
 	filterProcessingStart := time.Now()
 
 	conf, err := config.GetConfig(m.GuildID)
 
 	if conf == nil || err != nil {
 		fmt.Println(conf, err)
-		return true, "", filterProcessingStart
+		return true, "", 0, filterProcessingStart
 	}
 
 	automod := conf.Modules.Automod
@@ -64,7 +63,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 
 	if len(automod.SpamLevels) == 0 && len(automod.SpamChannels) == 0 &&
 		len(automod.CensorLevels) == 0 && len(automod.SpamChannels) == 0 {
-		return true, "", filterProcessingStart
+		return true, "", 0, filterProcessingStart
 	}
 
 	censorChannel := automod.CensorChannels[m.ChannelID]
@@ -87,7 +86,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorLevel.FilterZalgo {
 			ok := censor.ZalgoCheck(content)
 			if !ok {
-				return false, "Censor->Zalgo", filterProcessingStart
+				return false, "Censor->Zalgo", 1, filterProcessingStart
 			}
 		}
 
@@ -95,12 +94,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorLevel.FilterInvites {
 			ok, invite := censor.InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Invite (%v)", invite), filterProcessingStart
+				return false, fmt.Sprintf("Censor->Invite (%v)", invite), 1, filterProcessingStart
 			}
 		} else if len(*censorLevel.InvitesBlacklist) != 0 {
 			ok, invite := censor.InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), filterProcessingStart
+				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), 1, filterProcessingStart
 			}
 		}
 
@@ -109,12 +108,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorLevel.FilterDomains {
 			ok, domain := censor.DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Domain (%v)", domain), filterProcessingStart
+				return false, fmt.Sprintf("Censor->Domain (%v)", domain), 1, filterProcessingStart
 			}
 		} else if len(*censorLevel.DomainBlacklist) != 0 {
 			ok, domain := censor.DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), filterProcessingStart
+				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), 1, filterProcessingStart
 			}
 		}
 
@@ -123,7 +122,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorLevel.FilterStrings {
 			ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
 			if !ok {
-				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), filterProcessingStart
+				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), 1, filterProcessingStart
 			}
 		}
 	}
@@ -134,7 +133,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorChannel.FilterZalgo {
 			ok := censor.ZalgoCheck(content)
 			if !ok {
-				return false, "Censor->FilterZalgo", filterProcessingStart
+				return false, "Censor->FilterZalgo", 1, filterProcessingStart
 			}
 		}
 
@@ -142,13 +141,13 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorChannel.FilterInvites {
 			ok, invite := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Invite (%v)", invite), filterProcessingStart
+				return false, fmt.Sprintf("Censor->Invite (%v)", invite), 1, filterProcessingStart
 			}
 
 		} else if len(*censorChannel.InvitesBlacklist) != 0 {
 			ok, invite := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), filterProcessingStart
+				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), 1, filterProcessingStart
 			}
 		}
 
@@ -157,12 +156,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorChannel.FilterDomains {
 			ok, domain := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Domain (%v)", domain), filterProcessingStart
+				return false, fmt.Sprintf("Censor->Domain (%v)", domain), 1, filterProcessingStart
 			}
 		} else if len(*censorChannel.DomainBlacklist) != 0 {
 			ok, domain := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), filterProcessingStart
+				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), 1, filterProcessingStart
 			}
 		}
 
@@ -171,7 +170,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		if censorChannel.FilterStrings {
 			ok, str := censor.StringsCheck(content, censorChannel.BlockedStrings)
 			if !ok {
-				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), filterProcessingStart
+				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), 1, filterProcessingStart
 			}
 		}
 	}
@@ -182,32 +181,35 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		limit := 5
 		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Messages (%v/%v)", limit, ten), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Messages (%v/%v)", limit, ten), 1, filterProcessingStart
 		}
 	}
 	{ // newlines
 		limit := 10
 		ok, count := spam.ProcessMaxNewlines(m.Content, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), filterProcessingStart
+			//                                                             1 strike per limit violation
+			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), (count / limit), filterProcessingStart
 		}
 	}
 	{ // mentions
 		limit := 2
 		ok, count := spam.ProcessMaxMentions(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Mentions (%v > %v)", count, limit), filterProcessingStart
+			//                                                      1 strike for every mention over the limit
+			return false, fmt.Sprintf("Spam->Mentions (%v > %v)", count, limit), (count - limit), filterProcessingStart
 		}
 		ok, count = spam.ProcessMaxRoleMentions(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), filterProcessingStart
+            // see above
+			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), (count - limit), filterProcessingStart
 		}
 	}
 	{ // links
 		limit := 2
 		ok, count := spam.ProcessMaxLinks(m.Content, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), filterProcessingStart
+			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), (count - limit), filterProcessingStart
 		}
 	}
 	{ // uppercase
@@ -215,23 +217,26 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, time.Time)
 		minLength := 20
 		ok, percent := spam.ProcessMaxUppercase(m.Content, limit, minLength)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Uppercase (%v%% > %v%%)", percent, limit), filterProcessingStart
+			// flat rate because there's basically no calculation we can do here
+			return false, fmt.Sprintf("Spam->Uppercase (%v%% > %v%%)", percent, limit), 1, filterProcessingStart
 		}
 	}
 	{ // emoji
 		limit := 10
 		ok, count := spam.ProcessMaxEmojis(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), filterProcessingStart
+			//                                                             1 strike per limit violation
+			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), (count / limit), filterProcessingStart
 		}
 	}
 	{ // attachments
 		limit := 2
 		ok, count := spam.ProcessMaxAttachments(m, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), filterProcessingStart
+			//                                                       1 strike per attachment over the limit
+			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), (count - limit), filterProcessingStart
 		}
 	}
 
-	return true, "", filterProcessingStart
+	return true, "", 0, filterProcessingStart
 }

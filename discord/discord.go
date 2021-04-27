@@ -96,7 +96,7 @@ func (bot *Bot) getToken() {
 }
 
 func punishmentExpiryGoroutine() {
-	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("timedPunishments")
+	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("punishments")
 
 	log.Println("punishment expiry ready")
 	for {
@@ -118,7 +118,7 @@ func punishmentExpiryGoroutine() {
 
 		for cursor.Next(context.TODO()) {
 			log.Println("next")
-			doc := mongodb.MongoExpiringPunishment{}
+			doc := mongodb.MongoPunishment{}
 			cursor.Decode(doc)
 			go func() {
 				switch doc.PunishmentType {
@@ -126,6 +126,8 @@ func punishmentExpiryGoroutine() {
 					GetInstance().Session.GuildBanDelete(doc.GuildID, doc.UserID)
 				case "role":
 					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
+				case "strike":
+					// can ignore, strikes don't have anything special about them when they expire
 				default:
 					fmt.Println("unknown punishment type", doc.PunishmentType)
 				}

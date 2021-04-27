@@ -6,6 +6,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/mongodb"
+	"github.com/blackmesadev/discordgo"
 )
 
 var userIdRegex = regexp.MustCompile(`^(?:<@!?)?(\d+)>?$`)
@@ -79,4 +84,28 @@ func parseTime(strTime string) int64 {
 	}
 
 	return unixTime
+}
+
+func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int, reason string, expiry int64, location string) error {
+	strike := &mongodb.MongoPunishment{
+		GuildID: guildId,
+		UserID: userId,
+		Issuer: issuer,
+		Weight: weight,
+		Reason: reason,
+		Expires: expiry,
+	}
+
+	_, err := config.AddPunishment(strike)
+
+	if err == nil {
+		member, possibleErr := s.State.Member(guildId, userId)
+		if possibleErr != nil {
+			return possibleErr
+		} // ???
+
+		logging.LogStrike(s, guildId, issuer, member.User, weight, reason, location)
+	}
+
+	return err
 }

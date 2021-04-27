@@ -6,7 +6,7 @@ import (
 )
 
 func AddTimedBan(guildid string, userid string, expiry int64) error {
-	punishment := &mongodb.MongoExpiringPunishment{
+	punishment := &mongodb.MongoPunishment{
 		GuildID:        guildid,
 		UserID:         userid,
 		PunishmentType: "ban",
@@ -18,7 +18,7 @@ func AddTimedBan(guildid string, userid string, expiry int64) error {
 }
 
 func AddTimedRole(guildid string, userid string, roleid string, expiry int64) error {
-	punishment := &mongodb.MongoExpiringPunishment{
+	punishment := &mongodb.MongoPunishment{
 		GuildID:        guildid,
 		UserID:         userid,
 		RoleID:         roleid,

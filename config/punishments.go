@@ -5,6 +5,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func AddPunishment(punishment *mongodb.MongoExpiringPunishment) (*mongo.InsertOneResult, error) {
+func AddPunishment(punishment *mongodb.MongoPunishment) (*mongo.InsertOneResult, error) {
 	return db.AddPunishment(punishment)
 }

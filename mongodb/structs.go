@@ -7,10 +7,18 @@ type MongoGuild struct {
 	Config  *structs.Config `json:"config" bson:"config"`
 }
 
-type MongoExpiringPunishment struct {
+type MongoPunishment struct {
 	GuildID        string `bson:"guildID"`
 	UserID         string `bson:"userID"`
-	RoleID         string `bson:"roleID,omitempty"`
+	Issuer         string `bson:"issuer"`
 	PunishmentType string `bson:"punishmentType"`
-	Expires        int64  `bson:"expires"`
+	Expires        int64  `bson:"expires,omitempty"`
+
+	// punishment specific fields
+	// mutes
+	RoleID         string `bson:"roleID,omitempty"`
+
+	// strikes
+	Weight         int    `bson:"weight,omitempty"`
+	Reason         string `bson:"reason,omitempty"`
 }

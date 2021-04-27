@@ -58,15 +58,15 @@ func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reaso
 	)
 }
 
-func LogStrike(s *discordgo.Session, guildId string, actor string, target *discordgo.User, count int, reason string, location string) {
+func LogStrike(s *discordgo.Session, guildId string, actor string, target *discordgo.User, weight int, reason string, location string) {
 	fullName := target.Username + "#" + target.Discriminator
 
 	addLog(s,
 		guildId,
 		"<:mesaStrike:832350526922293269>",
-		fmt.Sprintf("%v issued %v strikes to %v (`%v`): %v", actor, count, fullName, target.ID, reason),
-		actor == "AutoMod",
-		location,
+		fmt.Sprintf("%v issued a strike (with weight %v) to %v (`%v`): %v", actor, weight, fullName, target.ID, reason),
+		false,
+		"",
 	)
 }
 

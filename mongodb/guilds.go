@@ -105,7 +105,7 @@ func (db *DB) AddConfig(config *MongoGuild) (*mongo.InsertOneResult, error) {
 	return result, nil
 }
 
-func (db *DB) AddPunishment(punishment *MongoExpiringPunishment) (*mongo.InsertOneResult, error) {
+func (db *DB) AddPunishment(punishment *MongoPunishment) (*mongo.InsertOneResult, error) {
 	col := db.client.Database("black-mesa").Collection("punishments")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
