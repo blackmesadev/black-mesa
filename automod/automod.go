@@ -158,6 +158,10 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 		}
 	}
 
+	if conf.Modules.Automod.SpamLevels[userLevel] == nil {
+		return true, "", 0, filterProcessingStart
+	}
+
 	// Spam
 	{ // messages
 		ten, _ := time.ParseDuration("10s")
