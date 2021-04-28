@@ -2,6 +2,7 @@ package automod
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -23,7 +24,10 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		} else {
 			logging.LogMessageViolation(s, m, reason)
 		}
-		moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
+		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
+		if err != nil {
+			log.Println(err)
+		}
 		// and with that the moderation cycle is complete! :)
 	}
 }
