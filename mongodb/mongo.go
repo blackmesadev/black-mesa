@@ -26,7 +26,10 @@ func (db *DB) ConnectDB(mongoCfg structs.MongoConfig) {
 	creds.Password = mongoCfg.Password
 	clientOptions := options.Client()
 	clientOptions.ApplyURI(mongoCfg.ConnectionString)
-	clientOptions.SetAuth(creds)
+
+	if mongoCfg.Username != "" && mongoCfg.Password != "" {
+		clientOptions.SetAuth(creds)
+	}
 
 	db.client, err = mongo.Connect(context.TODO(), clientOptions)
 
