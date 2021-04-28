@@ -3,6 +3,6 @@ FROM golang:1.15
 WORKDIR /go/src/app
 COPY . .
 
-RUN go install
+RUN go build -o black-mesa
 
-CMD ["app"]
+CMD ["./black-mesa"]
