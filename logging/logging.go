@@ -19,10 +19,10 @@ func addLog(s *discordgo.Session, guildId string, emoji string, line string, pub
 		return
 	}
 
-	s.ChannelMessageSend(cfg.Modules.Logging.ChannelID, fmt.Sprintf("%v %v", emoji, line))
+	go s.ChannelMessageSend(cfg.Modules.Logging.ChannelID, fmt.Sprintf("%v %v", emoji, line))
 
 	if public && cfg.Modules.Automod.PublicHumilation {
-		s.ChannelMessageSend(channelId, fmt.Sprintf("%v %v", emoji, line))
+		go s.ChannelMessageSend(channelId, fmt.Sprintf("%v %v", emoji, line))
 	}
 }
 

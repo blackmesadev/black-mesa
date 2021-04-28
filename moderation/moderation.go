@@ -136,7 +136,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 	for strikeDocs.Next(context.TODO()) {
 		doc := mongodb.MongoPunishment{}
-		strikeDocs.Decode(doc)
+		strikeDocs.Decode(&doc)
 		strikeTotalWeight += doc.Weight
 	}
 
