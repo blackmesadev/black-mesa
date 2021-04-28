@@ -98,6 +98,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		Weight: weight,
 		Reason: reason,
 		Expires: expiry,
+		PunishmentType: "strike",
 	}
 
 	_, err := config.AddPunishment(strike)
