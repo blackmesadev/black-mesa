@@ -131,7 +131,7 @@ func CheckPermission(s *discordgo.Session, guildid string, userid string, permis
 		return false // safety
 	} // uh oh
 
-	if user.Permissions | 8 == 8 {
+	if (user.Permissions & 8) == 8 {
 		return true // always return true for admins
 	}
 
