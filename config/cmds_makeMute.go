@@ -7,6 +7,11 @@ import (
 )
 
 func MakeMuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, m.GuildID, m.Author.ID, "admin") {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
+		return
+	}
+
 	role, err := s.GuildRoleCreate(m.GuildID)
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, err.Error())
