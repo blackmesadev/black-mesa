@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -35,6 +36,7 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 
 	msg := "Successfully unmuted "
 
+	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableUnmute := make([]string, 0)
 	for _, id := range idList {
 
@@ -43,6 +45,10 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 			unableUnmute = append(unableUnmute, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
+
+			possibleUser, err := s.State.Member(m.GuildID, id)
+			if err != nil { continue }
+			logging.LogUnmute(s, m.GuildID, fullName, possibleUser.User, reason)
 		}
 	}
 

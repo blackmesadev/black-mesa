@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -37,6 +38,7 @@ func UnbanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 
 	msg := "<:mesaCheck:832350526729224243> Successfully unbanned "
 
+	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableUnban := make([]string, 0)
 	for _, id := range idList {
 		err := s.GuildBanDeleteWithReason(m.GuildID, id, reason)
@@ -44,6 +46,14 @@ func UnbanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 			unableUnban = append(unableUnban, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
+
+			user := fmt.Sprintf("`%v`", id)
+			possibleUser, err := s.State.Member(m.GuildID, id)
+			if err == nil {
+				user = fmt.Sprintf("%v#%v (`%v`)", possibleUser.User.Username, possibleUser.User.Discriminator, possibleUser.User.ID)
+			}
+
+			logging.LogUnban(s, m.GuildID, fullName, user, reason)
 		}
 	}
 
