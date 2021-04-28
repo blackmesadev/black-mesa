@@ -3,6 +3,10 @@ package spam
 import "unicode"
 
 func ProcessMaxUppercase(message string, percentageLimit float64, minimumLength int) (bool, float64) {
+	if percentageLimit == 0 {
+		return true, 0
+	}
+
 	length := len(message)
 	if length < minimumLength {
 		return true, 0

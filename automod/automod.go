@@ -161,14 +161,14 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 	// Spam
 	{ // messages
 		ten, _ := time.ParseDuration("10s")
-		limit := 5
+		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxMessages
 		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
 			return false, fmt.Sprintf("Spam->Messages (%v/%v)", limit, ten), 1, filterProcessingStart
 		}
 	}
 	{ // newlines
-		limit := 10
+		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxNewlines
 		ok, count := spam.ProcessMaxNewlines(m.Content, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
@@ -176,7 +176,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 		}
 	}
 	{ // mentions
-		limit := 2
+		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxMentions
 		ok, count := spam.ProcessMaxMentions(m, limit)
 		if !ok {
 			//                                                      1 strike for every mention over the limit
@@ -189,14 +189,14 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 		}
 	}
 	{ // links
-		limit := 2
+		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxLinks
 		ok, count := spam.ProcessMaxLinks(m.Content, limit)
 		if !ok {
 			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
 	{ // uppercase
-		limit := 50.0
+		limit := 0.0
 		minLength := 20
 		ok, percent := spam.ProcessMaxUppercase(m.Content, limit, minLength)
 		if !ok {
@@ -205,7 +205,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 		}
 	}
 	{ // emoji
-		limit := 10
+		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxEmojis
 		ok, count := spam.ProcessMaxEmojis(m, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
@@ -213,7 +213,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 		}
 	}
 	{ // attachments
-		limit := 2
+		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxAttachments
 		ok, count := spam.ProcessMaxAttachments(m, limit)
 		if !ok {
 			//                                                       1 strike per attachment over the limit

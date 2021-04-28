@@ -11,14 +11,14 @@ import (
 
 var r *redis.Client
 
-func ProcessMaxMessages(userId string, guildId string, max int, timeLimit time.Duration, resetOnContinuedSpam bool) bool {
+func ProcessMaxMessages(userId string, guildId string, max int64, timeLimit time.Duration, resetOnContinuedSpam bool) bool {
 	if r == nil {
 		r = bmRedis.GetRedis()
 	}
 
 	key := fmt.Sprintf("spam:maxMessages:%v:%v", guildId, userId)
 
-	res, err := r.Get(r.Context(), key).Int()
+	res, err := r.Get(r.Context(), key).Int64()
 	if err != nil {
 		if err == redis.Nil {
 			r.Set(r.Context(), key, 1, timeLimit)

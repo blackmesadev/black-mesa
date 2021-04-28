@@ -2,13 +2,13 @@ package spam
 
 import "github.com/blackmesadev/discordgo"
 
-func ProcessMaxEmojis(message *discordgo.Message, limit int) (bool, int) {
-	customEmojis := len(message.GetCustomEmojis())
+func ProcessMaxEmojis(message *discordgo.Message, limit int64) (bool, int64) {
+	customEmojis := int64(len(message.GetCustomEmojis()))
 	if customEmojis > limit { // micro optimization; don't even bother with unicode if customs are over
 		return false, customEmojis
 	}
 
-	unicodeEmojis := 0
+	var unicodeEmojis int64 = 0
 	for _, r := range message.Content {
 		// various unicode emoji ranges
 		if r >= 127744 && r <= 129750 {
