@@ -161,10 +161,15 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 		return
 	} // ?
 
+	attachments := ""
+	for _, v := range message.Attachments {
+		attachments += v.URL + " "
+	}
+
 	addLog(s,
 		message.GuildID,
 		"<:mesaMessageDelete:832350526917312562>",
-		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content),
+		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content + "\n\n" + attachments),
 		false,
 		"",
 	)
