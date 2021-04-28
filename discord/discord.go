@@ -56,6 +56,12 @@ func (bot *Bot) Start() {
 	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
 	bot.Session.State.MaxMessageCount = 5000
+	bot.Session.State.TrackMembers = true
+	bot.Session.State.TrackChannels = true
+	bot.Session.State.TrackEmojis = true
+	bot.Session.State.TrackPresences = true
+	bot.Session.State.TrackRoles = true
+	bot.Session.State.TrackVoice = true
 
 	err = bot.Session.Open()
 	if err != nil {
