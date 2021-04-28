@@ -26,7 +26,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		}
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
 		if err != nil {
-			log.Println(err)
+			log.Println("strikes failed", err)
 		}
 		// and with that the moderation cycle is complete! :)
 	}
