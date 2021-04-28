@@ -12,6 +12,11 @@ import (
 )
 
 func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, m.GuildID, m.Author.ID, "moderation.mute") {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
+		return
+	}
+
 	var reason string
 
 	start := time.Now()
