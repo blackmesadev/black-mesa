@@ -108,6 +108,8 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		NewMemberThreshold: 0,
 	}
 
+	strikeEscalation := make(map[int64]structs.StrikeEscalation, 0)
+
 	moderation := &structs.Moderation{
 		ConfirmActionsMessage:       true,
 		ConfirmActionsMessageExpiry: 0,
@@ -117,6 +119,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		NotifyActions:               true,
 		ShowModeratorOnNotify:       true,
 		SilenceLevel:                100,
+		StrikeEscalation:            strikeEscalation,
 	}
 
 	mods := &structs.Modules{
