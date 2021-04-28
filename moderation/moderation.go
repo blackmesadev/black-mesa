@@ -125,6 +125,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	strikeDocs, err := db.Find(context.TODO(), bson.M{
 		"guildID": guildId,
 		"userID": userId,
+		"punishmentType": "strike",
 	})
 
 	if err != nil {
