@@ -159,7 +159,11 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 		switch (escalatingTo.Type) {
 		case "mute":
-			err := AddTimedRole(guildId, userId, guildConfig.Modules.Moderation.MuteRole, duration)
+			err := s.GuildMemberRoleAdd(guildId, userId, guildConfig.Modules.Moderation.MuteRole)
+			if err != nil {
+				return err
+			}
+			err = AddTimedRole(guildId, userId, guildConfig.Modules.Moderation.MuteRole, duration)
 			if err != nil {
 				return err
 			}
@@ -171,7 +175,11 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			}
 			return err
 		case "ban":
-			err := AddTimedBan(guildId, userId, duration)
+			err := s.GuildBanCreateWithReason(guildId, userId, reason, 0)
+			if err != nil {
+				return err
+			}
+			err = AddTimedBan(guildId, userId, duration)
 			if err != nil {
 				return err
 			}
