@@ -82,7 +82,7 @@ func GetPrefix(guildid string) string {
 func GetMutedRole(guildid string) string {
 	tempStruct := &mongodb.MongoGuild{}
 
-	data, err := db.GetConfigProjection(guildid, "muteRole")
+	data, err := db.GetConfigProjection(guildid, "modules.moderation.muteRole")
 	if err != nil || len(data) == 0 {
 		log.Println(err)
 		return ""
