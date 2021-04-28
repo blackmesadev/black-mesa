@@ -3,6 +3,7 @@ package moderation
 import (
 	"context"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -148,9 +149,39 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	}
 
 	if escalatingTo, ok := strikeEscalationConfig[util.GetClosestLevel(strikeEscalationLevels, strikeTotalWeight)]; ok {
+		duration := parseTime(escalatingTo.Duration)
+
+		user, err := s.State.Member(guildId, userId)
+		if err != nil {
+			return err
+		}
+
 		switch (escalatingTo.Type) {
 		case "mute":
+			err := AddTimedRole(guildId, userId, guildConfig.Modules.Moderation.MuteRole, duration)
+			if err != nil {
+				return err
+			}
 
+			if duration != 0 {
+				logging.LogTempMute(s, guildId, "AutoMod", user.User, time.Until(time.Unix(duration, 0)), reason, location)
+			} else {
+				logging.LogMute(s, guildId, "AutoMod", user.User, reason, location)
+			}
+			return err
+		case "ban":
+			err := AddTimedBan(guildId, userId, duration)
+			if err != nil {
+				return err
+			}
+
+			if duration != 0 {
+				logging.LogTempBan(s, guildId, "AutoMod", user.User, time.Until(time.Unix(duration, 0)), reason, location)
+			} else {
+				logging.LogBan(s, guildId, "AutoMod", user.User, reason, location)
+			}
+		default:
+			log.Printf("%v has unknown punishment escalation type %v\n", guildId, escalatingTo.Type)
 		}
 	}
 

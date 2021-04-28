@@ -94,6 +94,53 @@ func LogTempMute(s *discordgo.Session, guildId string, actor string, target *dis
 	)
 }
 
+func LogUnmute(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	addLog(s,
+		guildId,
+		"<:mesaMemberUnmute:835506799393374218>",
+		fmt.Sprintf("%v unmuted %v (`%v`): %v", actor, fullName, target.ID, reason),
+		false,
+		"",
+	)
+}
+
+
+func LogBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	addLog(s,
+		guildId,
+		"<:mesaBan:832350526690820146>",
+		fmt.Sprintf("%v banned %v (`%v`): %v", actor, fullName, target.ID, reason),
+		actor == "AutoMod",
+		location,
+	)
+}
+
+func LogTempBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, duration time.Duration, reason string, location string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	addLog(s,
+		guildId,
+		"<:mesaBan:832350526690820146>",
+		fmt.Sprintf("%v banned %v (`%v`) until %v: %v", actor, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
+		actor == "AutoMod",
+		location,
+	)
+}
+
+func LogUnban(s *discordgo.Session, guildId string, actor string, target string, reason string) {
+	addLog(s,
+		guildId,
+		"<:mesaBan:832350526690820146>",
+		fmt.Sprintf("%v unbanned %v: %v", actor, target, reason),
+		false,
+		"",
+	)
+}
+
 func LogKick(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
 	fullName := target.Username + "#" + target.Discriminator
 
