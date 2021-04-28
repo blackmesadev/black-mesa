@@ -132,13 +132,12 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		return err
 	}
 
-	strikes := make([]mongodb.MongoPunishment, 0)
-	strikeDocs.All(context.TODO(), strikes)
-
 	strikeTotalWeight := int64(0)
 
-	for _, v := range strikes {
-		strikeTotalWeight += v.Weight
+	for strikeDocs.Next(context.TODO()) {
+		doc := mongodb.MongoPunishment{}
+		strikeDocs.Decode(doc)
+		strikeTotalWeight += doc.Weight
 	}
 
 	strikeEscalationConfig := guildConfig.Modules.Moderation.StrikeEscalation
