@@ -107,6 +107,11 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			if !ok {
 				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), 1, filterProcessingStart
 			}
+
+			ok, str = censor.SubStringsCheck(content, censorLevel.BlockedSubstrings)
+			if !ok {
+				return false, fmt.Sprintf("Censor->BlockedSubString (%v)", str), 1, filterProcessingStart
+			}
 		}
 	}
 
@@ -154,6 +159,11 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			ok, str := censor.StringsCheck(content, censorChannel.BlockedStrings)
 			if !ok {
 				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), 1, filterProcessingStart
+			}
+
+			ok, str = censor.SubStringsCheck(content, censorChannel.BlockedSubstrings)
+			if !ok {
+				return false, fmt.Sprintf("Censor->BlockedSubString (%v)", str), 1, filterProcessingStart
 			}
 		}
 	}
