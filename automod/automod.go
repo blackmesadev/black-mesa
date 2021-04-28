@@ -162,21 +162,38 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 	{ // messages
 		ten, _ := time.ParseDuration("10s")
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxMessages
+
+		if limit == 0 {
+			goto SkipMessages
+		}
+
 		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
 			return false, fmt.Sprintf("Spam->Messages (%v/%v)", limit, ten), 1, filterProcessingStart
 		}
 	}
+	SkipMessages:
 	{ // newlines
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxNewlines
+
+		if limit == 0 {
+			goto SkipNewlines
+		}
+
 		ok, count := spam.ProcessMaxNewlines(m.Content, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
 			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
+	SkipNewlines:
 	{ // mentions
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxMentions
+
+		if limit == 0 {
+			goto SkipMentions
+		}
+
 		ok, count := spam.ProcessMaxMentions(m, limit)
 		if !ok {
 			//                                                      1 strike for every mention over the limit
@@ -188,15 +205,27 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
+	SkipMentions:
 	{ // links
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxLinks
+
+		if limit == 0 {
+			goto SkipLinks
+		}
+
 		ok, count := spam.ProcessMaxLinks(m.Content, limit)
 		if !ok {
 			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
+	SkipLinks:
 	{ // uppercase
 		limit := 0.0
+
+		if limit == 0.0 {
+			goto SkipUppercase
+		}
+
 		minLength := 20
 		ok, percent := spam.ProcessMaxUppercase(m.Content, limit, minLength)
 		if !ok {
@@ -204,22 +233,35 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->Uppercase (%v%% > %v%%)", percent, limit), 1, filterProcessingStart
 		}
 	}
+	SkipUppercase:
 	{ // emoji
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxEmojis
+
+		if limit == 0 {
+			goto SkipEmoji
+		}
+
 		ok, count := spam.ProcessMaxEmojis(m, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
 			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
+	SkipEmoji:
 	{ // attachments
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxAttachments
+
+		if limit == 0 {
+			goto SkipAttachments
+		}
+
 		ok, count := spam.ProcessMaxAttachments(m, limit)
 		if !ok {
 			//                                                       1 strike per attachment over the limit
 			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
+	SkipAttachments:
 
 	return true, "", 0, filterProcessingStart
 }
