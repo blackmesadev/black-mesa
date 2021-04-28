@@ -8,10 +8,12 @@ import (
 
 func main() {
 
-	config.StartDB()
-	redis.ConnectRedis("localhost:6379")
+	configFlat := config.LoadFlatConfig()
 
-	bot := discord.CreateBot()
+	config.StartDB(configFlat.Mongo)
+	redis.ConnectRedis(configFlat.Redis)
+
+	bot := discord.CreateBot(configFlat.Token)
 
 	bot.Start()
 

@@ -2,9 +2,7 @@ package discord
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -27,9 +25,9 @@ type Bot struct {
 	Router   *Mux
 }
 
-func CreateBot() *Bot {
+func CreateBot(token string) *Bot {
 	instance = &Bot{}
-	instance.getToken()
+	instance.Token = token
 	instance.Version = "16042021Alpha"
 
 	return instance
@@ -74,25 +72,6 @@ func (bot *Bot) Start() {
 
 	bot.Session.Close()
 
-}
-
-func (bot *Bot) getToken() {
-	file, err := os.Open("token.json")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			log.Fatalln(err)
-		}
-	}()
-
-	token, err := ioutil.ReadAll(file)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	json.Unmarshal(token, bot)
 }
 
 func punishmentExpiryGoroutine() {

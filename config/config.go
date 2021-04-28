@@ -2,7 +2,9 @@ package config
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/structs"
@@ -11,9 +13,26 @@ import (
 
 var db *mongodb.DB
 
-func StartDB() {
+func LoadFlatConfig() structs.FlatConfig {
+	jsonFile, err := os.Open("config.json")
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer jsonFile.Close()
+
+	bytes, _ := ioutil.ReadAll(jsonFile)
+
+	var result structs.FlatConfig
+	json.Unmarshal([]byte(bytes), &result)
+
+	return result
+}
+
+func StartDB(cfg structs.MongoConfig) {
 	db = mongodb.InitDB()
-	db.ConnectDB("mongodb://localhost:27017")
+	db.ConnectDB(cfg)
 }
 
 func GetDB() *mongodb.DB {

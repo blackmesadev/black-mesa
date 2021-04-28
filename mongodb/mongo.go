@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/blackmesadev/black-mesa/structs"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -17,14 +18,14 @@ func InitDB() *DB {
 	return db
 }
 
-func (db *DB) ConnectDB(connectionString string) {
+func (db *DB) ConnectDB(mongoCfg structs.MongoConfig) {
 	var err error
 
 	creds := options.Credential{}
-	creds.Username = "root"
-	creds.Password = "password123"
+	creds.Username = mongoCfg.Username
+	creds.Password = mongoCfg.Password
 	clientOptions := options.Client()
-	clientOptions.ApplyURI(connectionString)
+	clientOptions.ApplyURI(mongoCfg.ConnectionString)
 	clientOptions.SetAuth(creds)
 
 	db.client, err = mongo.Connect(context.TODO(), clientOptions)

@@ -1,0 +1,31 @@
+version: '3.9'
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: black-mesa
+    restart: unless-stopped
+    links:
+      - mongo
+      - redis
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    volumes:
+      - mongo:/data/db
+
+  redis:
+    image: redis
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+
+volumes:
+  mongo:
+  redis:

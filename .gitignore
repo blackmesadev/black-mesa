@@ -20,5 +20,5 @@ black-mesa
 /vendor/
 /Godeps/
 
-# token
-token.json
+# config
+config.json

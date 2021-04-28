@@ -3,16 +3,17 @@ package redis
 import (
 	"log"
 
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/go-redis/redis/v8"
 )
 
 var r *redis.Client
 
-func ConnectRedis(addr string) *redis.Client {
+func ConnectRedis(redisCfg structs.RedisConfig) *redis.Client {
 	var err error
 
 	r = redis.NewClient(&redis.Options{
-		Addr: addr,
+		Addr: redisCfg.Host,
 		DB: 0,
 	})
 
