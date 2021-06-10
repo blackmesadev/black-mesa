@@ -1,6 +1,6 @@
 module github.com/blackmesadev/black-mesa
 
-go 1.15
+go 1.16
 
 require (
 	github.com/blackmesadev/discordgo v0.24.0
