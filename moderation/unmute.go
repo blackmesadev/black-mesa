@@ -52,7 +52,9 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 			msg += fmt.Sprintf("<@%v> ", id)
 
 			possibleUser, err := s.State.Member(m.GuildID, id)
-			if err != nil { continue }
+			if err != nil {
+				continue
+			}
 			logging.LogUnmute(s, m.GuildID, fullName, possibleUser.User, reason)
 		}
 	}

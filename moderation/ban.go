@@ -39,6 +39,11 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		return
 	}
 
+	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
+		return
+	}
+
 	duration := parseTime(args[durationOrReasonStart])
 	reason := strings.Join(args[(durationOrReasonStart+1):], " ")
 
@@ -68,11 +73,11 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 			msg += fmt.Sprintf("<@%v> ", id)
 			AddTimedBan(m.GuildID, id, duration)
 
-						member, _ := s.State.Member(m.GuildID, id)
+			member, _ := s.State.Member(m.GuildID, id)
 			if duration == 0 {
-				logging.LogMute(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 			} else {
-				logging.LogTempMute(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+				logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
 			}
 		}
 	}

@@ -106,7 +106,6 @@ func LogUnmute(s *discordgo.Session, guildId string, actor string, target *disco
 	)
 }
 
-
 func LogBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
 	fullName := target.Username + "#" + target.Discriminator
 
@@ -154,6 +153,7 @@ func LogKick(s *discordgo.Session, guildId string, actor string, target *discord
 }
 
 func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
+	fmt.Println(message)
 	fullName := message.Author.Username + "#" + message.Author.Discriminator
 
 	channel, err := s.Channel(message.ChannelID)
@@ -166,10 +166,12 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 		attachments += v.URL + " "
 	}
 
+	fmt.Printf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content+"\n\n"+attachments)
+
 	addLog(s,
 		message.GuildID,
 		"<:mesaMessageDelete:832350526917312562>",
-		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content + "\n\n" + attachments),
+		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content+"\n\n"+attachments),
 		false,
 		"",
 	)

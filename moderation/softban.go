@@ -27,6 +27,11 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		return
 	}
 
+	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
+		return
+	}
+
 	reasonSearch := snowflakeRegex.Split(m.Content, -1)
 
 	search := reasonSearch[len(reasonSearch)-1]

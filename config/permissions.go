@@ -160,3 +160,15 @@ func CheckPermission(s *discordgo.Session, guildid string, userid string, permis
 	return userLevel >= permissionValue
 
 }
+
+func CheckTargets(s *discordgo.Session, guildid string, actioner string, targets []string) bool {
+	actionPermValue := GetLevel(s, guildid, actioner)
+
+	for _, target := range targets {
+		targetPermValue := GetLevel(s, guildid, target)
+		if targetPermValue >= actionPermValue {
+			return false
+		}
+	}
+	return true
+}
