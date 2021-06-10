@@ -166,8 +166,6 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 		attachments += v.URL + " "
 	}
 
-	fmt.Printf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content+"\n\n"+attachments)
-
 	addLog(s,
 		message.GuildID,
 		"<:mesaMessageDelete:832350526917312562>",
