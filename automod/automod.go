@@ -15,6 +15,8 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
+var chillax = make(map[string]map[string]int) // chllax[guildId][userId] -> exemptions remaining
+
 func Process(s *discordgo.Session, m *discordgo.Message) {
 	ok, reason, weight, _ := Check(s, m)
 	if !ok {
@@ -24,6 +26,22 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		} else {
 			logging.LogMessageViolation(s, m, reason)
 		}
+		// CHILL MODE TBD -L
+		// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
+		// escalated to a ban due to automod delay)
+
+		if users, ok := chillax[m.GuildID]; ok {
+			if exemptions, ok := users[m.Author.ID]; ok {
+				if exemptions > 0 {
+					users[m.Author.ID]--
+					return
+				}
+			}
+		} else {
+			chillax[m.GuildID] = make(map[string]int)
+			chillax[m.GuildID][m.Author.ID] = 3
+		}
+
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)

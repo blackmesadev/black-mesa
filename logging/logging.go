@@ -21,9 +21,10 @@ func addLog(s *discordgo.Session, guildId string, emoji string, line string, pub
 
 	go s.ChannelMessageSend(cfg.Modules.Logging.ChannelID, fmt.Sprintf("%v %v", emoji, line))
 
-	if public && cfg.Modules.Automod.PublicHumilation {
-		go s.ChannelMessageSend(channelId, fmt.Sprintf("%v %v", emoji, line))
-	}
+	// leave disabled for now, we can come back to public humiliation mode another time -L
+	//if public && cfg.Modules.Automod.PublicHumilation {
+	//	go s.ChannelMessageSend(channelId, fmt.Sprintf("%v %v", emoji, line))
+	//}
 }
 
 func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason string) {
