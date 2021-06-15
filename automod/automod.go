@@ -30,16 +30,17 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
 		// escalated to a ban due to automod delay)
 
-		if users, ok := chillax[m.GuildID]; ok {
-			if exemptions, ok := users[m.Author.ID]; ok {
-				if exemptions > 0 {
-					users[m.Author.ID]--
-					return
-				}
-			}
-		} else {
+		if _, ok := chillax[m.GuildID]; !ok {
 			chillax[m.GuildID] = make(map[string]int)
+		}
+
+		if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
 			chillax[m.GuildID][m.Author.ID] = 3
+		}
+
+		if chillax[m.GuildID][m.Author.ID] > 0 {
+			chillax[m.GuildID][m.Author.ID]--
+			return
 		}
 
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
