@@ -26,10 +26,9 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		} else {
 			logging.LogMessageViolation(s, m, reason)
 		}
-		// CHILL MODE TBD -L
+
 		// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
 		// escalated to a ban due to automod delay)
-
 		if _, ok := chillax[m.GuildID]; !ok {
 			chillax[m.GuildID] = make(map[string]int)
 		}
