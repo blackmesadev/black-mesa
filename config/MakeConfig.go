@@ -120,6 +120,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		ShowModeratorOnNotify:       true,
 		SilenceLevel:                100,
 		StrikeEscalation:            strikeEscalation,
+		StrikeCushioning:            3,
 	}
 
 	mods := &structs.Modules{

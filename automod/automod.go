@@ -11,6 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/moderation"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -18,7 +19,14 @@ import (
 var chillax = make(map[string]map[string]int) // chllax[guildId][userId] -> exemptions remaining
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
-	ok, reason, weight, _ := Check(s, m)
+	conf, err := config.GetConfig(m.GuildID)
+
+	if conf == nil || err != nil {
+		fmt.Println(conf, err)
+		return
+	}
+
+	ok, reason, weight, _ := Check(s, m, conf)
 	if !ok {
 		go RemoveMessage(s, m) // remove
 		if strings.HasPrefix(reason, "Censor") { // log
@@ -34,7 +42,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
-			chillax[m.GuildID][m.Author.ID] = 3
+			chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
 		}
 
 		if chillax[m.GuildID][m.Author.ID] > 0 {
@@ -52,15 +60,8 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 
 // Return true if all is okay, return false if not.
 // This function should be "silent" if a message is okay.
-func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, time.Time) {
+func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bool, string, int64, time.Time) {
 	filterProcessingStart := time.Now()
-
-	conf, err := config.GetConfig(m.GuildID)
-
-	if conf == nil || err != nil {
-		fmt.Println(conf, err)
-		return true, "", 0, filterProcessingStart
-	}
 
 	automod := conf.Modules.Automod
 
