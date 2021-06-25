@@ -18,7 +18,7 @@ import (
 func Process(s *discordgo.Session, m *discordgo.Message) {
 	ok, reason, weight, _ := Check(s, m)
 	if !ok {
-		go RemoveMessage(s, m) // remove
+		go RemoveMessage(s, m)                   // remove
 		if strings.HasPrefix(reason, "Censor") { // log
 			logging.LogMessageCensor(s, m, reason)
 		} else {
@@ -70,12 +70,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 	// Level censors
 	if censorLevel != nil {
 		// Zalgo
-		if censorLevel.FilterZalgo {
-			ok := censor.ZalgoCheck(content)
-			if !ok {
-				return false, "Censor->Zalgo", 1, filterProcessingStart
-			}
-		}
+		//if censorLevel.FilterZalgo {
+		//	ok := censor.ZalgoCheck(content)
+		//	if !ok {
+		//		return false, "Censor->Zalgo", 1, filterProcessingStart
+		//	}
+		//}
 
 		// Invites
 		if censorLevel.FilterInvites {
@@ -122,12 +122,12 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 	// Channel censors
 	if censorChannel != nil {
 		// Zalgo
-		if censorChannel.FilterZalgo {
-			ok := censor.ZalgoCheck(content)
-			if !ok {
-				return false, "Censor->FilterZalgo", 1, filterProcessingStart
-			}
-		}
+		//if censorChannel.FilterZalgo {
+		//	ok := censor.ZalgoCheck(content)
+		//	if !ok {
+		//		return false, "Censor->FilterZalgo", 1, filterProcessingStart
+		//	}
+		//}
 
 		// Invites
 		if censorChannel.FilterInvites {
@@ -190,7 +190,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->Messages (%v/%v)", limit, ten), 1, filterProcessingStart
 		}
 	}
-	SkipMessages:
+SkipMessages:
 	{ // newlines
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxNewlines
 
@@ -204,7 +204,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
-	SkipNewlines:
+SkipNewlines:
 	{ // mentions
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxMentions
 
@@ -219,11 +219,11 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 		}
 		ok, count = spam.ProcessMaxRoleMentions(m, limit)
 		if !ok {
-            // see above
+			// see above
 			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
-	SkipMentions:
+SkipMentions:
 	{ // links
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxLinks
 
@@ -236,7 +236,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
-	SkipLinks:
+SkipLinks:
 	{ // uppercase
 		limit := 0.0
 
@@ -251,7 +251,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->Uppercase (%v%% > %v%%)", percent, limit), 1, filterProcessingStart
 		}
 	}
-	SkipUppercase:
+SkipUppercase:
 	{ // emoji
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxEmojis
 
@@ -265,7 +265,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
-	SkipEmoji:
+SkipEmoji:
 	{ // attachments
 		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxAttachments
 
@@ -279,7 +279,7 @@ func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, tim
 			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
-	SkipAttachments:
+SkipAttachments:
 
 	return true, "", 0, filterProcessingStart
 }
