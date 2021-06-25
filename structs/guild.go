@@ -97,6 +97,7 @@ type Moderation struct {
 	ShowModeratorOnNotify       bool                       `json:"showModeratorOnNotify" bson:"showModeratorOnNotify"`
 	SilenceLevel                int64                      `json:"silenceLevel" bson:"silenceLevel"`
 	StrikeEscalation            map[int64]StrikeEscalation `json:"strikeEscalation" bson:"strikeEscalation"`
+	StrikeCushioning            int                        `json:"strikeCushioning" bson:"strikeCushioning"`
 }
 
 type StrikeEscalation struct {

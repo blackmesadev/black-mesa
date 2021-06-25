@@ -130,9 +130,21 @@ func CheckPermission(s *discordgo.Session, guildid string, userid string, permis
 		log.Println("failed to check permissions in", guildid, "for user", userid, "because", err)
 		return false // safety
 	} // uh oh
-
-	if (user.Permissions & 8) == 8 {
-		return true // always return true for admins
+	
+	user, err = s.GuildMember(guildid, userid)
+	if err != nil {
+		log.Println("failed to check permissions in", guildid, "for user", userid, "because", err)
+		return false // safety
+	} // uh oh 2
+	
+	for _, roleid := range user.Roles {
+		role, err := s.State.Role(guildid, roleid)
+		if err != nil {
+			continue // skip
+		}
+		if role.Permissions & 8 == 8 {
+			return true // user is admin
+		}
 	}
 
 	permissionValue, err := GetPermission(s, guildid, permission)

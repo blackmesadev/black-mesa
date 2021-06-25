@@ -11,12 +11,22 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/moderation"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
+var chillax = make(map[string]map[string]int) // chllax[guildId][userId] -> exemptions remaining
+
 func Process(s *discordgo.Session, m *discordgo.Message) {
-	ok, reason, weight, _ := Check(s, m)
+	conf, err := config.GetConfig(m.GuildID)
+
+	if conf == nil || err != nil {
+		fmt.Println(conf, err)
+		return
+	}
+
+	ok, reason, weight, _ := Check(s, m, conf)
 	if !ok {
 		go RemoveMessage(s, m)                   // remove
 		if strings.HasPrefix(reason, "Censor") { // log
@@ -24,6 +34,22 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		} else {
 			logging.LogMessageViolation(s, m, reason)
 		}
+
+		// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
+		// escalated to a ban due to automod delay)
+		if _, ok := chillax[m.GuildID]; !ok {
+			chillax[m.GuildID] = make(map[string]int)
+		}
+
+		if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
+			chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
+		}
+
+		if chillax[m.GuildID][m.Author.ID] > 0 {
+			chillax[m.GuildID][m.Author.ID]--
+			return
+		}
+
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
@@ -34,15 +60,8 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 
 // Return true if all is okay, return false if not.
 // This function should be "silent" if a message is okay.
-func Check(s *discordgo.Session, m *discordgo.Message) (bool, string, int64, time.Time) {
+func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bool, string, int64, time.Time) {
 	filterProcessingStart := time.Now()
-
-	conf, err := config.GetConfig(m.GuildID)
-
-	if conf == nil || err != nil {
-		fmt.Println(conf, err)
-		return true, "", 0, filterProcessingStart
-	}
 
 	automod := conf.Modules.Automod
 
