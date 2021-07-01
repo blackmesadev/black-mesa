@@ -42,7 +42,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
-			chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
+			chillax[m.GuildID][m.Author.ID] = 0
 		}
 
 		if chillax[m.GuildID][m.Author.ID] > 0 {
@@ -50,6 +50,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 			return
 		}
 
+		chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
