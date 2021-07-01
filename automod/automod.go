@@ -18,6 +18,18 @@ import (
 
 var chillax = make(map[string]map[string]int) // chllax[guildId][userId] -> exemptions remaining
 
+func clearCushioning(guildId string, userId string) {
+	lastStrikes := chillax[guildId][userId]
+	go func() {
+		timer := time.NewTimer(1 * time.Minute)
+		<-timer.C
+
+		if chillax[guildId][userId] == lastStrikes {
+			chillax[guildId][userId] = 0
+		}
+	}()
+}
+
 func Process(s *discordgo.Session, m *discordgo.Message) {
 	conf, err := config.GetConfig(m.GuildID)
 
@@ -47,10 +59,12 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 
 		if chillax[m.GuildID][m.Author.ID] > 0 {
 			chillax[m.GuildID][m.Author.ID]--
+			clearCushioning(m.GuildID, m.Author.ID)
 			return
 		}
 
 		chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
+		clearCushioning(m.GuildID, m.Author.ID)
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
