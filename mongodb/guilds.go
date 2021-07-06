@@ -28,7 +28,7 @@ func (db *DB) GetConfig(id string) (*structs.Config, error) {
 	return config.Config, nil
 }
 
-func (db *DB) SetConfigOne(id string, key string, value string) (*mongo.UpdateResult, error) {
+func (db *DB) SetConfigOne(id string, key string, value interface{}) (*mongo.UpdateResult, error) {
 	col := db.client.Database("black-mesa").Collection("guilds")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
