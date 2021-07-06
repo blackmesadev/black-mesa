@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"log"
+	"reflect"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/structs"
@@ -29,6 +30,14 @@ func (db *DB) GetConfig(id string) (*structs.Config, error) {
 }
 
 func (db *DB) SetConfigOne(id string, key string, value interface{}) (*mongo.UpdateResult, error) {
+	originalValue, err := db.GetConfigProjection(id, key)
+
+	if err != nil {
+		return nil, err
+	}
+
+	originalValueType := reflect.TypeOf(originalValue)
+
 	col := db.client.Database("black-mesa").Collection("guilds")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -37,7 +46,7 @@ func (db *DB) SetConfigOne(id string, key string, value interface{}) (*mongo.Upd
 
 	key = "config." + key
 
-	update := &bson.M{"$set": bson.M{key: value}}
+	update := &bson.M{"$set": bson.M{key: reflect.ValueOf(value).Convert(originalValueType)}}
 
 	results, err := col.UpdateOne(ctx, filters, update)
 	if err != nil {
