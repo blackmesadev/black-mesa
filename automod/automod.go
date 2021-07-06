@@ -16,7 +16,7 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-var chillax = make(map[string]map[string]int) // chllax[guildId][userId] -> exemptions remaining
+var chillax = make(map[string]map[string]int64) // chllax[guildId][userId] -> exemptions remaining
 
 func clearCushioning(guildId string, userId string) {
 	lastStrikes := chillax[guildId][userId]
@@ -50,7 +50,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
 		// escalated to a ban due to automod delay)
 		if _, ok := chillax[m.GuildID]; !ok {
-			chillax[m.GuildID] = make(map[string]int)
+			chillax[m.GuildID] = make(map[string]int64)
 		}
 
 		if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
@@ -58,7 +58,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		if chillax[m.GuildID][m.Author.ID] > 0 {
-			chillax[m.GuildID][m.Author.ID]--
+			chillax[m.GuildID][m.Author.ID] -= weight
 			clearCushioning(m.GuildID, m.Author.ID)
 			return
 		}
