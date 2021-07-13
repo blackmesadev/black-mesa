@@ -28,7 +28,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	perms["logging"] = 100
 
 	emptyMap := make(map[string]string)
-	emptySlice := make([]string, 0, 0)
+	emptySlice := make([]string, 0)
 
 	persist := &structs.Persistance{Roles: false,
 		WhitelistedRoles: &emptySlice,
@@ -108,7 +108,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		NewMemberThreshold: 0,
 	}
 
-	strikeEscalation := make(map[int64]structs.StrikeEscalation, 0)
+	strikeEscalation := make(map[int64]structs.StrikeEscalation)
 
 	moderation := &structs.Moderation{
 		ConfirmActionsMessage:       true,

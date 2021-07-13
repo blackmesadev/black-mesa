@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/blackmesadev/discordgo"
 )
@@ -30,7 +31,7 @@ func SetConfigCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 		}
 	}
 
-	updates, err := db.SetConfigOne(m.GuildID, ctx.Fields[1], combinedValue)
+	updates, err := db.SetConfigOne(m.GuildID, ctx.Fields[1], strings.TrimSpace(combinedValue))
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCross:832350526414127195> Failed for reason %v", err))
 		return

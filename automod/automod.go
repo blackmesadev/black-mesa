@@ -17,8 +17,20 @@ import (
 	"github.com/blackmesadev/discordgo"
 )
 
-var chillax = make(map[string]map[string]int) // chllax[guildId][userId] -> exemptions remaining
+var chillax = make(map[string]map[string]int64) // chllax[guildId][userId] -> exemptions remaining
 var cdnRegex = regexp.MustCompile(`(cdn\.discord(?:\.com|app\.com))`)
+
+func clearCushioning(guildId string, userId string) {
+	lastStrikes := chillax[guildId][userId]
+	go func() {
+		timer := time.NewTimer(1 * time.Minute)
+		<-timer.C
+
+		if chillax[guildId][userId] == lastStrikes {
+			chillax[guildId][userId] = 0
+		}
+	}()
+}
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
 	conf, err := config.GetConfig(m.GuildID)
@@ -40,18 +52,21 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
 		// escalated to a ban due to automod delay)
 		if _, ok := chillax[m.GuildID]; !ok {
-			chillax[m.GuildID] = make(map[string]int)
+			chillax[m.GuildID] = make(map[string]int64)
 		}
 
 		if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
-			chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
+			chillax[m.GuildID][m.Author.ID] = 0
 		}
 
 		if chillax[m.GuildID][m.Author.ID] > 0 {
-			chillax[m.GuildID][m.Author.ID]--
+			chillax[m.GuildID][m.Author.ID] -= weight
+			clearCushioning(m.GuildID, m.Author.ID)
 			return
 		}
 
+		chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
+		clearCushioning(m.GuildID, m.Author.ID)
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)

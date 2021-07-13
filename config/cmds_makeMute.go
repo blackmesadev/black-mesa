@@ -85,7 +85,7 @@ func MakeMuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 
 	}
 
-	updates, err := db.SetConfigOne(m.GuildID, "modules.moderation.muteRole", role.ID)
+	updates, _ := db.SetConfigOne(m.GuildID, "modules.moderation.muteRole", role.ID)
 
 	msg := fmt.Sprintf("<:mesaCheck:832350526729224243> Created role 'Muted' `(%v)`. Updated `%v` Text Channels and `%v` Voice Channels. Updated `%v` database entry.",
 		role.ID, textCompleted, voiceCompleted, updates.ModifiedCount)

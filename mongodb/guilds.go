@@ -2,7 +2,10 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/structs"
@@ -10,6 +13,21 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func cast(v string, originalValue interface{}) (interface{}, error) {
+	switch originalValue.(type) {
+	case string:
+		return v, nil
+	case int64:
+		return strconv.ParseInt(v, 10, 64)
+	case bool:
+		return strconv.ParseBool(v)
+	case float64:
+		return strconv.ParseFloat(v, 64)
+	default:
+		return nil, fmt.Errorf("cannot convert %q to %q", v, reflect.TypeOf(originalValue).String())
+	}
+}
 
 func (db *DB) GetConfig(id string) (*structs.Config, error) {
 	var config *MongoGuild
@@ -29,6 +47,12 @@ func (db *DB) GetConfig(id string) (*structs.Config, error) {
 }
 
 func (db *DB) SetConfigOne(id string, key string, value string) (*mongo.UpdateResult, error) {
+	originalValue, err := db.GetConfigProjection(id, key)
+
+	if err != nil {
+		return nil, err
+	}
+
 	col := db.client.Database("black-mesa").Collection("guilds")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -37,7 +61,12 @@ func (db *DB) SetConfigOne(id string, key string, value string) (*mongo.UpdateRe
 
 	key = "config." + key
 
-	update := &bson.M{"$set": bson.M{key: value}}
+	castedValue, err := cast(value, originalValue)
+	if err != nil {
+		return nil, err
+	}
+
+	update := &bson.M{"$set": bson.M{key: castedValue}}
 
 	results, err := col.UpdateOne(ctx, filters, update)
 	if err != nil {
