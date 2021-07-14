@@ -154,7 +154,6 @@ func LogKick(s *discordgo.Session, guildId string, actor string, target *discord
 }
 
 func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
-	fmt.Println(message)
 	fullName := message.Author.Username + "#" + message.Author.Discriminator
 
 	channel, err := s.Channel(message.ChannelID)
