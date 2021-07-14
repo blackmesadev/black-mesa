@@ -55,7 +55,7 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 		return
 	}
 
-	msg := "Successfully unmuted "
+	msg := "<:mesaCheck:832350526729224243> Successfully unmuted "
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableUnmute := make([]string, 0)
