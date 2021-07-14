@@ -92,12 +92,12 @@ func parseTime(strTime string) int64 {
 
 func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string) error {
 	strike := &mongodb.MongoPunishment{
-		GuildID: guildId,
-		UserID: userId,
-		Issuer: issuer,
-		Weight: weight,
-		Reason: reason,
-		Expires: expiry,
+		GuildID:        guildId,
+		UserID:         userId,
+		Issuer:         issuer,
+		Weight:         weight,
+		Reason:         reason,
+		Expires:        expiry,
 		PunishmentType: "strike",
 	}
 
@@ -123,8 +123,8 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("punishments")
 
 	strikeDocs, err := db.Find(context.TODO(), bson.M{
-		"guildID": guildId,
-		"userID": userId,
+		"guildID":        guildId,
+		"userID":         userId,
 		"punishmentType": "strike",
 	})
 
@@ -157,13 +157,13 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			return err
 		}
 
-		switch (escalatingTo.Type) {
+		switch escalatingTo.Type {
 		case "mute":
 			err := s.GuildMemberRoleAdd(guildId, userId, guildConfig.Modules.Moderation.MuteRole)
 			if err != nil {
 				return err
 			}
-			err = AddTimedRole(guildId, userId, guildConfig.Modules.Moderation.MuteRole, duration)
+			err = AddTimedRole(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration)
 			if err != nil {
 				return err
 			}
@@ -179,7 +179,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedBan(guildId, userId, duration)
+			err = AddTimedBan(guildId, "AutoMod", userId, duration)
 			if err != nil {
 				return err
 			}

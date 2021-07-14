@@ -5,10 +5,11 @@ import (
 	"github.com/blackmesadev/black-mesa/mongodb"
 )
 
-func AddTimedBan(guildid string, userid string, expiry int64) error {
+func AddTimedBan(guildid string, issuer string, userid string, expiry int64) error {
 	punishment := &mongodb.MongoPunishment{
 		GuildID:        guildid,
 		UserID:         userid,
+		Issuer:         issuer,
 		PunishmentType: "ban",
 		Expires:        expiry,
 	}
@@ -17,10 +18,11 @@ func AddTimedBan(guildid string, userid string, expiry int64) error {
 	return err
 }
 
-func AddTimedRole(guildid string, userid string, roleid string, expiry int64) error {
+func AddTimedRole(guildid string, issuer string, userid string, roleid string, expiry int64) error {
 	punishment := &mongodb.MongoPunishment{
 		GuildID:        guildid,
 		UserID:         userid,
+		Issuer:         issuer,
 		RoleID:         roleid,
 		PunishmentType: "role",
 		Expires:        expiry,

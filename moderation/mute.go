@@ -74,7 +74,7 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 			unableMute = append(unableMute, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
-			AddTimedRole(m.GuildID, id, roleid, duration)
+			AddTimedRole(m.GuildID, m.Author.ID, id, roleid, duration)
 
 			member, _ := s.State.Member(m.GuildID, id)
 			if duration == 0 {
