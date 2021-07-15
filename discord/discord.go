@@ -104,8 +104,8 @@ func punishmentExpiryGoroutine() {
 		for cursor.Next(context.TODO()) {
 			doc := mongodb.MongoPunishment{}
 			cursor.Decode(doc)
-			fmt.Println(doc)
 			go func() {
+				fmt.Println(doc)
 				switch doc.PunishmentType {
 				case "ban":
 					GetInstance().Session.GuildBanDelete(doc.GuildID, doc.UserID)
