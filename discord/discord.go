@@ -104,7 +104,7 @@ func punishmentExpiryGoroutine() {
 		for cursor.Next(context.TODO()) {
 			doc := mongodb.MongoPunishment{}
 			cursor.Decode(doc)
-			go func() {
+			go func(doc mongodb.MongoPunishment) {
 				fmt.Println(doc)
 				switch doc.PunishmentType {
 				case "ban":
@@ -116,7 +116,7 @@ func punishmentExpiryGoroutine() {
 				default:
 					fmt.Println("unknown punishment type", doc.PunishmentType)
 				}
-			}()
+			}(doc)
 		}
 
 		cursor.Close(context.TODO())
