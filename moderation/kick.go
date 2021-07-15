@@ -2,6 +2,7 @@ package moderation
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -58,7 +59,16 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
 
-			member, _ := s.State.Member(m.GuildID, id)
+			member, err := s.State.Member(m.GuildID, id)
+			if err == discordgo.ErrStateNotFound {
+				member, err = s.GuildMember(m.GuildID, id)
+				if err != nil {
+					log.Println(err)
+					unableKick = append(unableKick, id)
+				} else {
+					s.State.MemberAdd(member)
+				}
+			}
 			logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 		}
 	}

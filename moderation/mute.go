@@ -2,6 +2,7 @@ package moderation
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -76,7 +77,16 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 			msg += fmt.Sprintf("<@%v> ", id)
 			AddTimedRole(m.GuildID, m.Author.ID, id, roleid, duration)
 
-			member, _ := s.State.Member(m.GuildID, id)
+			member, err := s.State.Member(m.GuildID, id)
+			if err == discordgo.ErrStateNotFound {
+				member, err = s.GuildMember(m.GuildID, id)
+				if err != nil {
+					log.Println(err)
+					unableMute = append(unableMute, id)
+				} else {
+					s.State.MemberAdd(member)
+				}
+			}
 			if duration == 0 {
 				logging.LogMute(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 			} else {
