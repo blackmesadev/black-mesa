@@ -18,7 +18,7 @@ func AddTimedBan(guildid string, issuer string, userid string, expiry int64) err
 	return err
 }
 
-func AddTimedRole(guildid string, issuer string, userid string, roleid string, expiry int64) error {
+func AddTimedRole(guildid string, issuer string, userid string, roleid string, expiry int64, reason string) error {
 	punishment := &mongodb.MongoPunishment{
 		GuildID:        guildid,
 		UserID:         userid,
@@ -26,6 +26,7 @@ func AddTimedRole(guildid string, issuer string, userid string, roleid string, e
 		RoleID:         roleid,
 		PunishmentType: "role",
 		Expires:        expiry,
+		Reason:         reason,
 	}
 
 	_, err := config.AddPunishment(punishment)
