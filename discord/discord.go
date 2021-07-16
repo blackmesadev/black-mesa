@@ -28,7 +28,7 @@ type Bot struct {
 func CreateBot(token string) *Bot {
 	instance = &Bot{}
 	instance.Token = token
-	instance.Version = "20210714Beta"
+	instance.Version = config.GetVersion()
 
 	return instance
 }
