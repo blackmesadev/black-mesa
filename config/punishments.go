@@ -8,3 +8,7 @@ import (
 func AddPunishment(punishment *mongodb.MongoPunishment) (*mongo.InsertOneResult, error) {
 	return db.AddPunishment(punishment)
 }
+
+func GetPunishments(guildid string, userid string) ([]*mongodb.MongoPunishment, error) {
+	return db.GetPunishments(guildid, userid)
+}
