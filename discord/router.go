@@ -27,5 +27,6 @@ func (r *Mux) InitRouter() {
 	r.Route("unban", moderation.UnbanCmd)
 	r.Route("mute", moderation.MuteCmd)
 	r.Route("unmute", moderation.UnmuteCmd)
+	r.Route("strike", moderation.StrikeCmd)
 	r.Route("search", moderation.SearchCmd)
 }
