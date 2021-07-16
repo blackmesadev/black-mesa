@@ -5,10 +5,11 @@ import (
 	"log"
 	"runtime"
 
+	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/discordgo"
 )
 
-func (bot *Bot) ErrorHandler(s *discordgo.Session, channelID string, commandError error) {
+func ErrorHandler(s *discordgo.Session, channelID string, commandError error) {
 	if channelID == "" {
 		log.Println(commandError)
 	}
@@ -20,7 +21,7 @@ func (bot *Bot) ErrorHandler(s *discordgo.Session, channelID string, commandErro
 	}
 	embedFields = append(embedFields, field)
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", bot.Version, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", config.GetVersion(), runtime.Version()),
 	}
 	embed := &discordgo.MessageEmbed{
 		Title:  "Black Mesa couldn't handle this!",
