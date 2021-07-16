@@ -153,3 +153,28 @@ func (db *DB) AddPunishment(punishment *MongoPunishment) (*mongo.InsertOneResult
 
 	return results, nil
 }
+
+func (db *DB) GetPunishments(guildid string, userid string) ([]*MongoPunishment, error) {
+	var punishments []*MongoPunishment
+
+	col := db.client.Database("black-mesa").Collection("punishments")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := bson.M{
+		"guildID": guildid,
+		"userID":  userid,
+	}
+
+	cursor, err := col.Find(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for cursor.Next(ctx) {
+		doc := MongoPunishment{}
+		cursor.Decode(&doc)
+		punishments = append(punishments, &doc)
+	}
+	return punishments, err
+}
