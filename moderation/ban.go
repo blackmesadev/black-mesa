@@ -82,13 +82,13 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 				}
 			}
 			if permBan {
-				msg += "lasting `Forever`."
+				msg += "lasting `Forever` "
 
 				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 			} else {
 				timeExpiry := time.Unix(duration, 0)
 				timeUntil := time.Until(timeExpiry).Round(time.Second)
-				msg += fmt.Sprintf("expiring `%v` (`%v`)", timeExpiry, timeUntil.String())
+				msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
 
 				logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
 			}
