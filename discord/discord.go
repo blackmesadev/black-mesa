@@ -104,7 +104,7 @@ func punishmentExpiryGoroutine() {
 
 		for cursor.Next(context.TODO()) {
 			doc := mongodb.MongoPunishment{}
-			cursor.Decode(doc)
+			cursor.Decode(&doc)
 			go func(doc mongodb.MongoPunishment) {
 				fmt.Println(doc)
 				switch doc.PunishmentType {
