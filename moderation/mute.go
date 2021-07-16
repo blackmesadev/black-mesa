@@ -65,7 +65,7 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		return
 	}
 
-	msg := "Successfully muted "
+	msg := "<:mesaCheck:832350526729224243> Successfully muted "
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableMute := make([]string, 0)
