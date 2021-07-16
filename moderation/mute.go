@@ -87,25 +87,25 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 					s.State.MemberAdd(member)
 				}
 			}
-			if duration == 0 {
+			if permMute {
+				msg += "lasting `Forever`."
+
 				logging.LogMute(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 			} else {
-				logging.LogTempMute(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+				timeExpiry := time.Unix(duration, 0)
+				timeUntil := time.Until(timeExpiry)
+				msg += fmt.Sprintf("expiring `%v` (in %v).", timeExpiry, timeUntil.String())
+
+				logging.LogTempMute(s, m.GuildID, fullName, member.User, timeUntil, reason, m.ChannelID)
 			}
 		}
 	}
 	if len(reason) != 0 {
 		msg += fmt.Sprintf("for reason `%v` ", reason)
 	}
-	if permMute {
-		msg += "lasting `Forever`."
-
-	} else {
-		msg += fmt.Sprintf("expiring `%v`.", time.Unix(duration, 0))
-	}
 
 	if len(unableMute) != 0 {
-		msg += fmt.Sprintf("\nCould not mute %v", unableMute)
+		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not mute %v", unableMute)
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)

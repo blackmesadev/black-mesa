@@ -59,12 +59,9 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
-	parse := time.Since(start)
-
 	msg := "<:mesaCheck:832350526729224243> Successfully banned "
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
-	dstart := time.Now()
 	unableBan := make([]string, 0)
 	for _, id := range idList {
 		err := s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
@@ -84,35 +81,31 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 					s.State.MemberAdd(member)
 				}
 			}
-			if duration == 0 {
+			if permBan {
+				msg += "lasting `Forever`."
+
 				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 			} else {
+				timeExpiry := time.Unix(duration, 0)
+				timeUntil := time.Until(timeExpiry)
+				msg += fmt.Sprintf("expiring `%v` (in %v).", timeExpiry, timeUntil.String())
+
 				logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
 			}
 		}
 	}
-	discord := time.Since(dstart)
-	msgs := time.Now()
 	if len(reason) != 0 {
 		msg += fmt.Sprintf("for reason `%v` ", reason)
-	}
-
-	if permBan {
-		msg += "lasting `Forever`."
-
-	} else {
-		msg += fmt.Sprintf("expiring `%v`.", time.Unix(duration, 0))
 	}
 
 	if len(unableBan) != 0 {
 		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not ban %v", unableBan)
 	}
 
-	msgsTotal := time.Since(msgs)
 	go s.ChannelMessageSend(m.ChannelID, msg)
 
 	if util.IsDevInstance(s) {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v (%v parsing, %v discordapi, %v message creation)",
-			time.Since(start), parse, discord, msgsTotal))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v",
+			time.Since(start)))
 	}
 }
