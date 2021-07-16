@@ -163,7 +163,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedRole(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration)
+			err = AddTimedRole(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.")
 			if err != nil {
 				return err
 			}
