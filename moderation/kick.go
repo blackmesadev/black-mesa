@@ -8,6 +8,7 @@ import (
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -22,7 +23,7 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 	start := time.Now()
 
-	idList := snowflakeRegex.FindAllString(m.Content, -1)
+	idList := misc.SnowflakeRegex.FindAllString(m.Content, -1)
 
 	if len(idList) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `kick <target:user[]> [reason:string...]`")
@@ -34,7 +35,7 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		return
 	}
 
-	reasonSearch := snowflakeRegex.Split(m.Content, -1)
+	reasonSearch := misc.SnowflakeRegex.Split(m.Content, -1)
 
 	search := reasonSearch[len(reasonSearch)-1]
 
