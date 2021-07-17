@@ -71,6 +71,30 @@ func LogStrike(s *discordgo.Session, guildId string, actor string, target *disco
 	)
 }
 
+func LogRoleAdd(s *discordgo.Session, guildId string, actor string, role string, target *discordgo.User, location string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	addLog(s,
+		guildId,
+		"<:mesaMemberMute:835506799331246130>",
+		fmt.Sprintf("%v added role %v to %v (`%v`)", actor, role, fullName, target.ID),
+		true,
+		location,
+	)
+}
+
+func LogTempRoleAdd(s *discordgo.Session, guildId string, actor string, role string, target *discordgo.User, duration time.Duration, location string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	addLog(s,
+		guildId,
+		"<:mesaMemberMute:835506799331246130>",
+		fmt.Sprintf("%v added role %v to %v (`%v`) until %v", actor, role, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM")),
+		true,
+		location,
+	)
+}
+
 func LogMute(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
 	fullName := target.Username + "#" + target.Discriminator
 
@@ -138,6 +162,18 @@ func LogUnban(s *discordgo.Session, guildId string, actor string, target string,
 		fmt.Sprintf("%v unbanned %v: %v", actor, target, reason),
 		false,
 		"",
+	)
+}
+
+func LogSoftBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	addLog(s,
+		guildId,
+		"<:mesaBan:832350526690820146>",
+		fmt.Sprintf("%v soft banned %v (`%v`): %v", actor, fullName, target.ID, reason),
+		actor == "AutoMod",
+		location,
 	)
 }
 
