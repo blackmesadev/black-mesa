@@ -2,10 +2,13 @@ package moderation
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -20,7 +23,7 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 
 	start := time.Now()
 
-	idList := snowflakeRegex.FindAllString(m.Content, -1)
+	idList := misc.SnowflakeRegex.FindAllString(m.Content, -1)
 
 	if len(idList) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `softban <target:user[]> [reason:string...]`")
@@ -32,7 +35,7 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		return
 	}
 
-	reasonSearch := snowflakeRegex.Split(m.Content, -1)
+	reasonSearch := misc.SnowflakeRegex.Split(m.Content, -1)
 
 	search := reasonSearch[len(reasonSearch)-1]
 
@@ -48,6 +51,7 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 
 	msg := "<:mesaCheck:832350526729224243> Successfully softbanned "
 
+	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableBan := make([]string, 0)
 	unableUnban := make([]string, 0)
 	for _, id := range idList {
@@ -60,6 +64,18 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 				unableUnban = append(unableUnban, id)
 			}
 			msg += fmt.Sprintf("<@%v> ", id)
+
+			member, err := s.State.Member(m.GuildID, id)
+			if err == discordgo.ErrStateNotFound {
+				member, err = s.GuildMember(m.GuildID, id)
+				if err != nil {
+					log.Println(err)
+					unableBan = append(unableBan, id)
+				} else {
+					s.State.MemberAdd(member)
+				}
+			}
+			logging.LogSoftBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 		}
 	}
 
