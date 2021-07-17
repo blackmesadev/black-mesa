@@ -134,8 +134,8 @@ func (db *DB) AddConfig(config *MongoGuild) (*mongo.InsertOneResult, error) {
 	return result, nil
 }
 
-func (db *DB) AddPunishment(punishment *MongoPunishment) (*mongo.InsertOneResult, error) {
-	col := db.client.Database("black-mesa").Collection("punishments")
+func (db *DB) AddAction(punishment *Action) (*mongo.InsertOneResult, error) {
+	col := db.client.Database("black-mesa").Collection("actions")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -154,10 +154,38 @@ func (db *DB) AddPunishment(punishment *MongoPunishment) (*mongo.InsertOneResult
 	return results, nil
 }
 
-func (db *DB) GetPunishments(guildid string, userid string) ([]*MongoPunishment, error) {
-	var punishments []*MongoPunishment
+func (db *DB) GetPunishments(guildid string, userid string) ([]*Action, error) {
+	var punishments []*Action
 
-	col := db.client.Database("black-mesa").Collection("punishments")
+	col := db.client.Database("black-mesa").Collection("actions")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := bson.M{
+		"guildID": guildid,
+		"userID":  userid,
+		"type": bson.M{
+			"$not": "role",
+		},
+	}
+
+	cursor, err := col.Find(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for cursor.Next(ctx) {
+		doc := Action{}
+		cursor.Decode(&doc)
+		punishments = append(punishments, &doc)
+	}
+	return punishments, err
+}
+
+func (db *DB) GetActions(guildid string, userid string) ([]*Action, error) {
+	var actions []*Action
+
+	col := db.client.Database("black-mesa").Collection("actions")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -172,9 +200,35 @@ func (db *DB) GetPunishments(guildid string, userid string) ([]*MongoPunishment,
 	}
 
 	for cursor.Next(ctx) {
-		doc := MongoPunishment{}
+		doc := Action{}
 		cursor.Decode(&doc)
-		punishments = append(punishments, &doc)
+		actions = append(actions, &doc)
 	}
-	return punishments, err
+	return actions, err
+}
+
+func (db *DB) GetNonPunishments(guildid string, userid string) ([]*Action, error) {
+	var actions []*Action
+
+	col := db.client.Database("black-mesa").Collection("actions")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := bson.M{
+		"guildID": guildid,
+		"userID":  userid,
+		"type":    "role", // its only temp roles that are not punishments as of now so this is just easier
+	}
+
+	cursor, err := col.Find(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for cursor.Next(ctx) {
+		doc := Action{}
+		cursor.Decode(&doc)
+		actions = append(actions, &doc)
+	}
+	return actions, err
 }
