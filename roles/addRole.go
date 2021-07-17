@@ -100,6 +100,7 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	for _, id := range idList {
 		err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
 		if err != nil {
+			log.Println(err)
 			unableAddRole = append(unableAddRole, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
