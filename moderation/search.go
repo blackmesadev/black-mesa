@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -15,7 +16,7 @@ func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 		return
 	}
 
-	idList := snowflakeRegex.FindAllString(m.Content, -1)
+	idList := misc.SnowflakeRegex.FindAllString(m.Content, -1)
 
 	if len(idList) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `search <target:user[]>`")
@@ -48,7 +49,7 @@ func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 			issuer = punishment.Issuer
 		}
 		field := &discordgo.MessageEmbedField{
-			Name:   punishment.PunishmentType,
+			Name:   punishment.Type,
 			Value:  fmt.Sprintf("**Reason:** %v\n**Issued By:** %v", punishment.Reason, issuer),
 			Inline: true,
 		}
