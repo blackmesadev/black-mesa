@@ -4,6 +4,7 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/moderation"
+	"github.com/blackmesadev/black-mesa/roles"
 )
 
 func (r *Mux) InitRouter() {
@@ -29,4 +30,7 @@ func (r *Mux) InitRouter() {
 	r.Route("unmute", moderation.UnmuteCmd)
 	r.Route("strike", moderation.StrikeCmd)
 	r.Route("search", moderation.SearchCmd)
+
+	//roles
+	r.Route("addrole", roles.AddRoleCmd)
 }
