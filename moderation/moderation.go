@@ -4,42 +4,24 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-var userIdRegex = regexp.MustCompile(`^(?:<@!?)?(\d+)>?$`)
-
-var snowflakeRegex = regexp.MustCompile(`([0-9]{17,18})`)
-
-var numberRegex = regexp.MustCompile(`[0-9]*[.]?[0-9]+`)
-
-// seconds to regex for the string of it, makes iteration easier as you can use k as the multiplier for v
-var timeRegex = map[int64]*regexp.Regexp{
-	1:        regexp.MustCompile(`(\d+)s`),
-	60:       regexp.MustCompile(`(\d+)m`),
-	3600:     regexp.MustCompile(`(\d+)h`),
-	86400:    regexp.MustCompile(`(\d+)d`),
-	604800:   regexp.MustCompile(`(\d+)w`),
-	2628000:  regexp.MustCompile(`(\d+)mo`),
-	31536000: regexp.MustCompile(`(\d+)y`),
-}
-
 func parseCommand(cmd string) ([]string, int64, string) {
 	var reason string
 
-	idList := snowflakeRegex.FindAllString(cmd, -1)
+	idList := misc.SnowflakeRegex.FindAllString(cmd, -1)
 
-	params := snowflakeRegex.Split(cmd, -1)
+	params := misc.SnowflakeRegex.Split(cmd, -1)
 
 	if params[len(params)-1][:1] == ">" {
 		reason = params[len(params)-1][1:]
@@ -48,7 +30,7 @@ func parseCommand(cmd string) ([]string, int64, string) {
 	}
 
 	durationStr := strings.Fields(reason)[0]
-	duration := parseTime(durationStr)
+	duration := misc.ParseTime(durationStr)
 
 	reason = strings.ReplaceAll(reason, durationStr, "")
 
@@ -62,46 +44,18 @@ func parseCommand(cmd string) ([]string, int64, string) {
 	return idList, duration, reason
 }
 
-// returns a int64 unix timestamp representative of when the punishment can be lifted
-func parseTime(strTime string) int64 {
-	var unixTime int64
-
-	unixTime = time.Now().Unix()
-
-	for multiplier, regex := range timeRegex {
-		timeValStrSlice := regex.FindAllString(strTime, -1)
-		if timeValStrSlice != nil {
-			timeVal, err := strconv.ParseInt(numberRegex.FindAllString(timeValStrSlice[0], 1)[0], 10, 32) // will be cast to uint32 so needs to be int32 at heart in an int64 body
-			if err != nil {
-				fmt.Println(err)
-				if strings.Contains(err.Error(), "strconv.ParseInt: parsing") {
-					return 0
-				}
-			}
-			unixTime += timeVal * multiplier
-		}
-	}
-
-	// fallback
-	if unixTime == time.Now().Unix() {
-		return 0
-	}
-
-	return unixTime
-}
-
 func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string) error {
-	strike := &mongodb.MongoPunishment{
-		GuildID:        guildId,
-		UserID:         userId,
-		Issuer:         issuer,
-		Weight:         weight,
-		Reason:         reason,
-		Expires:        expiry,
-		PunishmentType: "strike",
+	strike := &mongodb.Action{
+		GuildID: guildId,
+		UserID:  userId,
+		Issuer:  issuer,
+		Weight:  weight,
+		Reason:  reason,
+		Expires: expiry,
+		Type:    "strike",
 	}
 
-	_, err := config.AddPunishment(strike)
+	_, err := config.AddAction(strike)
 
 	if err != nil {
 		return err
@@ -123,9 +77,9 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("punishments")
 
 	strikeDocs, err := db.Find(context.TODO(), bson.M{
-		"guildID":        guildId,
-		"userID":         userId,
-		"punishmentType": "strike",
+		"guildID": guildId,
+		"userID":  userId,
+		"type":    "strike",
 	})
 
 	if err != nil {
@@ -135,7 +89,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	strikeTotalWeight := int64(0)
 
 	for strikeDocs.Next(context.TODO()) {
-		doc := mongodb.MongoPunishment{}
+		doc := mongodb.Action{}
 		strikeDocs.Decode(&doc)
 		strikeTotalWeight += doc.Weight
 	}
@@ -150,7 +104,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	}
 
 	if escalatingTo, ok := strikeEscalationConfig[util.GetClosestLevel(strikeEscalationLevels, strikeTotalWeight)]; ok {
-		duration := parseTime(escalatingTo.Duration)
+		duration := misc.ParseTime(escalatingTo.Duration)
 
 		user, err := s.State.Member(guildId, userId)
 		if err != nil {
@@ -163,7 +117,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedRole(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.")
+			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.")
 			if err != nil {
 				return err
 			}
