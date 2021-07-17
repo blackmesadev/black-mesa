@@ -6,29 +6,29 @@ import (
 )
 
 func AddTimedBan(guildid string, issuer string, userid string, expiry int64) error {
-	punishment := &mongodb.MongoPunishment{
-		GuildID:        guildid,
-		UserID:         userid,
-		Issuer:         issuer,
-		PunishmentType: "ban",
-		Expires:        expiry,
+	punishment := &mongodb.Action{
+		GuildID: guildid,
+		UserID:  userid,
+		Issuer:  issuer,
+		Type:    "ban",
+		Expires: expiry,
 	}
 
-	_, err := config.AddPunishment(punishment)
+	_, err := config.AddAction(punishment)
 	return err
 }
 
-func AddTimedRole(guildid string, issuer string, userid string, roleid string, expiry int64, reason string) error {
-	punishment := &mongodb.MongoPunishment{
-		GuildID:        guildid,
-		UserID:         userid,
-		Issuer:         issuer,
-		RoleID:         roleid,
-		PunishmentType: "role",
-		Expires:        expiry,
-		Reason:         reason,
+func AddTimedMute(guildid string, issuer string, userid string, roleid string, expiry int64, reason string) error {
+	punishment := &mongodb.Action{
+		GuildID: guildid,
+		UserID:  userid,
+		Issuer:  issuer,
+		RoleID:  roleid,
+		Type:    "mute",
+		Expires: expiry,
+		Reason:  reason,
 	}
 
-	_, err := config.AddPunishment(punishment)
+	_, err := config.AddAction(punishment)
 	return err
 }
