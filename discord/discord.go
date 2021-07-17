@@ -70,7 +70,7 @@ func (bot *Bot) Start() {
 		return
 	}
 
-	go punishmentExpiryGoroutine()
+	go actionExpiryGoroutine()
 
 	fmt.Println("Bot started. Press CTRL-C to exit")
 	sc := make(chan os.Signal, 1)
@@ -81,10 +81,10 @@ func (bot *Bot) Start() {
 
 }
 
-func punishmentExpiryGoroutine() {
-	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("punishments")
+func actionExpiryGoroutine() {
+	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
-	log.Println("punishment expiry ready")
+	log.Println("action expiry ready")
 	for {
 		time.Sleep(time.Second)
 
@@ -103,19 +103,21 @@ func punishmentExpiryGoroutine() {
 		}
 
 		for cursor.Next(context.TODO()) {
-			doc := mongodb.MongoPunishment{}
+			doc := mongodb.Action{}
 			cursor.Decode(&doc)
-			go func(doc mongodb.MongoPunishment) {
+			go func(doc mongodb.Action) {
 				fmt.Println(doc)
-				switch doc.PunishmentType {
+				switch doc.Type {
 				case "ban":
 					GetInstance().Session.GuildBanDelete(doc.GuildID, doc.UserID)
 				case "role":
 					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
+				case "mute":
+					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
 				case "strike":
 					// can ignore, strikes don't have anything special about them when they expire
 				default:
-					fmt.Println("unknown punishment type", doc.PunishmentType)
+					fmt.Println("unknown type", doc.Type)
 				}
 			}(doc)
 		}

@@ -5,10 +5,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func AddPunishment(punishment *mongodb.MongoPunishment) (*mongo.InsertOneResult, error) {
-	return db.AddPunishment(punishment)
+func AddAction(punishment *mongodb.Action) (*mongo.InsertOneResult, error) {
+	return db.AddAction(punishment)
 }
 
-func GetPunishments(guildid string, userid string) ([]*mongodb.MongoPunishment, error) {
+func GetPunishments(guildid string, userid string) ([]*mongodb.Action, error) {
 	return db.GetPunishments(guildid, userid)
+}
+
+func GetActions(guildid string, userid string) ([]*mongodb.Action, error) {
+	return db.GetActions(guildid, userid)
 }
