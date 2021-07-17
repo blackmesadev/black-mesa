@@ -98,21 +98,24 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableAddRole := make([]string, 0)
 	for _, id := range idList {
-		err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
-		if err != nil {
-			log.Println(err)
-			unableAddRole = append(unableAddRole, id)
-		} else {
-			msg += fmt.Sprintf("<@%v> ", id)
+		for _, roleid := range roleIdList {
+			var member *discordgo.Member
+			err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
+			if err != nil {
+				log.Println(err)
+				unableAddRole = append(unableAddRole, id)
+			} else {
+				msg += fmt.Sprintf("<@%v> ", id)
 
-			member, err := s.State.Member(m.GuildID, id)
-			if err == discordgo.ErrStateNotFound {
-				member, err = s.GuildMember(m.GuildID, id)
-				if err != nil {
-					log.Println(err)
-					unableAddRole = append(unableAddRole, id)
-				} else {
-					s.State.MemberAdd(member)
+				member, err = s.State.Member(m.GuildID, id)
+				if err == discordgo.ErrStateNotFound {
+					member, err = s.GuildMember(m.GuildID, id)
+					if err != nil {
+						log.Println(err)
+						unableAddRole = append(unableAddRole, id)
+					} else {
+						s.State.MemberAdd(member)
+					}
 				}
 			}
 
@@ -124,18 +127,19 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 				}
 			}
 			if permRole {
-				msg += "lasting `Forever` "
-
 				AddRole(m.GuildID, m.Author.ID, id, roleid)
 				logging.LogRoleAdd(s, m.GuildID, fullName, role.Name, member.User, m.ChannelID)
 			} else {
-				timeExpiry := time.Unix(duration, 0)
-				timeUntil := time.Until(timeExpiry).Round(time.Second)
-				msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
-
 				AddTimedRole(m.GuildID, m.Author.ID, id, roleid, duration)
 				logging.LogTempRoleAdd(s, m.GuildID, fullName, role.Name, member.User, time.Duration(duration), m.ChannelID)
 			}
+		}
+		if permRole {
+			msg += "lasting `Forever` "
+		} else {
+			timeExpiry := time.Unix(duration, 0)
+			timeUntil := time.Until(timeExpiry).Round(time.Second)
+			msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
 		}
 	}
 
