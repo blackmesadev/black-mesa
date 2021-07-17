@@ -73,12 +73,24 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 
 	var duration int64
 
-	if args[len(args)-1] == roleIdList[len(roleIdList)-1] {
-		duration = 0
-		permRole = true
-	} else {
-		duration = misc.ParseTime(args[len(args)-1])
-		permRole = false
+	if len(roleIdList) > 0 {
+		if args[len(args)-1] == roleIdList[len(roleIdList)-1] {
+			duration = 0
+			permRole = true
+		} else {
+			duration = misc.ParseTime(args[len(args)-1])
+			permRole = false
+
+		}
+	} else if len(idList) > 0 {
+		if args[len(args)-1] == idList[len(idList)-1] {
+			duration = 0
+			permRole = true
+		} else {
+			duration = misc.ParseTime(args[len(args)-1])
+			permRole = false
+
+		}
 	}
 
 	msg := "<:mesaCheck:832350526729224243> Successfully added roles to "
