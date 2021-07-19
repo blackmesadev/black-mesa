@@ -63,6 +63,10 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 
 	ok, reason, weight, _ := Check(s, m, conf)
 	if !ok {
+		ok := addExemptMessage(m.GuildID, m.ID)
+		if !ok {
+			log.Printf("addExemptMessage failed on %v, %v", m.GuildID, m.ID)
+		}
 		go RemoveMessage(s, m)                   // remove
 		if strings.HasPrefix(reason, "Censor") { // log
 			logging.LogMessageCensor(s, m, reason)
