@@ -12,6 +12,7 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/moderation"
+	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -19,6 +20,8 @@ import (
 
 var chillax = make(map[string]map[string]int64) // chllax[guildId][userId] -> exemptions remaining
 var cdnRegex = regexp.MustCompile(`(cdn\.discord(?:\.com|app\.com))`)
+
+var r = bmRedis.GetRedis()
 
 func clearCushioning(guildId string, userId string) {
 	lastStrikes := chillax[guildId][userId]
@@ -30,6 +33,19 @@ func clearCushioning(guildId string, userId string) {
 			chillax[guildId][userId] = 0
 		}
 	}()
+}
+
+func addExemptMessage(guildId string, messageId string) bool {
+	key := fmt.Sprintf("exemptmessages:%v", guildId)
+	set := r.HSet(r.Context(), key, messageId, 1)
+	result, err := set.Result()
+	if err != nil {
+		return false
+	}
+	if result == 1 {
+		return true
+	}
+	return false
 }
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
