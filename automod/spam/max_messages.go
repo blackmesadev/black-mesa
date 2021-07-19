@@ -8,9 +8,13 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var r = bmRedis.GetRedis()
+var r *redis.Client
 
 func ProcessMaxMessages(userId string, guildId string, max int64, timeLimit time.Duration, resetOnContinuedSpam bool) bool {
+
+	if r == nil {
+		r = bmRedis.GetRedis()
+	}
 
 	key := fmt.Sprintf("spam:maxMessages:%v:%v", guildId, userId)
 

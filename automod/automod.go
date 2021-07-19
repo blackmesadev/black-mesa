@@ -16,12 +16,13 @@ import (
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+	"github.com/go-redis/redis/v8"
 )
 
 var chillax = make(map[string]map[string]int64) // chllax[guildId][userId] -> exemptions remaining
 var cdnRegex = regexp.MustCompile(`(cdn\.discord(?:\.com|app\.com))`)
 
-var r = bmRedis.GetRedis()
+var r *redis.Client
 
 func clearCushioning(guildId string, userId string) {
 	lastStrikes := chillax[guildId][userId]
@@ -36,6 +37,10 @@ func clearCushioning(guildId string, userId string) {
 }
 
 func addExemptMessage(guildId string, messageId string) bool {
+	if r == nil {
+		r = bmRedis.GetRedis()
+	}
+
 	key := fmt.Sprintf("exemptmessages:%v", guildId)
 	set := r.HSet(r.Context(), key, messageId, 1)
 	result, err := set.Result()

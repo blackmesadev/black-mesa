@@ -7,11 +7,16 @@ import (
 	"github.com/blackmesadev/black-mesa/logging"
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/discordgo"
+	"github.com/go-redis/redis/v8"
 )
 
-var r = bmRedis.GetRedis()
+var r *redis.Client
 
 func (bot *Bot) OnMessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
+	if r == nil {
+		r = bmRedis.GetRedis()
+	}
+
 	key := fmt.Sprintf("exemptmessages:%v", m.GuildID)
 	request := r.HExists(r.Context(), key, m.ID)
 	result, err := request.Result()
