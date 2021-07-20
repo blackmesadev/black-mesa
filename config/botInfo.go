@@ -1,5 +1,5 @@
 package config
 
 func GetVersion() string {
-	return "0.2.6"
+	return "0.2.7"
 }
