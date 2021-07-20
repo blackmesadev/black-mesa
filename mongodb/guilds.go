@@ -165,7 +165,7 @@ func (db *DB) GetPunishments(guildid string, userid string) ([]*Action, error) {
 		"guildID": guildid,
 		"userID":  userid,
 		"type": bson.M{
-			"$not": "role",
+			"$ne": "role",
 		},
 	}
 
