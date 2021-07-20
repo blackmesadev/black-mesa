@@ -125,28 +125,25 @@ func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 }
 
 func CheckPermission(s *discordgo.Session, guildid string, userid string, permission string) bool {
-	_, err := s.State.Member(guildid, userid)
+	var member *discordgo.Member
+	member, err := s.State.Member(guildid, userid)
 	if err != nil {
-		log.Println("failed to check permissions in", guildid, "for user", userid, "because", err)
 		if err == discordgo.ErrStateNotFound {
-			member, err := s.GuildMember(guildid, userid)
+			member, err = s.GuildMember(guildid, userid)
 			if err != nil {
 				log.Println(err)
 				return false
 			}
 			s.State.MemberAdd(member)
 		}
-		return false // safety
-	} // uh oh
-
-	user, err := s.GuildMember(guildid, userid)
-	if err != nil || user == nil {
+	}
+	if err != nil || member == nil {
 		log.Println("failed to check permissions in", guildid, "for user", userid, "because", err)
-		fmt.Println(user)
+		fmt.Println(member)
 		return false // safety
-	} // uh oh 2
+	}
 
-	for _, roleid := range user.Roles {
+	for _, roleid := range member.Roles {
 		role, err := s.State.Role(guildid, roleid)
 		if err != nil {
 			continue // skip
