@@ -44,7 +44,7 @@ func parseCommand(cmd string) ([]string, int64, string) {
 	return idList, duration, reason
 }
 
-func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string) error {
+func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string, infractionUUID string) error {
 	strike := &mongodb.Action{
 		GuildID: guildId,
 		UserID:  userId,
@@ -53,6 +53,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		Reason:  reason,
 		Expires: expiry,
 		Type:    "strike",
+		UUID:    infractionUUID,
 	}
 
 	_, err := config.AddAction(strike)
@@ -66,7 +67,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		return err
 	} // ???
 
-	logging.LogStrike(s, guildId, issuer, member.User, weight, reason, location)
+	logging.LogStrike(s, guildId, issuer, member.User, weight, reason, location, infractionUUID)
 
 	// escalate punishments
 	guildConfig, err := config.GetConfig(guildId)

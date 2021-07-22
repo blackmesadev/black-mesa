@@ -17,6 +17,7 @@ import (
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 )
 
 var chillax = make(map[string]map[string]int64) // chllax[guildId][userId] -> exemptions remaining
@@ -92,7 +93,8 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 
 		chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
 		clearCushioning(m.GuildID, m.Author.ID)
-		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID) // strike
+		infractionUUID := uuid.New().String()
+		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID, infractionUUID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
 		}

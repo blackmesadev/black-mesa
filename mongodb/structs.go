@@ -21,4 +21,6 @@ type Action struct {
 	// strikes
 	Weight int64  `bson:"weight,omitempty"`
 	Reason string `bson:"reason,omitempty"`
+
+	UUID string `bson:"uuid"`
 }

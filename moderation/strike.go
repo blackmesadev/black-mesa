@@ -11,6 +11,8 @@ import (
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+
+	"github.com/google/uuid"
 )
 
 func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
@@ -67,7 +69,8 @@ func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 	unableStrike := make([]string, 0)
 	for _, id := range idList {
 
-		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID)
+		infractionUUID := uuid.New().String()
+		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID, infractionUUID)
 		if err != nil {
 			unableStrike = append(unableStrike, id)
 		} else {
@@ -75,7 +78,7 @@ func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 			if err != nil {
 				log.Println(err)
 			} else {
-				logging.LogStrike(s, m.GuildID, fullName, user, 1, reason, m.ChannelID)
+				logging.LogStrike(s, m.GuildID, fullName, user, 1, reason, m.ChannelID, infractionUUID)
 			}
 		}
 	}
