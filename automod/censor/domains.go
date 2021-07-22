@@ -18,12 +18,12 @@ func DomainsWhitelistCheck(m string, whitelist *[]string) (bool, string) {
 
 	fmt.Println(domains)
 
-	for _, invite := range domains {
+	for _, domain := range domains {
 		for _, whitelistedDomain := range *whitelist {
-			if invite == whitelistedDomain {
+			if domain == whitelistedDomain {
 				ok = true
 			} else {
-				return false, invite
+				return false, domain
 			}
 		}
 	}
@@ -33,16 +33,16 @@ func DomainsWhitelistCheck(m string, whitelist *[]string) (bool, string) {
 
 func DomainsBlacklistCheck(m string, blacklist *[]string) (bool, string) {
 	ok := true
-	invites := domainsRegex.FindAllString(m, -1)
+	domains := domainsRegex.FindAllString(m, -1)
 
-	if len(invites) == 0 {
+	if len(domains) == 0 {
 		return true, ""
 	}
 
-	for _, invite := range invites {
+	for _, domain := range domains {
 		for _, blacklistedDomain := range *blacklist {
-			if invite == blacklistedDomain {
-				return false, invite
+			if domain == blacklistedDomain {
+				return false, domain
 			} else {
 				ok = true
 			}
