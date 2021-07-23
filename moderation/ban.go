@@ -11,6 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+	"github.com/google/uuid"
 )
 
 func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
@@ -22,6 +23,8 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 	start := time.Now()
 
 	var permBan bool
+
+	var hackban bool
 
 	//idList, duration, reason := parseCommand(m.Content)
 	idList := make([]string, 0)
@@ -65,36 +68,48 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableBan := make([]string, 0)
 	for _, id := range idList {
-		err := s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
+		infractionUUID := uuid.New().String()
+
+		member, err := s.State.Member(m.GuildID, id)
+		if err == discordgo.ErrStateNotFound {
+			member, err = s.GuildMember(m.GuildID, id)
+			if err == discordgo.ErrUnknownMember {
+				hackban = true
+			}
+			if err != nil {
+				log.Println(err)
+				unableBan = append(unableBan, id)
+			}
+		}
+		err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
 		if err != nil {
 			unableBan = append(unableBan, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
-			AddTimedBan(m.GuildID, m.Author.ID, id, duration)
+			AddTimedBan(m.GuildID, m.Author.ID, id, duration, infractionUUID)
+		}
+		if permBan {
+			msg += "lasting `Forever` "
 
-			member, err := s.State.Member(m.GuildID, id)
-			if err == discordgo.ErrStateNotFound {
-				member, err = s.GuildMember(m.GuildID, id)
-				if err != nil {
-					log.Println(err)
-					unableBan = append(unableBan, id)
-				} else {
-					s.State.MemberAdd(member)
-				}
-			}
-			if permBan {
-				msg += "lasting `Forever` "
-
-				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+			if hackban {
+				logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
 			} else {
-				timeExpiry := time.Unix(duration, 0)
-				timeUntil := time.Until(timeExpiry).Round(time.Second)
-				msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
+				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+			}
+		} else {
+			timeExpiry := time.Unix(duration, 0)
+			timeUntil := time.Until(timeExpiry).Round(time.Second)
+			msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
 
+			if hackban {
+				logging.LogHackTempBan(s, m.GuildID, fullName, id, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+			} else {
 				logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
 			}
+
 		}
 	}
+
 	if len(reason) != 0 {
 		msg += fmt.Sprintf("for reason `%v` ", reason)
 	}
