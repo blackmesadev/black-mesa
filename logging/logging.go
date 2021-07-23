@@ -155,6 +155,28 @@ func LogTempBan(s *discordgo.Session, guildId string, actor string, target *disc
 	)
 }
 
+func LogHackBan(s *discordgo.Session, guildId string, actor string, id string, reason string, location string) {
+
+	addLog(s,
+		guildId,
+		"<:mesaBan:832350526690820146>",
+		fmt.Sprintf("%v banned %v: %v", actor, id, reason),
+		actor == "AutoMod",
+		location,
+	)
+}
+
+func LogHackTempBan(s *discordgo.Session, guildId string, actor string, id string, duration time.Duration, reason string, location string) {
+
+	addLog(s,
+		guildId,
+		"<:mesaBan:832350526690820146>",
+		fmt.Sprintf("%v banned %v until %v: %v", actor, id, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
+		actor == "AutoMod",
+		location,
+	)
+}
+
 func LogUnban(s *discordgo.Session, guildId string, actor string, target string, reason string) {
 	addLog(s,
 		guildId,
