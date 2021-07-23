@@ -50,13 +50,11 @@ func (m *Mux) Match(msg string) (*Route, []string, []string) {
 	}
 	var r *Route
 
-	var fieldCount int
-	for fieldCount, field := range fields {
-
-		for _, route := range m.Routes {
-			if route.Pattern == field {
-				return route, fields[fieldCount:], fields[1:]
-			}
+	fieldCount := len(fields)
+	field := fields[0]
+	for _, route := range m.Routes {
+		if route.Pattern == field {
+			return route, fields[fieldCount:], fields[1:]
 		}
 	}
 	return r, fields[fieldCount:], fields[1:]
