@@ -20,6 +20,28 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 		return
 	}
 
+	var memberCount string
+	stateGuild, err := s.State.Guild(m.GuildID)
+	if err != nil || stateGuild == nil {
+		memberCount = strconv.Itoa(guild.ApproximateMemberCount)
+	} else {
+		memberCount = strconv.Itoa(stateGuild.MemberCount)
+	}
+
+	var invite string
+	invites, err := s.GuildInvites(m.GuildID)
+	if err != nil {
+		invite = ""
+	} else {
+		var prevMax int
+		for _, v := range invites {
+			if v.MaxUses > prevMax {
+				invite = v.Code
+				prevMax = v.Uses
+			}
+		}
+	}
+
 	fields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "ID",
@@ -43,7 +65,7 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 		},
 		{
 			Name:   "Member Count",
-			Value:  strconv.Itoa(guild.ApproximateMemberCount),
+			Value:  memberCount,
 			Inline: true,
 		},
 		{
@@ -66,11 +88,16 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 			Value:  strconv.Itoa(len(guild.Channels)),
 			Inline: true,
 		},
-		{
+	}
+
+	if guild.VanityURLCode != "" {
+		fields = append(fields, &discordgo.MessageEmbedField{
 			Name:   "Vanity URL",
-			Value:  strconv.Itoa(len(guild.Channels)),
+			Value:  guild.VanityURLCode,
 			Inline: true,
-		},
+		})
+		invite = fmt.Sprintf("https://discord.gg/%v", guild.VanityURLCode)
+
 	}
 
 	thumbnail := &discordgo.MessageEmbedThumbnail{
@@ -80,7 +107,7 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 	}
 
 	embed := &discordgo.MessageEmbed{
-		URL:       WEBSITE,
+		URL:       invite,
 		Type:      discordgo.EmbedTypeRich,
 		Title:     fmt.Sprintf("%v Guild Info", guild.Name),
 		Color:     0,
