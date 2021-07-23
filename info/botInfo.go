@@ -10,7 +10,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const VERSION = "0.4.0"
+const VERSION = "0.4.1"
 
 const WEBSITE = "https://blackmesa.bot"
 
@@ -70,12 +70,12 @@ func BotInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		},
 		{
 			Name:   "Memory Usage",
-			Value:  fmt.Sprintf("%.2f Used", usedMem),
+			Value:  fmt.Sprintf("%.3f", usedMem) + "% Used",
 			Inline: true,
 		},
 		{
 			Name:   "CPU Usage",
-			Value:  fmt.Sprintf("%.2f Used", usedCpu),
+			Value:  fmt.Sprintf("%.3f", usedCpu) + "% Used",
 			Inline: true,
 		},
 	}
