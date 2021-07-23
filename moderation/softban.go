@@ -55,24 +55,22 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	unableBan := make([]string, 0)
 	unableUnban := make([]string, 0)
 	for _, id := range idList {
-		err := s.GuildBanCreateWithReason(m.GuildID, id, reason, 1) // todo: make the days configurable via cmd params + config (default setting)
-		if err != nil {
-			unableBan = append(unableBan, id)
-		} else {
-			err := s.GuildBanDeleteWithReason(m.GuildID, id, "Softban")
-			if err != nil && unableBan[len(unableBan)-1] != id { // make sure that the person just wasnt banned in the first place aswell
-				unableUnban = append(unableUnban, id)
+		member, err := s.State.Member(m.GuildID, id)
+		if err == discordgo.ErrStateNotFound {
+			member, err = s.GuildMember(m.GuildID, id)
+			if err != nil {
+				log.Println(err)
+				unableBan = append(unableBan, id)
 			}
-			msg += fmt.Sprintf("<@%v> ", id)
-
-			member, err := s.State.Member(m.GuildID, id)
-			if err == discordgo.ErrStateNotFound {
-				member, err = s.GuildMember(m.GuildID, id)
-				if err != nil {
-					log.Println(err)
-					unableBan = append(unableBan, id)
+			err := s.GuildBanCreateWithReason(m.GuildID, id, reason, 1) // todo: make the days configurable via cmd params + config (default setting)
+			if err != nil {
+				unableBan = append(unableBan, id)
+			} else {
+				err := s.GuildBanDeleteWithReason(m.GuildID, id, "Softban")
+				if err != nil && unableBan[len(unableBan)-1] != id { // make sure that the person just wasnt banned in the first place aswell
+					unableUnban = append(unableUnban, id)
 				} else {
-					s.State.MemberAdd(member)
+					msg += fmt.Sprintf("<@%v> ", id)
 				}
 			}
 			logging.LogSoftBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)

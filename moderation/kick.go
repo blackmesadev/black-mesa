@@ -11,6 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+	"github.com/google/uuid"
 )
 
 func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
@@ -54,21 +55,22 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableKick := make([]string, 0)
 	for _, id := range idList {
-		err := s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
-		if err != nil {
-			unableKick = append(unableKick, id)
-		} else {
-			msg += fmt.Sprintf("<@%v> ", id)
+		infractionUUID := uuid.New().String()
 
-			member, err := s.State.Member(m.GuildID, id)
-			if err == discordgo.ErrStateNotFound {
-				member, err = s.GuildMember(m.GuildID, id)
-				if err != nil {
-					log.Println(err)
-					unableKick = append(unableKick, id)
-				} else {
-					s.State.MemberAdd(member)
-				}
+		member, err := s.State.Member(m.GuildID, id)
+		if err == discordgo.ErrStateNotFound {
+			member, err = s.GuildMember(m.GuildID, id)
+			if err != nil {
+				log.Println(err)
+				unableKick = append(unableKick, id)
+			}
+			err := s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
+
+			if err != nil {
+				unableKick = append(unableKick, id)
+			} else {
+				msg += fmt.Sprintf("<@%v> ", id)
+				AddKick(m.GuildID, m.Author.ID, id, reason, infractionUUID)
 			}
 			logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 		}
