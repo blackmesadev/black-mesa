@@ -15,7 +15,7 @@ black-mesa
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-
+data/
 ### Go Patch ###
 /vendor/
 /Godeps/
