@@ -2,6 +2,7 @@ package discord
 
 import (
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/moderation"
 	"github.com/blackmesadev/black-mesa/roles"
@@ -32,9 +33,13 @@ func (r *Mux) InitRouter() {
 	r.Route("search", moderation.SearchCmd)
 
 	// moderation funny commands
-
 	r.Route("fuckoff", moderation.KickCmd)
 	r.Route("shutup", moderation.MuteCmd)
+
+	// info
+	r.Route("botinfo", info.BotInfoCmd)
+	//r.Route("guildinfo", info.GuildInfoCmd)
+	//r.Route("serverinfo", info.GuildInfoCmd)
 
 	//roles
 	r.Route("addrole", roles.AddRoleCmd)
