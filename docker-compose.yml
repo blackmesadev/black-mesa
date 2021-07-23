@@ -13,6 +13,10 @@ services:
     depends_on:
       - mongo
       - redis
+    volumes:
+    - /proc:/root/host/proc
+    environment: 
+      HOST_PROC=/root/host/proc
 
   mongo:
     image: mongo
