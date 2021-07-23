@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/discordgo"
 )
@@ -56,7 +57,7 @@ func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 		embedFields = append(embedFields, field)
 	}
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", config.GetVersion(), runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	user, err := s.User(idList[0])
