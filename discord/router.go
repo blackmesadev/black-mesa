@@ -38,8 +38,8 @@ func (r *Mux) InitRouter() {
 
 	// info
 	r.Route("botinfo", info.BotInfoCmd)
-	//r.Route("guildinfo", info.GuildInfoCmd)
-	//r.Route("serverinfo", info.GuildInfoCmd)
+	r.Route("guildinfo", info.GuildInfoCmd)
+	r.Route("serverinfo", info.GuildInfoCmd)
 
 	//roles
 	r.Route("addrole", roles.AddRoleCmd)
