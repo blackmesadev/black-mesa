@@ -11,6 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+	"github.com/google/uuid"
 )
 
 func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
@@ -71,12 +72,14 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableMute := make([]string, 0)
 	for _, id := range idList {
+		infractionUUID := uuid.New().String()
+
 		err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
 		if err != nil {
 			unableMute = append(unableMute, id)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
-			AddTimedMute(m.GuildID, m.Author.ID, id, roleid, duration, reason)
+			AddTimedMute(m.GuildID, m.Author.ID, id, roleid, duration, reason, infractionUUID)
 
 			member, err := s.State.Member(m.GuildID, id)
 			if err == discordgo.ErrStateNotFound {

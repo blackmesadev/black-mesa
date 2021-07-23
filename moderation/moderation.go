@@ -118,7 +118,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.")
+			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", infractionUUID)
 			if err != nil {
 				return err
 			}
@@ -134,7 +134,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedBan(guildId, "AutoMod", userId, duration)
+			err = AddTimedBan(guildId, "AutoMod", userId, duration, infractionUUID)
 			if err != nil {
 				return err
 			}
