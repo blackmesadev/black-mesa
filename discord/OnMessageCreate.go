@@ -75,25 +75,19 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 		}
 	}
 
-	// Detect prefix mention
 	prefix := config.GetPrefix(mc.GuildID)
 
 	if !ctx.IsDirected && len(prefix) > 0 {
-
-		// TODO : Must be changed to support a per-guild user defined prefix
 		if strings.HasPrefix(ctx.Content, prefix) {
 			ctx.IsDirected, ctx.HasPrefix, ctx.HasMentionFirst = true, true, true
 			ctx.Content = strings.TrimPrefix(ctx.Content, prefix)
 		}
 	}
 
-	// For now, if we're not specifically mentioned we do nothing.
-	// later I might add an option for global non-mentioned command wors
 	if !ctx.IsDirected {
 		return
 	}
 
-	// Try to find the "best match" command out of the message.
 	r, params, args := bot.Router.Match(ctx.Content)
 	if r != nil {
 		ctx.Fields = params
@@ -101,13 +95,7 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 		return
 	}
 
-	// If no command match was found, call the default.
-	// Ignore if only @mentioned in the middle of a message
 	if bot.Router.Default != nil && (ctx.HasMentionFirst) {
-		// TODO: This could use a ratelimit
-		// or should the ratelimit be inside the cmd handler?..
-		// In the case of "talking" to another bot, this can create an endless
-		// loop.  Probably most common in private messages.
 		bot.Router.Default.Run(s, mc.Message, ctx, make([]string, 0))
 	}
 }
