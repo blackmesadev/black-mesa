@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/mongodb"
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -28,7 +30,7 @@ type Bot struct {
 func CreateBot(token string) *Bot {
 	instance = &Bot{}
 	instance.Token = token
-	instance.Version = config.GetVersion()
+	instance.Version = info.VERSION
 
 	return instance
 }
@@ -64,6 +66,7 @@ func (bot *Bot) Start() {
 		return
 	}
 
+	go util.CalcStats(bot.Session)
 	go actionExpiryGoroutine()
 
 	fmt.Println("Bot started. Press CTRL-C to exit")
