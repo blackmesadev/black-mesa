@@ -30,7 +30,7 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 
 	var invite string
 	invites, err := s.GuildInvites(m.GuildID)
-	if err != nil {
+	if err != nil || len(invites) == 0 {
 		invite = ""
 	} else {
 		var prevMax int
