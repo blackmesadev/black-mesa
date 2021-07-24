@@ -83,11 +83,14 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 			Value:  strconv.Itoa(len(guild.Emojis)),
 			Inline: true,
 		},
-		{
+	}
+
+	if stateGuild != nil {
+		fields = append(fields, &discordgo.MessageEmbedField{
 			Name:   "Channel Count",
-			Value:  strconv.Itoa(len(guild.Channels)),
+			Value:  strconv.Itoa(len(stateGuild.Channels)),
 			Inline: true,
-		},
+		})
 	}
 
 	if guild.VanityURLCode != "" {
