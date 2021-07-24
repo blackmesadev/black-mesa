@@ -36,6 +36,9 @@ func (r *Mux) InitRouter() {
 	r.Route("fuckoff", moderation.KickCmd)
 	r.Route("shutup", moderation.MuteCmd)
 
+	// administration
+	r.Route("remove", moderation.RemoveInfractionCmd)
+
 	// info
 	r.Route("botinfo", info.BotInfoCmd)
 	r.Route("guildinfo", info.GuildInfoCmd)
