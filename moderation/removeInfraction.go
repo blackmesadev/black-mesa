@@ -36,7 +36,7 @@ func RemoveInfractionCmd(s *discordgo.Session, m *discordgo.Message, ctx *discor
 	if len(unableRemove) != 0 {
 		msg += "\n<:mesaCross:832350526414127195> Could not remove "
 		for _, uuid := range unableRemove {
-			msg += fmt.Sprintf(`%v`, uuid)
+			msg += fmt.Sprintf("`%v` ", uuid)
 		}
 
 	}
