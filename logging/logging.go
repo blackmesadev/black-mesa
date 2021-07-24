@@ -71,6 +71,16 @@ func LogStrike(s *discordgo.Session, guildId string, actor string, target *disco
 	)
 }
 
+func LogRemoveAction(s *discordgo.Session, guildId string, actor string, uuid string) {
+	addLog(s,
+		guildId,
+		"<:mesaStrike:832350526922293269>",
+		fmt.Sprintf("%v removed an action of UUID `%v`", actor, uuid),
+		false,
+		"",
+	)
+}
+
 func LogRoleAdd(s *discordgo.Session, guildId string, actor string, role string, target *discordgo.User, location string) {
 	fullName := target.Username + "#" + target.Discriminator
 

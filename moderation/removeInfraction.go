@@ -3,9 +3,12 @@ package moderation
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/misc"
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -14,6 +17,8 @@ func RemoveInfractionCmd(s *discordgo.Session, m *discordgo.Message, ctx *discor
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
 		return
 	}
+
+	start := time.Now()
 
 	uuidList := misc.UuidRegex.FindAllString(m.Content, -1)
 
@@ -29,6 +34,7 @@ func RemoveInfractionCmd(s *discordgo.Session, m *discordgo.Message, ctx *discor
 			log.Println(err)
 			unableRemove = append(unableRemove, uuid)
 		} else {
+			logging.LogRemoveAction(s, m.GuildID, m.Author.String(), uuid)
 			msg += fmt.Sprintf("`%v` ", uuid)
 		}
 	}
@@ -43,4 +49,7 @@ func RemoveInfractionCmd(s *discordgo.Session, m *discordgo.Message, ctx *discor
 
 	s.ChannelMessageSend(m.ChannelID, msg)
 
+	if util.IsDevInstance(s) {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v", time.Since(start)))
+	}
 }
