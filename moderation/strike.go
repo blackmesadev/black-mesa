@@ -2,12 +2,10 @@ package moderation
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
-	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -65,23 +63,16 @@ func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 
 	msg := "<:mesaCheck:832350526729224243> Successfully striked "
 
-	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableStrike := make([]string, 0)
 	for _, id := range idList {
 
 		infractionUUID := uuid.New().String()
+		msg += fmt.Sprintf("<@%v>", id)
 		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID, infractionUUID)
 		if err != nil {
 			unableStrike = append(unableStrike, id)
-		} else {
-			user, err := s.User(id)
-			if err != nil {
-				log.Println(err)
-			} else {
-				msg += fmt.Sprintf("<@%v>", id)
-				logging.LogStrike(s, m.GuildID, fullName, user, 1, reason, m.ChannelID, infractionUUID)
-			}
 		}
+
 	}
 
 	if permStrike {
