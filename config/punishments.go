@@ -9,8 +9,8 @@ func AddAction(punishment *mongodb.Action) (*mongo.InsertOneResult, error) {
 	return db.AddAction(punishment)
 }
 
-func RemoveAction(guildid string, userid string) (bool, error) {
-	return db.RemoveAction(guildid, userid)
+func RemoveAction(guildid string, uuid string) (bool, error) {
+	return db.RemoveAction(guildid, uuid)
 }
 
 func GetPunishments(guildid string, userid string) ([]*mongodb.Action, error) {
