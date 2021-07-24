@@ -9,7 +9,7 @@ func AddAction(punishment *mongodb.Action) (*mongo.InsertOneResult, error) {
 	return db.AddAction(punishment)
 }
 
-func RemoveAction(guildid string, uuid string) (bool, error) {
+func RemoveAction(guildid string, uuid string) (*mongo.DeleteResult, error) {
 	return db.RemoveAction(guildid, uuid)
 }
 

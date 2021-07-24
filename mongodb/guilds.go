@@ -182,7 +182,7 @@ func (db *DB) GetPunishments(guildid string, userid string) ([]*Action, error) {
 	return punishments, err
 }
 
-func (db *DB) RemoveAction(guildid string, uuid string) (bool, error) {
+func (db *DB) RemoveAction(guildid string, uuid string) (*mongo.DeleteResult, error) {
 	col := db.client.Database("black-mesa").Collection("actions")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -193,12 +193,9 @@ func (db *DB) RemoveAction(guildid string, uuid string) (bool, error) {
 	}
 	deleteResult, err := col.DeleteOne(ctx, query)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	if deleteResult.DeletedCount == 0 {
-		return false, nil
-	}
-	return true, nil
+	return deleteResult, nil
 }
 
 func (db *DB) GetActions(guildid string, userid string) ([]*Action, error) {

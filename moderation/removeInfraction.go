@@ -29,8 +29,8 @@ func RemoveInfractionCmd(s *discordgo.Session, m *discordgo.Message, ctx *discor
 	unableRemove := make([]string, 0)
 	msg := "<:mesaCheck:832350526729224243> Successfully removed "
 	for _, uuid := range uuidList {
-		ok, err := config.RemoveAction(m.GuildID, uuid)
-		if err != nil || !ok {
+		deleteResult, err := config.RemoveAction(m.GuildID, uuid)
+		if err != nil || deleteResult.DeletedCount < 1 {
 			log.Println(err)
 			unableRemove = append(unableRemove, uuid)
 		} else {
