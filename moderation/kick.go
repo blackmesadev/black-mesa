@@ -64,16 +64,16 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 				log.Println(err)
 				unableKick = append(unableKick, id)
 			}
-			err := s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
-
-			if err != nil {
-				unableKick = append(unableKick, id)
-			} else {
-				msg += fmt.Sprintf("<@%v> ", id)
-				AddKick(m.GuildID, m.Author.ID, id, reason, infractionUUID)
-			}
-			logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 		}
+		err = s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
+
+		if err != nil {
+			unableKick = append(unableKick, id)
+		} else {
+			msg += fmt.Sprintf("<@%v> ", id)
+			AddKick(m.GuildID, m.Author.ID, id, reason, infractionUUID)
+		}
+		logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 	}
 
 	if len(reason) != 0 {
