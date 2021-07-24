@@ -1,7 +1,13 @@
 package misc
 
-import "github.com/blackmesadev/discordgo"
+import (
+	"fmt"
+
+	"github.com/blackmesadev/black-mesa/info"
+	"github.com/blackmesadev/discordgo"
+)
 
 func HelpCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	s.ChannelMessageSend(m.ChannelID, "Help can be found at blackmesawebsite")
+	msg := fmt.Sprintf("Help can be found at %v", info.WEBSITE)
+	s.ChannelMessageSend(m.ChannelID, msg)
 }
