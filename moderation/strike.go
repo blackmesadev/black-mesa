@@ -78,6 +78,7 @@ func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 			if err != nil {
 				log.Println(err)
 			} else {
+				msg += fmt.Sprintf("<@%v>", id)
 				logging.LogStrike(s, m.GuildID, fullName, user, 1, reason, m.ChannelID, infractionUUID)
 			}
 		}
