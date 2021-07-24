@@ -195,7 +195,7 @@ func (db *DB) RemoveAction(guildid string, uuid string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	if deleteResult.DeletedCount < 1 {
+	if deleteResult.DeletedCount == 0 {
 		return false, nil
 	}
 	return true, nil

@@ -21,15 +21,24 @@ func RemoveInfractionCmd(s *discordgo.Session, m *discordgo.Message, ctx *discor
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `remove <action:uuid[]>`")
 		return
 	}
-
+	unableRemove := make([]string, 0)
 	msg := "<:mesaCheck:832350526729224243> Successfully removed "
 	for _, uuid := range uuidList {
 		ok, err := config.RemoveAction(m.GuildID, m.Author.ID)
 		if err != nil || !ok {
 			log.Println(err)
+			unableRemove = append(unableRemove, uuid)
 		} else {
 			msg += fmt.Sprintf("`%v` ", uuid)
 		}
+	}
+
+	if len(unableRemove) != 0 {
+		msg += "\n<:mesaCross:832350526414127195> Could not remove "
+		for _, uuid := range unableRemove {
+			msg += fmt.Sprintf(`%v`, uuid)
+		}
+
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)
