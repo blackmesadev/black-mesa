@@ -2,6 +2,7 @@ package moderation
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -67,9 +68,10 @@ func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 	for _, id := range idList {
 
 		infractionUUID := uuid.New().String()
-		msg += fmt.Sprintf("<@%v>", id)
+		msg += fmt.Sprintf("<@%v> ", id)
 		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID, infractionUUID)
 		if err != nil {
+			log.Println(err)
 			unableStrike = append(unableStrike, id)
 		}
 
