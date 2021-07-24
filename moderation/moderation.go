@@ -62,18 +62,25 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		return err
 	}
 
+	var user *discordgo.User
+
 	member, err := s.State.Member(guildId, userId)
 	if err != nil {
-		return err
-	} // ???
+		user, err = s.User(userId)
+		if err != nil {
+			return err
+		}
+	} else {
+		user = member.User
+	}
 
-	logging.LogStrike(s, guildId, issuer, member.User, weight, reason, location, infractionUUID)
+	logging.LogStrike(s, guildId, issuer, user, weight, reason, location, infractionUUID)
 
 	// escalate punishments
 	guildConfig, err := config.GetConfig(guildId)
 	if err != nil {
 		return err
-	} // ???????
+	}
 
 	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("punishments")
 
