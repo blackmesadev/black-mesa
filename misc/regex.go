@@ -10,6 +10,8 @@ var SnowflakeRegex = regexp.MustCompile(`([0-9]{17,18})`)
 
 var NumberRegex = regexp.MustCompile(`[0-9]*[.]?[0-9]+`)
 
+var UuidRegex = regexp.MustCompile(`\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b`)
+
 // seconds to regex for the string of it, makes iteration easier as you can use k as the multiplier for v
 var TimeRegex = map[int64]*regexp.Regexp{
 	1:        regexp.MustCompile(`(\d+)s`),
