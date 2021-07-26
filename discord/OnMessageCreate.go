@@ -63,8 +63,11 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 				reg := regexp.MustCompile(fmt.Sprintf("<@!?(%s)>", s.State.User.ID))
 
 				// Was the @mention the first part of the string?
-				if reg.FindStringIndex(ctx.Content)[0] == 0 {
-					ctx.HasMentionFirst = true
+				mentionSearch := reg.FindStringIndex(ctx.Content)
+				if len(mentionSearch) > 0 {
+					if mentionSearch[0] == 0 {
+						ctx.HasMentionFirst = true
+					}
 				}
 
 				// strip bot mention tags from content string
