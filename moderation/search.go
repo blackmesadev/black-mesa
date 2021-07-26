@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strings"
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/info"
@@ -50,7 +51,7 @@ func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 			issuer = punishment.Issuer
 		}
 		field := &discordgo.MessageEmbedField{
-			Name:   punishment.Type,
+			Name:   strings.Title(punishment.Type),
 			Value:  fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v", punishment.Reason, issuer, punishment.UUID),
 			Inline: true,
 		}
