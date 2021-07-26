@@ -10,7 +10,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const VERSION = "0.6.0"
+const VERSION = "0.6.1"
 
 const WEBSITE = "https://blackmesa.bot"
 
@@ -40,7 +40,7 @@ func BotInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	membersNum, err := membersResult.Int()
 
 	if err != nil {
-		usedCpu = 0
+		membersNum = 0
 	}
 
 	footer := &discordgo.MessageEmbedFooter{
