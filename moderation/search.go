@@ -12,7 +12,7 @@ import (
 )
 
 func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, "moderation.search") {
+	if !config.CheckPermission(s, m.GuildID, m.Author.ID, PERMISSION_SEARCH) {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
 		return
 	}

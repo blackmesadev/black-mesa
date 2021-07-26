@@ -37,7 +37,7 @@ func (r *Mux) InitRouter() {
 	r.Route("shutup", moderation.MuteCmd)
 
 	// administration
-	r.Route("remove", moderation.RemoveInfractionCmd)
+	r.Route("remove", moderation.RemoveActionCmd)
 
 	// info
 	r.Route("botinfo", info.BotInfoCmd)
