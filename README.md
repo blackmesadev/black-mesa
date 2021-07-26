@@ -34,7 +34,7 @@ The prefered and supported method of running the bot is via [Docker](https://www
 
 Black Mesa uses [MongoDB](https://www.mongodb.com) as the database and will use it to read and write configuration data, actions and logs.
 
-Black Mesa also uses [Redis](https://redis.io) for short term variable sharing such as keeping record of CPU/Memory Usage, 
+Black Mesa also uses [Redis](https://redis.io) for short term variable sharing such as keeping record of CPU/Memory Usage, Automod Data, etc.
 
 Black Mesa configuration is in `config.json`, this is where you will store your **Token**, **Mongo DB URI** and **Redis URI**
 
