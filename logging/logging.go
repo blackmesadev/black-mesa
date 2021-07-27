@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -36,7 +37,7 @@ func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason s
 
 	addLog(s,
 		message.GuildID,
-		"<:mesaCensoredMessage:869663511754731541>",
+		util.EmojiCensoredMessage,
 		fmt.Sprintf("AutoMod censored message by %v (`%v`) in #%v (`%v`): %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, message.Content),
 		false,
 		"",
@@ -52,7 +53,7 @@ func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reaso
 
 	addLog(s,
 		message.GuildID,
-		"<:mesaMessageViolation:869663336625733635>",
+		util.EmojiMessageViolation,
 		fmt.Sprintf("AutoMod deleted message by %v (`%v`) in #%v (`%v`) due to violation %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, message.Content),
 		false,
 		"",
@@ -64,7 +65,7 @@ func LogStrike(s *discordgo.Session, guildId string, actor string, target *disco
 
 	addLog(s,
 		guildId,
-		"<:mesaStrike:869663336843845752>",
+		util.EmojiStrike,
 		fmt.Sprintf("%v issued a strike of UUID `%v` (with weight %v) to %v (`%v`): %v", actor, uuid, weight, fullName, target.ID, reason),
 		false,
 		"",
@@ -74,7 +75,7 @@ func LogStrike(s *discordgo.Session, guildId string, actor string, target *disco
 func LogRemoveAction(s *discordgo.Session, guildId string, actor string, uuid string) {
 	addLog(s,
 		guildId,
-		"<:mesaUnstrike:869664457788358716>",
+		util.EmojiUnstrike,
 		fmt.Sprintf("%v removed an action of UUID `%v`", actor, uuid),
 		false,
 		"",
@@ -86,7 +87,7 @@ func LogRoleAdd(s *discordgo.Session, guildId string, actor string, role string,
 
 	addLog(s,
 		guildId,
-		"<:mesaMemberMute:869663336814497832>",
+		util.EmojiMute,
 		fmt.Sprintf("%v added role %v to %v (`%v`)", actor, role, fullName, target.ID),
 		true,
 		location,
@@ -98,7 +99,7 @@ func LogTempRoleAdd(s *discordgo.Session, guildId string, actor string, role str
 
 	addLog(s,
 		guildId,
-		"<:mesaMemberMute:869663336814497832>",
+		util.EmojiMute,
 		fmt.Sprintf("%v added role %v to %v (`%v`) until %v", actor, role, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM")),
 		true,
 		location,
@@ -110,7 +111,7 @@ func LogMute(s *discordgo.Session, guildId string, actor string, target *discord
 
 	addLog(s,
 		guildId,
-		"<:mesaMemberMute:869663336814497832>",
+		util.EmojiMute,
 		fmt.Sprintf("%v muted %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -122,7 +123,7 @@ func LogTempMute(s *discordgo.Session, guildId string, actor string, target *dis
 
 	addLog(s,
 		guildId,
-		"<:mesaMemberMute:869663336814497832>",
+		util.EmojiMute,
 		fmt.Sprintf("%v muted %v (`%v`) until %v: %v", actor, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
 		actor == "AutoMod",
 		location,
@@ -134,7 +135,7 @@ func LogUnmute(s *discordgo.Session, guildId string, actor string, target *disco
 
 	addLog(s,
 		guildId,
-		"<:mesaMemberUnmute:869663336583802982>",
+		util.EmojiUnmute,
 		fmt.Sprintf("%v unmuted %v (`%v`): %v", actor, fullName, target.ID, reason),
 		false,
 		"",
@@ -146,7 +147,7 @@ func LogBan(s *discordgo.Session, guildId string, actor string, target *discordg
 
 	addLog(s,
 		guildId,
-		"<:mesaBan:869663336625733634>",
+		util.EmojiBan,
 		fmt.Sprintf("%v banned %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -158,7 +159,7 @@ func LogTempBan(s *discordgo.Session, guildId string, actor string, target *disc
 
 	addLog(s,
 		guildId,
-		"<:mesaBan:869663336625733634>",
+		util.EmojiBan,
 		fmt.Sprintf("%v banned %v (`%v`) until %v: %v", actor, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
 		actor == "AutoMod",
 		location,
@@ -169,7 +170,7 @@ func LogHackBan(s *discordgo.Session, guildId string, actor string, id string, r
 
 	addLog(s,
 		guildId,
-		"<:mesaBan:869663336625733634>",
+		util.EmojiBan,
 		fmt.Sprintf("%v banned %v: %v", actor, id, reason),
 		actor == "AutoMod",
 		location,
@@ -180,7 +181,7 @@ func LogHackTempBan(s *discordgo.Session, guildId string, actor string, id strin
 
 	addLog(s,
 		guildId,
-		"<:mesaBan:869663336625733634>",
+		util.EmojiBan,
 		fmt.Sprintf("%v banned %v until %v: %v", actor, id, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
 		actor == "AutoMod",
 		location,
@@ -190,7 +191,7 @@ func LogHackTempBan(s *discordgo.Session, guildId string, actor string, id strin
 func LogUnban(s *discordgo.Session, guildId string, actor string, target string, reason string) {
 	addLog(s,
 		guildId,
-		"<:mesaBan:869663336625733634>",
+		util.EmojiUnban,
 		fmt.Sprintf("%v unbanned %v: %v", actor, target, reason),
 		false,
 		"",
@@ -202,7 +203,7 @@ func LogSoftBan(s *discordgo.Session, guildId string, actor string, target *disc
 
 	addLog(s,
 		guildId,
-		"<:mesaBan:869663336625733634>",
+		util.EmojiBan,
 		fmt.Sprintf("%v soft banned %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -214,7 +215,7 @@ func LogKick(s *discordgo.Session, guildId string, actor string, target *discord
 
 	addLog(s,
 		guildId,
-		"<:mesaKick:869665034312253460>",
+		util.EmojiKick,
 		fmt.Sprintf("%v kicked %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -236,7 +237,7 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 
 	addLog(s,
 		message.GuildID,
-		"<:mesaMessageDelete:869663511977025586>",
+		util.EmojiMessageDelete,
 		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content+"\n\n"+attachments),
 		false,
 		"",
@@ -253,7 +254,7 @@ func LogMessageUpdate(s *discordgo.Session, message *discordgo.Message, before s
 
 	addLog(s,
 		message.GuildID,
-		"<:mesaMessageEdit:869663511834411059>",
+		util.EmojiMessageEdit,
 		fmt.Sprintf("Message by %v (`%v`) in #%v (`%v`) was updated\n**Before**\n`%v`\n**After**\n`%v`", fullName, message.Author.ID, channel.Name, channel.ID, before, message.Content),
 		false,
 		"",
