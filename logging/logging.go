@@ -37,7 +37,7 @@ func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason s
 
 	addLog(s,
 		message.GuildID,
-		util.EmojiCensoredMessage,
+		util.EMOJI_CENSORED_MESSAGE,
 		fmt.Sprintf("AutoMod censored message by %v (`%v`) in #%v (`%v`): %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, message.Content),
 		false,
 		"",
@@ -53,7 +53,7 @@ func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reaso
 
 	addLog(s,
 		message.GuildID,
-		util.EmojiMessageViolation,
+		util.EMOJI_MESSAGE_VIOLATION,
 		fmt.Sprintf("AutoMod deleted message by %v (`%v`) in #%v (`%v`) due to violation %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, message.Content),
 		false,
 		"",
@@ -65,7 +65,7 @@ func LogStrike(s *discordgo.Session, guildId string, actor string, target *disco
 
 	addLog(s,
 		guildId,
-		util.EmojiStrike,
+		util.EMOJI_STRIKE,
 		fmt.Sprintf("%v issued a strike of UUID `%v` (with weight %v) to %v (`%v`): %v", actor, uuid, weight, fullName, target.ID, reason),
 		false,
 		"",
@@ -75,7 +75,7 @@ func LogStrike(s *discordgo.Session, guildId string, actor string, target *disco
 func LogRemoveAction(s *discordgo.Session, guildId string, actor string, uuid string) {
 	addLog(s,
 		guildId,
-		util.EmojiUnstrike,
+		util.EMOJI_UNSTRIKE,
 		fmt.Sprintf("%v removed an action of UUID `%v`", actor, uuid),
 		false,
 		"",
@@ -87,7 +87,7 @@ func LogRoleAdd(s *discordgo.Session, guildId string, actor string, role string,
 
 	addLog(s,
 		guildId,
-		util.EmojiMute,
+		util.EMOJI_MUTE,
 		fmt.Sprintf("%v added role %v to %v (`%v`)", actor, role, fullName, target.ID),
 		true,
 		location,
@@ -99,7 +99,7 @@ func LogTempRoleAdd(s *discordgo.Session, guildId string, actor string, role str
 
 	addLog(s,
 		guildId,
-		util.EmojiMute,
+		util.EMOJI_MUTE,
 		fmt.Sprintf("%v added role %v to %v (`%v`) until %v", actor, role, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM")),
 		true,
 		location,
@@ -111,7 +111,7 @@ func LogMute(s *discordgo.Session, guildId string, actor string, target *discord
 
 	addLog(s,
 		guildId,
-		util.EmojiMute,
+		util.EMOJI_MUTE,
 		fmt.Sprintf("%v muted %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -123,7 +123,7 @@ func LogTempMute(s *discordgo.Session, guildId string, actor string, target *dis
 
 	addLog(s,
 		guildId,
-		util.EmojiMute,
+		util.EMOJI_MUTE,
 		fmt.Sprintf("%v muted %v (`%v`) until %v: %v", actor, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
 		actor == "AutoMod",
 		location,
@@ -135,7 +135,7 @@ func LogUnmute(s *discordgo.Session, guildId string, actor string, target *disco
 
 	addLog(s,
 		guildId,
-		util.EmojiUnmute,
+		util.EMOJI_UNMUTE,
 		fmt.Sprintf("%v unmuted %v (`%v`): %v", actor, fullName, target.ID, reason),
 		false,
 		"",
@@ -147,7 +147,7 @@ func LogBan(s *discordgo.Session, guildId string, actor string, target *discordg
 
 	addLog(s,
 		guildId,
-		util.EmojiBan,
+		util.EMOJI_BAN,
 		fmt.Sprintf("%v banned %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -159,7 +159,7 @@ func LogTempBan(s *discordgo.Session, guildId string, actor string, target *disc
 
 	addLog(s,
 		guildId,
-		util.EmojiBan,
+		util.EMOJI_BAN,
 		fmt.Sprintf("%v banned %v (`%v`) until %v: %v", actor, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
 		actor == "AutoMod",
 		location,
@@ -170,7 +170,7 @@ func LogHackBan(s *discordgo.Session, guildId string, actor string, id string, r
 
 	addLog(s,
 		guildId,
-		util.EmojiBan,
+		util.EMOJI_BAN,
 		fmt.Sprintf("%v banned %v: %v", actor, id, reason),
 		actor == "AutoMod",
 		location,
@@ -181,7 +181,7 @@ func LogHackTempBan(s *discordgo.Session, guildId string, actor string, id strin
 
 	addLog(s,
 		guildId,
-		util.EmojiBan,
+		util.EMOJI_BAN,
 		fmt.Sprintf("%v banned %v until %v: %v", actor, id, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
 		actor == "AutoMod",
 		location,
@@ -191,7 +191,7 @@ func LogHackTempBan(s *discordgo.Session, guildId string, actor string, id strin
 func LogUnban(s *discordgo.Session, guildId string, actor string, target string, reason string) {
 	addLog(s,
 		guildId,
-		util.EmojiUnban,
+		util.EMOJI_UNBAN,
 		fmt.Sprintf("%v unbanned %v: %v", actor, target, reason),
 		false,
 		"",
@@ -203,7 +203,7 @@ func LogSoftBan(s *discordgo.Session, guildId string, actor string, target *disc
 
 	addLog(s,
 		guildId,
-		util.EmojiBan,
+		util.EMOJI_BAN,
 		fmt.Sprintf("%v soft banned %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -215,7 +215,7 @@ func LogKick(s *discordgo.Session, guildId string, actor string, target *discord
 
 	addLog(s,
 		guildId,
-		util.EmojiKick,
+		util.EMOJI_KICK,
 		fmt.Sprintf("%v kicked %v (`%v`): %v", actor, fullName, target.ID, reason),
 		actor == "AutoMod",
 		location,
@@ -237,7 +237,7 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 
 	addLog(s,
 		message.GuildID,
-		util.EmojiMessageDelete,
+		util.EMOJI_MESSAGE_DELETE,
 		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content+"\n\n"+attachments),
 		false,
 		"",
@@ -254,7 +254,7 @@ func LogMessageUpdate(s *discordgo.Session, message *discordgo.Message, before s
 
 	addLog(s,
 		message.GuildID,
-		util.EmojiMessageEdit,
+		util.EMOJI_MESSAGE_EDIT,
 		fmt.Sprintf("Message by %v (`%v`) in #%v (`%v`) was updated\n**Before**\n`%v`\n**After**\n`%v`", fullName, message.Author.ID, channel.Name, channel.ID, before, message.Content),
 		false,
 		"",
