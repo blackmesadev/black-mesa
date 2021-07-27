@@ -1,4 +1,4 @@
-package util
+package consts
 
 const (
 	EMOJI_CENSORED_MESSAGE  = "<:mesaCensoredMessage:869663511754731541>"
