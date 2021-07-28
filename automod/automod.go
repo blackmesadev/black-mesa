@@ -174,6 +174,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		// Strings / Substrings
 
 		if censorLevel.FilterStrings {
+			content = censor.ReplaceNonStandardSpace(content)
 			ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
 			if !ok {
 				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), 1, filterProcessingStart

@@ -1,6 +1,15 @@
 package censor
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
+
+var nonStdSpaceRegex = regexp.MustCompile(`[\x{2000}-x{200F}]+`)
+
+func ReplaceNonStandardSpace(m string) string {
+	return nonStdSpaceRegex.ReplaceAllString(m, " ")
+}
 
 func SubStringsCheck(m string, blacklist *[]string) (bool, string) {
 	m = strings.ToLower(m)
@@ -14,7 +23,7 @@ func SubStringsCheck(m string, blacklist *[]string) (bool, string) {
 
 func StringsCheck(m string, blacklist *[]string) (bool, string) {
 	m = strings.ToLower(m)
-	words := strings.Split(m, " ")
+	words := strings.Fields(m)
 	for _, str := range *blacklist {
 		for _, word := range words {
 			if word == str {
