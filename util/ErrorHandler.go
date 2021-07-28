@@ -1,4 +1,4 @@
-package discord
+package util
 
 import (
 	"fmt"
@@ -16,8 +16,11 @@ func ErrorHandler(s *discordgo.Session, channelID string, commandError error) {
 	embedFields := make([]*discordgo.MessageEmbedField, 0)
 	field := &discordgo.MessageEmbedField{
 		Name:   "Error",
-		Value:  commandError.Error(),
 		Inline: false,
+	}
+	switch commandError {
+	default:
+		field.Value = commandError.Error()
 	}
 	embedFields = append(embedFields, field)
 	footer := &discordgo.MessageEmbedFooter{
