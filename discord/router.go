@@ -31,6 +31,7 @@ func (r *Mux) InitRouter() {
 	r.Route("unmute", moderation.UnmuteCmd)
 	r.Route("strike", moderation.StrikeCmd)
 	r.Route("search", moderation.SearchCmd)
+	r.Route("purge", moderation.PurgeCmd)
 
 	// moderation funny commands
 	r.Route("fuckoff", moderation.KickCmd)
