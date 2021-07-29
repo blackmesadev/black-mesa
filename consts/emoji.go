@@ -12,4 +12,5 @@ const (
 	EMOJI_BAN               = "<:mesaBan:869663336625733634>"
 	EMOJI_UNBAN             = "<:mesaUnban:869663336697069619>"
 	EMOJI_KICK              = "<:mesaKick:869665034312253460>"
+	EMOJI_CROSS             = "<:mesaCross:832350526414127195>"
 )
