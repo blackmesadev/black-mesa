@@ -13,18 +13,26 @@ import (
 func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	start := time.Now()
 
+	var userId string
+
 	idList := util.SnowflakeRegex.FindAllString(m.Content, -1)
 
-	if len(idList) == 0 || len(idList) > 1 {
+	userId = m.Author.ID
+
+	if len(idList) > 1 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `userinfo <target:user>`")
 		return
+	}
+
+	if len(idList) == 1 {
+		userId = idList[0]
 	}
 
 	footer := &discordgo.MessageEmbedFooter{
 		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", VERSION, runtime.Version()),
 	}
 
-	member, err := s.GuildMember(m.GuildID, idList[0])
+	member, err := s.GuildMember(m.GuildID, userId)
 	if err != nil {
 		log.Println(err)
 		return
