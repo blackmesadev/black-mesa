@@ -71,9 +71,9 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		infractionUUID := uuid.New().String()
 
 		member, err := s.State.Member(m.GuildID, id)
-		if err == discordgo.ErrStateNotFound {
+		if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
 			member, err = s.GuildMember(m.GuildID, id)
-			if err == discordgo.ErrUnknownMember || member == nil {
+			if err == discordgo.ErrUnknownMember || member == nil || member.User == nil {
 				hackban = true
 			}
 			if err != nil {
