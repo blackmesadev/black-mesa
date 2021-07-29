@@ -5,11 +5,15 @@ import (
 	"log"
 	"runtime"
 	"strconv"
+	"time"
 
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
 func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	start := time.Now()
+
 	footer := &discordgo.MessageEmbedFooter{
 		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", VERSION, runtime.Version()),
 	}
@@ -105,8 +109,8 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 
 	thumbnail := &discordgo.MessageEmbedThumbnail{
 		URL:    guild.IconURL(),
-		Width:  200,
-		Height: 200,
+		Width:  256,
+		Height: 256,
 	}
 
 	embed := &discordgo.MessageEmbed{
@@ -120,4 +124,8 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, embed)
+
+	if util.IsDevInstance(s) {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v", time.Since(start)))
+	}
 }

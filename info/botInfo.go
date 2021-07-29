@@ -4,19 +4,22 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
+	"time"
 
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
+	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"github.com/go-redis/redis/v8"
 )
 
-const VERSION = "0.7.0"
+const VERSION = "0.7.1"
 
 const WEBSITE = "https://blackmesa.bot"
 
 var r *redis.Client
 
 func BotInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	start := time.Now()
 
 	if r == nil {
 		r = bmRedis.GetRedis()
@@ -89,4 +92,8 @@ func BotInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	}
 
 	s.ChannelMessageSendEmbed(m.ChannelID, embed)
+
+	if util.IsDevInstance(s) {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v", time.Since(start)))
+	}
 }

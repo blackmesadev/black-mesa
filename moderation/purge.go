@@ -8,6 +8,7 @@ import (
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -107,21 +108,21 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 
 	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	if err != nil {
-		util.ErrorHandler(s, m.ChannelID, err)
+		misc.ErrorHandler(s, m.ChannelID, err)
 		return
 	}
 
 	for count < msgLimit {
 		msgList, err := s.ChannelMessages(m.ChannelID, 100, "", lastID, "")
 		if err != nil {
-			util.ErrorHandler(s, m.ChannelID, err)
+			misc.ErrorHandler(s, m.ChannelID, err)
 			return
 		}
 		for _, msg := range msgList {
 			lastID = msg.ID
 			err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 			if err != nil {
-				util.ErrorHandler(s, m.ChannelID, err)
+				misc.ErrorHandler(s, m.ChannelID, err)
 				return
 			}
 			count++

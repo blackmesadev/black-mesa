@@ -9,7 +9,6 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/logging"
-	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"github.com/google/uuid"
@@ -32,11 +31,11 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 	durationOrReasonStart := 0
 
 	for i, possibleId := range args {
-		if !misc.UserIdRegex.MatchString(possibleId) {
+		if !util.UserIdRegex.MatchString(possibleId) {
 			durationOrReasonStart = i
 			break
 		}
-		id := misc.UserIdRegex.FindStringSubmatch(possibleId)[1]
+		id := util.UserIdRegex.FindStringSubmatch(possibleId)[1]
 		idList = append(idList, id)
 	}
 
@@ -50,7 +49,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		return
 	}
 
-	duration := misc.ParseTime(args[durationOrReasonStart])
+	duration := util.ParseTime(args[durationOrReasonStart])
 	reason := strings.Join(args[(durationOrReasonStart+1):], " ")
 
 	if duration == 0 { // must be part of the reason

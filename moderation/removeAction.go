@@ -8,7 +8,6 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/logging"
-	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -21,7 +20,7 @@ func RemoveActionCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.
 
 	start := time.Now()
 
-	uuidList := misc.UuidRegex.FindAllString(m.Content, -1)
+	uuidList := util.UuidRegex.FindAllString(m.Content, -1)
 
 	if len(uuidList) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `remove <action:uuid[]>`")

@@ -9,7 +9,6 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/logging"
-	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -24,7 +23,7 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 
 	start := time.Now()
 
-	idList := misc.SnowflakeRegex.FindAllString(m.Content, -1)
+	idList := util.SnowflakeRegex.FindAllString(m.Content, -1)
 
 	if len(idList) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `softban <target:user[]> [reason:string...]`")
@@ -36,7 +35,7 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		return
 	}
 
-	reasonSearch := misc.SnowflakeRegex.Split(m.Content, -1)
+	reasonSearch := util.SnowflakeRegex.Split(m.Content, -1)
 
 	search := reasonSearch[len(reasonSearch)-1]
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
-	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -19,9 +18,9 @@ import (
 func parseCommand(cmd string) ([]string, int64, string) {
 	var reason string
 
-	idList := misc.SnowflakeRegex.FindAllString(cmd, -1)
+	idList := util.SnowflakeRegex.FindAllString(cmd, -1)
 
-	params := misc.SnowflakeRegex.Split(cmd, -1)
+	params := util.SnowflakeRegex.Split(cmd, -1)
 
 	if params[len(params)-1][:1] == ">" {
 		reason = params[len(params)-1][1:]
@@ -30,7 +29,7 @@ func parseCommand(cmd string) ([]string, int64, string) {
 	}
 
 	durationStr := strings.Fields(reason)[0]
-	duration := misc.ParseTime(durationStr)
+	duration := util.ParseTime(durationStr)
 
 	reason = strings.ReplaceAll(reason, durationStr, "")
 
@@ -112,7 +111,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	}
 
 	if escalatingTo, ok := strikeEscalationConfig[util.GetClosestLevel(strikeEscalationLevels, strikeTotalWeight)]; ok {
-		duration := misc.ParseTime(escalatingTo.Duration)
+		duration := util.ParseTime(escalatingTo.Duration)
 
 		user, err := s.State.Member(guildId, userId)
 		if err != nil {

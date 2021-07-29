@@ -8,7 +8,6 @@ import (
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
-	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
@@ -32,19 +31,19 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	var argsRoleString string
 
 	for _, possibleId := range args {
-		if !misc.UserIdRegex.MatchString(possibleId) {
+		if !util.UserIdRegex.MatchString(possibleId) {
 			argsRoleString += possibleId + " "
 			break
 		} else {
-			id := misc.UserIdRegex.FindStringSubmatch(possibleId)[1]
+			id := util.UserIdRegex.FindStringSubmatch(possibleId)[1]
 			idList = append(idList, id)
 		}
 
-		if !misc.RoleIdRegex.MatchString(possibleId) {
+		if !util.RoleIdRegex.MatchString(possibleId) {
 			argsRoleString += possibleId + " "
 			break
 		} else {
-			roleid = misc.RoleIdRegex.FindStringSubmatch(possibleId)[1]
+			roleid = util.RoleIdRegex.FindStringSubmatch(possibleId)[1]
 			roleIdList = append(roleIdList, roleid)
 		}
 	}
@@ -78,7 +77,7 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 			duration = 0
 			permRole = true
 		} else {
-			duration = misc.ParseTime(args[len(args)-1])
+			duration = util.ParseTime(args[len(args)-1])
 			permRole = false
 
 		}
@@ -87,7 +86,7 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 			duration = 0
 			permRole = true
 		} else {
-			duration = misc.ParseTime(args[len(args)-1])
+			duration = util.ParseTime(args[len(args)-1])
 			permRole = false
 
 		}
