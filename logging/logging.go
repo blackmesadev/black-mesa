@@ -268,3 +268,13 @@ func LogMessageUpdate(s *discordgo.Session, message *discordgo.Message, before s
 		"",
 	)
 }
+
+func LogStrikeEscalationFail(s *discordgo.Session, guildid string, targetID string, err error) {
+	addLog(s,
+		guildid,
+		consts.EMOJI_CROSS,
+		fmt.Sprintf("Failed to escalate strike for `%v` because `%v`", targetID, err.Error()),
+		false,
+		"",
+	)
+}
