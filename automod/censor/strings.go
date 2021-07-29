@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var nonStdSpaceRegex = regexp.MustCompile(`[\x{2000}-x{200F}]+`)
+var nonStdSpaceRegex = regexp.MustCompile(`[\x{2000}-\x{200F}]+`)
 
 func ReplaceNonStandardSpace(m string) string {
 	return nonStdSpaceRegex.ReplaceAllString(m, " ")
