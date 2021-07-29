@@ -75,24 +75,27 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 			logging.LogMessageViolation(s, m, reason)
 		}
 
-		// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
-		// escalated to a ban due to automod delay)
-		if _, ok := chillax[m.GuildID]; !ok {
-			chillax[m.GuildID] = make(map[string]int64)
-		}
+		if strings.HasPrefix(reason, "Spam->Messages") {
+			// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
+			// escalated to a ban due to automod delay)
+			if _, ok := chillax[m.GuildID]; !ok {
+				chillax[m.GuildID] = make(map[string]int64)
+			}
 
-		if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
-			chillax[m.GuildID][m.Author.ID] = 0
-		}
+			if _, ok := chillax[m.GuildID][m.Author.ID]; !ok {
+				chillax[m.GuildID][m.Author.ID] = 0
+			}
 
-		if chillax[m.GuildID][m.Author.ID] > 0 {
-			chillax[m.GuildID][m.Author.ID] -= weight
+			if chillax[m.GuildID][m.Author.ID] > 0 {
+				chillax[m.GuildID][m.Author.ID] -= weight
+				clearCushioning(m.GuildID, m.Author.ID)
+				return
+			}
+
+			chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
 			clearCushioning(m.GuildID, m.Author.ID)
-			return
 		}
 
-		chillax[m.GuildID][m.Author.ID] = conf.Modules.Moderation.StrikeCushioning
-		clearCushioning(m.GuildID, m.Author.ID)
 		infractionUUID := uuid.New().String()
 		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID, infractionUUID) // strike
 		if err != nil {
