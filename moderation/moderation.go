@@ -113,7 +113,14 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	if escalatingTo, ok := strikeEscalationConfig[util.GetClosestLevel(strikeEscalationLevels, strikeTotalWeight)]; ok {
 		duration := util.ParseTime(escalatingTo.Duration)
 
-		user, err := s.State.Member(guildId, userId)
+		member, err := s.State.Member(guildId, userId)
+		if err == discordgo.ErrStateNotFound {
+			member, err = s.GuildMember(guildId, userId)
+			if err != nil {
+				logging.LogStrikeEscalationFail(s, guildId, userId, err)
+				return err
+			}
+		}
 		if err != nil {
 			return err
 		}
@@ -130,9 +137,9 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			}
 
 			if duration != 0 {
-				logging.LogTempMute(s, guildId, "AutoMod", user.User, time.Until(time.Unix(duration, 0)), reason, location)
+				logging.LogTempMute(s, guildId, "AutoMod", member.User, time.Until(time.Unix(duration, 0)), reason, location)
 			} else {
-				logging.LogMute(s, guildId, "AutoMod", user.User, reason, location)
+				logging.LogMute(s, guildId, "AutoMod", member.User, reason, location)
 			}
 			return err
 		case "ban":
@@ -146,9 +153,9 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			}
 
 			if duration != 0 {
-				logging.LogTempBan(s, guildId, "AutoMod", user.User, time.Until(time.Unix(duration, 0)), reason, location)
+				logging.LogTempBan(s, guildId, "AutoMod", member.User, time.Until(time.Unix(duration, 0)), reason, location)
 			} else {
-				logging.LogBan(s, guildId, "AutoMod", user.User, reason, location)
+				logging.LogBan(s, guildId, "AutoMod", member.User, reason, location)
 			}
 		default:
 			log.Printf("%v has unknown punishment escalation type %v\n", guildId, escalatingTo.Type)
