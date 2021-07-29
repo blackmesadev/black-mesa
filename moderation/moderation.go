@@ -81,7 +81,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		return err
 	}
 
-	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("punishments")
+	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
 	strikeDocs, err := db.Find(context.TODO(), bson.M{
 		"guildID": guildId,
