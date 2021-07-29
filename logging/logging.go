@@ -167,22 +167,20 @@ func LogTempBan(s *discordgo.Session, guildId string, actor string, target *disc
 }
 
 func LogHackBan(s *discordgo.Session, guildId string, actor string, id string, reason string, location string) {
-
 	addLog(s,
 		guildId,
 		consts.EMOJI_BAN,
-		fmt.Sprintf("%v banned %v: %v", actor, id, reason),
+		fmt.Sprintf("%v banned `%v`: %v", actor, id, reason),
 		actor == "AutoMod",
 		location,
 	)
 }
 
 func LogHackTempBan(s *discordgo.Session, guildId string, actor string, id string, duration time.Duration, reason string, location string) {
-
 	addLog(s,
 		guildId,
 		consts.EMOJI_BAN,
-		fmt.Sprintf("%v banned %v until %v: %v", actor, id, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
+		fmt.Sprintf("%v banned `%v` until %v: %v", actor, id, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
 		actor == "AutoMod",
 		location,
 	)
@@ -205,6 +203,16 @@ func LogSoftBan(s *discordgo.Session, guildId string, actor string, target *disc
 		guildId,
 		consts.EMOJI_BAN,
 		fmt.Sprintf("%v soft banned %v (`%v`): %v", actor, fullName, target.ID, reason),
+		actor == "AutoMod",
+		location,
+	)
+}
+
+func LogHackSoftBan(s *discordgo.Session, guildId string, actor string, id string, reason string, location string) {
+	addLog(s,
+		guildId,
+		consts.EMOJI_BAN,
+		fmt.Sprintf("%v soft banned `%v`: %v", actor, id, reason),
 		actor == "AutoMod",
 		location,
 	)

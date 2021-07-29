@@ -73,7 +73,7 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 		member, err := s.State.Member(m.GuildID, id)
 		if err == discordgo.ErrStateNotFound {
 			member, err = s.GuildMember(m.GuildID, id)
-			if err == discordgo.ErrUnknownMember {
+			if err == discordgo.ErrUnknownMember || member == nil {
 				hackban = true
 			}
 			if err != nil {

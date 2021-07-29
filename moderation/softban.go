@@ -21,6 +21,8 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 
 	var reason string
 
+	var hackban bool
+
 	start := time.Now()
 
 	idList := util.SnowflakeRegex.FindAllString(m.Content, -1)
@@ -58,6 +60,9 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		member, err := s.State.Member(m.GuildID, id)
 		if err == discordgo.ErrStateNotFound {
 			member, err = s.GuildMember(m.GuildID, id)
+			if err == discordgo.ErrUnknownMember || member == nil {
+				hackban = true
+			}
 			if err != nil {
 				log.Println(err)
 				unableBan = append(unableBan, id)
@@ -73,7 +78,12 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 					msg += fmt.Sprintf("<@%v> ", id)
 				}
 			}
-			logging.LogSoftBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+			if hackban {
+				logging.LogHackSoftBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
+			} else {
+				logging.LogSoftBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+			}
+
 		}
 	}
 
