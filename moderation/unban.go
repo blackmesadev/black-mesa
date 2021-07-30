@@ -33,7 +33,7 @@ func UnbanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 	}
 
 	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `mute <target:user[]> [time:duration] [reason:string...]`")
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `unban <target:user[]> [reason:string...]`")
 		return
 	}
 
