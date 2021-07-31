@@ -63,6 +63,7 @@ func PurgeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 			return
 		}
 		filter := strings.Join(args[2:], " ")
+		filter = strings.ToLower(filter)
 		PurgeString(s, m, msgLimit, filter)
 	case consts.PURGE_USER:
 		PurgeUser(s, m, msgLimit)
@@ -79,27 +80,265 @@ func PurgeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 }
 
 func PurgeAttachments(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
+	var count int
+	var lastID string
+
+	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	if err != nil {
+		misc.ErrorHandler(s, m.ChannelID, err)
+		return
+	}
+
+	lastID = progressMsg.ID // just set lastid to this so that it wont delete the purge message
+
+	for count < msgLimit {
+		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+		if err != nil {
+			misc.ErrorHandler(s, m.ChannelID, err)
+			return
+		}
+		for _, msg := range msgList {
+			lastID = msg.ID
+			if len(msg.Attachments) > 0 {
+				err := s.ChannelMessageDelete(m.ChannelID, msg.ID)
+				if err != nil {
+					misc.ErrorHandler(s, m.ChannelID, err)
+					return
+				}
+				count++
+				if count == msgLimit {
+					break
+				}
+				// Update the purge message every 5 messages it deletes.
+				if count%5 == 0 {
+					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+				}
+			}
+		}
+		// Update at the end with newest count before waiting and deleting
+		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	}
+	time.Sleep(3 * time.Second)
+	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 
 }
 
 func PurgeBot(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
+	var count int
+	var lastID string
+
+	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	if err != nil {
+		misc.ErrorHandler(s, m.ChannelID, err)
+		return
+	}
+
+	lastID = progressMsg.ID // just set lastid to this so that it wont delete the purge message
+
+	for count < msgLimit {
+		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+		if err != nil {
+			misc.ErrorHandler(s, m.ChannelID, err)
+			return
+		}
+		for _, msg := range msgList {
+			lastID = msg.ID
+			if msg.Author.Bot || msg.Author.System {
+				err := s.ChannelMessageDelete(m.ChannelID, msg.ID)
+				if err != nil {
+					misc.ErrorHandler(s, m.ChannelID, err)
+					return
+				}
+				count++
+				if count == msgLimit {
+					break
+				}
+				// Update the purge message every 5 messages it deletes.
+				if count%5 == 0 {
+					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+				}
+			}
+		}
+		// Update at the end with newest count before waiting and deleting
+		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	}
+	time.Sleep(3 * time.Second)
+	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 
 }
 
 func PurgeImage(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
+	var count int
+	var lastID string
+
+	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	if err != nil {
+		misc.ErrorHandler(s, m.ChannelID, err)
+		return
+	}
+
+	lastID = progressMsg.ID // just set lastid to this so that it wont delete the purge message
+
+	for count < msgLimit {
+		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+		if err != nil {
+			misc.ErrorHandler(s, m.ChannelID, err)
+			return
+		}
+		for _, msg := range msgList {
+			lastID = msg.ID
+			if util.CheckForImage(msg) {
+				err := s.ChannelMessageDelete(m.ChannelID, msg.ID)
+				if err != nil {
+					misc.ErrorHandler(s, m.ChannelID, err)
+					return
+				}
+				count++
+				if count == msgLimit {
+					break
+				}
+				// Update the purge message every 5 messages it deletes.
+				if count%5 == 0 {
+					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+				}
+			}
+		}
+		// Update at the end with newest count before waiting and deleting
+		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	}
+	time.Sleep(3 * time.Second)
+	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 
 }
 
 func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filter string) {
+	var count int
+	var lastID string
+
+	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	if err != nil {
+		misc.ErrorHandler(s, m.ChannelID, err)
+		return
+	}
+
+	lastID = progressMsg.ID // just set lastid to this so that it wont delete the purge message
+
+	for count < msgLimit {
+		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+		if err != nil {
+			misc.ErrorHandler(s, m.ChannelID, err)
+			return
+		}
+		for _, msg := range msgList {
+			lastID = msg.ID
+			if strings.Contains(strings.ToLower(msg.Content), filter) {
+				err := s.ChannelMessageDelete(m.ChannelID, msg.ID)
+				if err != nil {
+					misc.ErrorHandler(s, m.ChannelID, err)
+					return
+				}
+				count++
+				if count == msgLimit {
+					break
+				}
+				// Update the purge message every 5 messages it deletes.
+				if count%5 == 0 {
+					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+				}
+			}
+		}
+		// Update at the end with newest count before waiting and deleting
+		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	}
+	time.Sleep(3 * time.Second)
+	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 
 }
 
 func PurgeUser(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
+	var count int
+	var lastID string
 
+	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	if err != nil {
+		misc.ErrorHandler(s, m.ChannelID, err)
+		return
+	}
+
+	lastID = progressMsg.ID // just set lastid to this so that it wont delete the purge message
+
+	for count < msgLimit {
+		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+		if err != nil {
+			misc.ErrorHandler(s, m.ChannelID, err)
+			return
+		}
+		for _, msg := range msgList {
+			lastID = msg.ID
+			if !msg.Author.Bot {
+				err := s.ChannelMessageDelete(m.ChannelID, msg.ID)
+				if err != nil {
+					misc.ErrorHandler(s, m.ChannelID, err)
+					return
+				}
+				count++
+				if count == msgLimit {
+					break
+				}
+				// Update the purge message every 5 messages it deletes.
+				if count%5 == 0 {
+					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+				}
+			}
+		}
+		// Update at the end with newest count before waiting and deleting
+		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	}
+	time.Sleep(3 * time.Second)
+	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 }
 
 func PurgeVideo(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
+	var count int
+	var lastID string
 
+	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	if err != nil {
+		misc.ErrorHandler(s, m.ChannelID, err)
+		return
+	}
+
+	lastID = progressMsg.ID // just set lastid to this so that it wont delete the purge message
+
+	for count < msgLimit {
+		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+		if err != nil {
+			misc.ErrorHandler(s, m.ChannelID, err)
+			return
+		}
+		for _, msg := range msgList {
+			lastID = msg.ID
+			if util.CheckForVideo(msg) {
+				err := s.ChannelMessageDelete(m.ChannelID, msg.ID)
+				if err != nil {
+					misc.ErrorHandler(s, m.ChannelID, err)
+					return
+				}
+				count++
+				if count == msgLimit {
+					break
+				}
+				// Update the purge message every 5 messages it deletes.
+				if count%5 == 0 {
+					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+				}
+			}
+		}
+		// Update at the end with newest count before waiting and deleting
+		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	}
+	time.Sleep(3 * time.Second)
+	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 }
 
 func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
@@ -131,8 +370,14 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 			if count == msgLimit {
 				break
 			}
+			// Update the purge message every 5 messages it deletes.
+			if count%5 == 0 {
+				s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+			}
 		}
+		// Update at the end with newest count before waiting and deleting
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
+	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 }

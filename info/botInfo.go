@@ -12,7 +12,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const VERSION = "0.7.7"
+const VERSION = "0.8.0"
 
 const WEBSITE = "https://blackmesa.bot"
 
