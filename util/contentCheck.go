@@ -12,7 +12,7 @@ func CheckForImage(m *discordgo.Message) bool {
 
 	if len(m.Embeds) > 0 {
 		for _, embed := range m.Embeds {
-			if embed.Image != nil {
+			if embed.Image != nil || embed.Thumbnail != nil {
 				return true
 			}
 		}
