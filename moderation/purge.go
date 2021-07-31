@@ -21,7 +21,7 @@ func PurgeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 
 	argsLength := len(args)
 
-	if argsLength < 1 || argsLength > 2 {
+	if argsLength < 1 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `purge <messages:int> [type:string] [filter:string...]`")
 		return
 	}
