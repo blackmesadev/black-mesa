@@ -82,25 +82,28 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 			AddTimedMute(m.GuildID, m.Author.ID, id, roleid, duration, reason, infractionUUID)
 
 			member, err := s.State.Member(m.GuildID, id)
-			if err == discordgo.ErrStateNotFound {
+			if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
 				member, err = s.GuildMember(m.GuildID, id)
-				if err != nil {
+				if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
 					log.Println(err)
 					unableMute = append(unableMute, id)
 				} else {
 					s.State.MemberAdd(member)
 				}
 			}
-			if permMute {
-				msg += "lasting `Forever` "
+			if member.User != nil {
+				if permMute {
+					msg += "lasting `Forever` "
 
-				logging.LogMute(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
-			} else {
-				timeExpiry := time.Unix(duration, 0)
-				timeUntil := time.Until(timeExpiry).Round(time.Second)
-				msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
+					logging.LogMute(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 
-				logging.LogTempMute(s, m.GuildID, fullName, member.User, timeUntil, reason, m.ChannelID)
+				} else {
+					timeExpiry := time.Unix(duration, 0)
+					timeUntil := time.Until(timeExpiry).Round(time.Second)
+					msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
+
+					logging.LogTempMute(s, m.GuildID, fullName, member.User, timeUntil, reason, m.ChannelID)
+				}
 			}
 		}
 	}
