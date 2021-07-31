@@ -120,7 +120,7 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 		}
 		for _, msg := range msgList {
 			lastID = msg.ID
-			err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+			err := s.ChannelMessageDelete(m.ChannelID, msg.ID)
 			if err != nil {
 				misc.ErrorHandler(s, m.ChannelID, err)
 				return
@@ -132,4 +132,5 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 		}
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
+	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 }
