@@ -112,8 +112,10 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 		return
 	}
 
+	lastID = progressMsg.ID // just set lastid to this so that it wont delete the purge message
+
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, "", lastID, "")
+		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
 		if err != nil {
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
