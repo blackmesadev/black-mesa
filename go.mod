@@ -3,7 +3,7 @@ module github.com/blackmesadev/black-mesa
 go 1.16
 
 require (
-	github.com/PuerkitoBio/goquery v1.7.1 // indirect
+	github.com/PuerkitoBio/goquery v1.7.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/blackmesadev/discordgo v0.25.3
 	github.com/go-ole/go-ole v1.2.4 // indirect
