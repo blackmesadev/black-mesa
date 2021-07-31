@@ -12,7 +12,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const VERSION = "0.7.4"
+const VERSION = "0.7.5"
 
 const WEBSITE = "https://blackmesa.bot"
 
@@ -39,7 +39,7 @@ func BotInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		usedCpu = 0
 	}
 
-	membersResult := r.Get(r.Context(), "members")
+	membersResult := r.Get(r.Context(), "memberCount")
 	membersNum, err := membersResult.Int()
 
 	if err != nil {

@@ -39,7 +39,7 @@ func CalcStats(s *discordgo.Session) {
 		var memberCount int
 
 		for _, i := range s.State.Guilds {
-			memberCount += i.ApproximateMemberCount
+			memberCount += i.MemberCount
 		}
 
 		// Send everything to Redis
