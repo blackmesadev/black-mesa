@@ -80,7 +80,7 @@ func PurgeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 		}
 
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `purge <messages:int> [type:string] [filter:string...]`")
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Invalid parameters. You put: `messages:%v` `type:%v` `filter:%v`", msgLimit, purgeType, filter))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Invalid parameters. You put: `messages:%v` `type:%v` `filter:%v` (%v)", msgLimit, purgeType, filter, args))
 		return
 	}
 
