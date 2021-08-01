@@ -17,7 +17,7 @@ const (
 
 	WEBSITE = "https://blackmesa.bot"
 
-	DISCORDINVITE = "https://discord.gg"
+	DISCORDINVITE = "https://discord.gg/fnGQSAuuSj"
 )
 
 var r *redis.Client
