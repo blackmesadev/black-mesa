@@ -215,7 +215,7 @@ func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filte
 	var count int
 	var lastID string
 
-	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+	progressMsg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Purging messages by `%v`... [%v/%v]", filter, count, msgLimit))
 	if err != nil {
 		misc.ErrorHandler(s, m.ChannelID, err)
 		return
@@ -243,12 +243,12 @@ func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filte
 				}
 				// Update the purge message every 5 messages it deletes.
 				if count%5 == 0 {
-					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+					s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages by `%v`... [%v/%v]", filter, count, msgLimit))
 				}
 			}
 		}
 		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages by `%v`... [%v/%v]", filter, count, msgLimit))
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
