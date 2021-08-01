@@ -26,7 +26,7 @@ func PurgeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 		return
 	}
 
-	purgeType := consts.PURGE_ALL
+	var purgeType string
 
 	start := time.Now()
 
