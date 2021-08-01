@@ -69,7 +69,7 @@ func (bot *Bot) Start() {
 	go util.CalcStats(bot.Session)
 	go actionExpiryGoroutine()
 
-	fmt.Println("Bot started. Press CTRL-C to exit")
+	log.Println("Black Mesa has finished initalizing successfully.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc

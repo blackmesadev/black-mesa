@@ -12,9 +12,13 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-const VERSION = "0.8.4"
+const (
+	VERSION = "0.8.5"
 
-const WEBSITE = "https://blackmesa.bot"
+	WEBSITE = "https://blackmesa.bot"
+
+	DISCORDINVITE = "https://discord.gg"
+)
 
 var r *redis.Client
 
