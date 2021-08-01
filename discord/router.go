@@ -2,6 +2,7 @@ package discord
 
 import (
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/guilds"
 	"github.com/blackmesadev/black-mesa/guilds/roles"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
@@ -48,6 +49,9 @@ func (r *Mux) InitRouter() {
 
 	r.Route("userinfo", info.UserInfoCmd)
 	r.Route("memberinfo", info.UserInfoCmd)
+
+	// guilds
+	r.Route("prefix", guilds.PrefixCmd)
 
 	//roles
 	r.Route("addrole", roles.AddRoleCmd)
