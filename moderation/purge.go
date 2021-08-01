@@ -108,6 +108,9 @@ func PurgeAttachments(s *discordgo.Session, m *discordgo.Message, msgLimit int) 
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
 		}
+		if len(msgList) == 0 {
+			break
+		}
 		for _, msg := range msgList {
 			lastID = msg.ID
 			if len(msg.Attachments) > 0 {
@@ -151,6 +154,9 @@ func PurgeBot(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 		if err != nil {
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
+		}
+		if len(msgList) == 0 {
+			break
 		}
 		for _, msg := range msgList {
 			lastID = msg.ID
@@ -196,6 +202,9 @@ func PurgeImage(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
 		}
+		if len(msgList) == 0 {
+			break
+		}
 		for _, msg := range msgList {
 			lastID = msg.ID
 			if util.CheckForImage(msg) {
@@ -239,6 +248,9 @@ func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filte
 		if err != nil {
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
+		}
+		if len(msgList) == 0 {
+			break
 		}
 		for _, msg := range msgList {
 			lastID = msg.ID
@@ -284,6 +296,9 @@ func PurgeUser(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
 		}
+		if len(msgList) == 0 {
+			break
+		}
 		for _, msg := range msgList {
 			lastID = msg.ID
 			if !msg.Author.Bot {
@@ -327,6 +342,9 @@ func PurgeVideo(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
 		}
+		if len(msgList) == 0 {
+			break
+		}
 		for _, msg := range msgList {
 			lastID = msg.ID
 			if util.CheckForVideo(msg) {
@@ -369,6 +387,9 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 		if err != nil {
 			misc.ErrorHandler(s, m.ChannelID, err)
 			return
+		}
+		if len(msgList) == 0 {
+			break
 		}
 		for _, msg := range msgList {
 			lastID = msg.ID
