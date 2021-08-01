@@ -46,7 +46,7 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	}
 
 	for _, role := range roles {
-		if strings.Contains(argsRoleString, role.Name) {
+		if strings.Contains(strings.ToLower(argsRoleString), strings.ToLower(role.Name)) {
 			roleIdList = append(roleIdList, role.ID)
 		}
 
