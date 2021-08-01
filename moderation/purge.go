@@ -71,7 +71,17 @@ func PurgeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 		PurgeVideo(s, m, msgLimit)
 
 	default:
-		PurgeAll(s, m, msgLimit)
+		var filter string
+		if len(args) > 3 {
+			filter = strings.Join(args[2:], " ")
+			filter = strings.ToLower(filter)
+		} else {
+			filter = ""
+		}
+
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `purge <messages:int> [type:string] [filter:string...]`")
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Invalid parameters. You put: `messages:%v` `type:%v` `filter:%v`", msgLimit, purgeType, filter))
+		return
 	}
 
 	if util.IsDevInstance(s) {
