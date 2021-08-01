@@ -22,40 +22,21 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 
 	var permRole bool
 
-	var roleid string
-
 	//idList, duration, reason := parseCommand(m.Content)
-	idList := make([]string, 0)
+	allIdList := make(map[string]bool, 0)
+	userIdList := make([]string, 0)
 	roleIdList := make([]string, 0)
 
 	var argsRoleString string
 
 	for _, possibleId := range args {
-		if !util.UserIdRegex.MatchString(possibleId) {
+		if !util.SnowflakeRegex.MatchString(possibleId) {
 			argsRoleString += possibleId + " "
 			break
 		} else {
-			id := util.UserIdRegex.FindStringSubmatch(possibleId)[1]
-			idList = append(idList, id)
+			id := util.SnowflakeRegex.FindStringSubmatch(possibleId)[1]
+			allIdList[id] = true
 		}
-
-		if !util.RoleIdRegex.MatchString(possibleId) {
-			argsRoleString += possibleId + " "
-			break
-		} else {
-			roleid = util.RoleIdRegex.FindStringSubmatch(possibleId)[1]
-			roleIdList = append(roleIdList, roleid)
-		}
-	}
-
-	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `addrole <target:user[]> [role:string] [time:duration]`")
-		return
-	}
-
-	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
-		return
 	}
 
 	roles, err := s.GuildRoles(m.GuildID)
@@ -68,6 +49,30 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		if strings.Contains(argsRoleString, role.Name) {
 			roleIdList = append(roleIdList, role.ID)
 		}
+
+		// figure out if an id a role, if it is then remove from allids and add to roleidlist
+		for id := range allIdList {
+			if id == role.ID {
+				roleIdList = append(roleIdList, id)
+				delete(allIdList, id)
+				break
+			}
+		}
+	}
+
+	// convert the map to slice
+	for id := range allIdList {
+		userIdList = append(userIdList, id)
+	}
+
+	if len(allIdList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `addrole <target:user[]> [role:string] [time:duration]`")
+		return
+	}
+
+	if !config.CheckTargets(s, m.GuildID, m.Author.ID, userIdList) {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
+		return
 	}
 
 	var duration int64
@@ -81,22 +86,16 @@ func AddRoleCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 			permRole = false
 
 		}
-	} else if len(idList) > 0 {
-		if args[len(args)-1] == idList[len(idList)-1] {
-			duration = 0
-			permRole = true
-		} else {
-			duration = util.ParseTime(args[len(args)-1])
-			permRole = false
-
-		}
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `addrole <target:user[]> [role:string] [time:duration]`")
+		return
 	}
 
 	msg := "<:mesaCheck:832350526729224243> Successfully added roles to "
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableAddRole := make([]string, 0)
-	for _, id := range idList {
+	for _, id := range userIdList {
 		for _, roleid := range roleIdList {
 			var member *discordgo.Member
 			err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented

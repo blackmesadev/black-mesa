@@ -2,10 +2,10 @@ package discord
 
 import (
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/guilds/roles"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/moderation"
-	"github.com/blackmesadev/black-mesa/roles"
 )
 
 func (r *Mux) InitRouter() {
