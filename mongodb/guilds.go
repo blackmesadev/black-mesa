@@ -70,7 +70,9 @@ func (db *DB) SetConfigOne(id string, key string, value string) (*mongo.UpdateRe
 
 	results, err := col.UpdateOne(ctx, filters, update)
 	if err != nil {
-		log.Println(err)
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
 		return nil, err
 	}
 
@@ -171,6 +173,9 @@ func (db *DB) GetPunishments(guildid string, userid string) ([]*Action, error) {
 
 	cursor, err := col.Find(ctx, query)
 	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
 		return nil, err
 	}
 
@@ -212,6 +217,9 @@ func (db *DB) GetActions(guildid string, userid string) ([]*Action, error) {
 
 	cursor, err := col.Find(ctx, query)
 	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
 		return nil, err
 	}
 
@@ -238,6 +246,9 @@ func (db *DB) GetNonPunishments(guildid string, userid string) ([]*Action, error
 
 	cursor, err := col.Find(ctx, query)
 	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
 		return nil, err
 	}
 

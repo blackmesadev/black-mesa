@@ -58,7 +58,6 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 	conf, err := config.GetConfig(m.GuildID)
 
 	if conf == nil || err != nil {
-		fmt.Println(conf, err)
 		return
 	}
 

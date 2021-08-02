@@ -9,6 +9,7 @@ import (
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var db *mongodb.DB
@@ -52,9 +53,12 @@ func AddGuild(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 func GetConfig(guildid string) (*structs.Config, error) {
 	config, err := db.GetConfig(guildid)
 	if err != nil {
-		log.Println(err)
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
 		return nil, err
 	}
+
 	return config, nil
 }
 
@@ -63,13 +67,11 @@ func GetPrefix(guildid string) string {
 
 	data, err := db.GetConfigProjection(guildid, "prefix")
 	if err != nil || len(data) == 0 {
-		log.Println(err)
 		return "!"
 	}
 
 	binData, err := json.Marshal(data)
 	if err != nil {
-		log.Println(err)
 		return "!"
 	}
 
@@ -84,13 +86,11 @@ func GetMutedRole(guildid string) string {
 
 	data, err := db.GetConfigProjection(guildid, "modules.moderation.muteRole")
 	if err != nil || len(data) == 0 {
-		log.Println(err)
 		return ""
 	}
 
 	binData, err := json.Marshal(data)
 	if err != nil {
-		log.Println(err)
 		return ""
 	}
 
