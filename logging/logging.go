@@ -7,11 +7,12 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/discordgo"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func addLog(s *discordgo.Session, guildId string, emoji string, line string, public bool, channelId string) {
 	cfg, err := config.GetConfig(guildId)
-	if err != nil {
+	if err != nil && err != mongo.ErrNoDocuments {
 		fmt.Printf("couldn't add log for %v: %v\n", guildId, err)
 		return
 	}
