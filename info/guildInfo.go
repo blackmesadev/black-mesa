@@ -2,14 +2,16 @@ package info
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"strconv"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
+
+var failureMsg = fmt.Sprintf("%v Unable to fetch Guild data.", consts.EMOJI_CROSS)
 
 func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	start := time.Now()
@@ -18,10 +20,13 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", VERSION, runtime.Version()),
 	}
 
-	guild, err := s.Guild(m.GuildID)
-	if err != nil {
-		log.Println(err)
-		return
+	guild, err := s.State.Guild(m.GuildID)
+	if err == discordgo.ErrStateNotFound || guild == nil {
+		guild, err = s.Guild(m.GuildID)
+		if err != nil || guild == nil {
+			s.ChannelMessageSend(m.ChannelID, failureMsg)
+			return
+		}
 	}
 
 	var memberCount string

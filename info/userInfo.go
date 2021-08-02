@@ -26,16 +26,21 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 
 	if len(idList) == 1 {
 		userId = idList[0]
+	} else {
+		userId = m.Author.ID
 	}
 
 	footer := &discordgo.MessageEmbedFooter{
 		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", VERSION, runtime.Version()),
 	}
 
-	member, err := s.GuildMember(m.GuildID, userId)
-	if err != nil {
-		log.Println(err)
-		return
+	member, err := s.State.Member(m.GuildID, userId)
+	if err == discordgo.ErrStateNotFound || member == nil {
+		member, err = s.GuildMember(m.GuildID, userId)
+		if err != nil || member == nil {
+			s.ChannelMessageSend(m.ChannelID, failureMsg)
+			return
+		}
 	}
 
 	roleList := member.Roles
@@ -61,7 +66,7 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 	fields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "ID",
-			Value:  member.User.ID,
+			Value:  fmt.Sprintf("`%v`", member.User.ID),
 			Inline: true,
 		},
 		{
@@ -71,12 +76,16 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 		},
 		{
 			Name:   "Nickname",
-			Value:  member.Nick,
+			Value:  fmt.Sprintf("`%v`", member.Nick),
 			Inline: true,
 		},
 		{
 			Name:  "Top Role",
 			Value: fmt.Sprintf("`%v`", highestRole.Name),
+		},
+		{
+			Name:  "Locale",
+			Value: fmt.Sprintf("`%v`", member.User.Locale),
 		},
 	}
 
