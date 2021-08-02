@@ -34,13 +34,10 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", VERSION, runtime.Version()),
 	}
 
-	member, err := s.State.Member(m.GuildID, userId)
-	if err == discordgo.ErrStateNotFound || member == nil {
-		member, err = s.GuildMember(m.GuildID, userId)
-		if err != nil || member == nil {
-			s.ChannelMessageSend(m.ChannelID, failureMsg)
-			return
-		}
+	member, err := s.GuildMember(m.GuildID, userId)
+	if err != nil || member == nil {
+		s.ChannelMessageSend(m.ChannelID, failureMsg)
+		return
 	}
 
 	roleList := member.Roles
