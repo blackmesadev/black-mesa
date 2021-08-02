@@ -51,6 +51,7 @@ func (bot *Bot) Start() {
 	bot.Session.AddHandler(bot.OnMessageCreate)
 	bot.Session.AddHandler(bot.OnMessageUpdate)
 	bot.Session.AddHandler(bot.OnMessageDelete)
+	bot.Session.AddHandler(bot.OnMemberJoin)
 	bot.Session.AddHandler(bot.OnReady)
 
 	bot.Router = NewRouter()
