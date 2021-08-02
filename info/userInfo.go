@@ -51,7 +51,7 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 	}
 
 	var highestRole *discordgo.Role
-	highestRolePos := len(guildRoles)
+	var highestRolePos int
 
 	for _, role := range guildRoles {
 		for _, userRole := range roleList {
