@@ -75,8 +75,9 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 			Inline: true,
 		},
 		{
-			Name:  "Top Role",
-			Value: fmt.Sprintf("`%v`", highestRole.Name),
+			Name:   "Top Role",
+			Value:  fmt.Sprintf("`%v`", highestRole.Name),
+			Inline: true,
 		},
 	}
 
