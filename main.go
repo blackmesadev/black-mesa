@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("%v\nBlack Mesa Version %v starting", string(startupMsg), info.VERSION)
+	fmt.Printf("%v\nBlack Mesa Version %v starting\n", string(startupMsg), info.VERSION)
 
 	configFlat := config.LoadFlatConfig()
 
