@@ -55,7 +55,7 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 
 	for _, role := range guildRoles {
 		for _, userRole := range roleList {
-			if role.ID == userRole && highestRolePos > role.Position {
+			if role.ID == userRole && highestRolePos < role.Position {
 				highestRole = role
 				highestRolePos = role.Position
 				break
@@ -75,18 +75,17 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 			Inline: true,
 		},
 		{
-			Name:   "Nickname",
-			Value:  fmt.Sprintf("`%v`", member.Nick),
-			Inline: true,
-		},
-		{
 			Name:  "Top Role",
 			Value: fmt.Sprintf("`%v`", highestRole.Name),
 		},
-		{
-			Name:  "Locale",
-			Value: fmt.Sprintf("`%v`", member.User.Locale),
-		},
+	}
+
+	if member.Nick != "" {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Nickname",
+			Value:  fmt.Sprintf("`%v`", member.Nick),
+			Inline: true,
+		})
 	}
 
 	thumbnail := &discordgo.MessageEmbedThumbnail{
