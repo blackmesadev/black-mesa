@@ -12,8 +12,10 @@ import (
 
 func addLog(s *discordgo.Session, guildId string, emoji string, line string, public bool, channelId string) {
 	cfg, err := config.GetConfig(guildId)
-	if err != nil && err != mongo.ErrNoDocuments {
-		fmt.Printf("couldn't add log for %v: %v\n", guildId, err)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			fmt.Printf("couldn't add log for %v: %v\n", guildId, err)
+		}
 		return
 	}
 
