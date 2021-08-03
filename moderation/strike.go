@@ -64,12 +64,24 @@ func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 
 	msg := "<:mesaCheck:832350526729224243> Successfully striked "
 
+	var timeExpiry time.Time
+	var timeUntil time.Duration
+
 	unableStrike := make([]string, 0)
 	for _, id := range idList {
 
 		infractionUUID := uuid.New().String()
 		msg += fmt.Sprintf("<@%v> ", id)
 		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID, infractionUUID)
+
+		timeExpiry = time.Unix(duration, 0)
+		timeUntil = time.Until(timeExpiry).Round(time.Second)
+
+		guild, err := s.Guild(m.GuildID)
+		member, err := s.GuildMember(m.GuildID, id)
+		if err == nil {
+			s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permStrike, "Striked"))
+		}
 		if err != nil {
 			log.Println(err)
 			unableStrike = append(unableStrike, id)
@@ -81,8 +93,7 @@ func StrikeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 		msg += "lasting `Forever` "
 
 	} else {
-		timeExpiry := time.Unix(duration, 0)
-		timeUntil := time.Until(timeExpiry).Round(time.Second)
+
 		msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
 	}
 

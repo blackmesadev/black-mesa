@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/util"
@@ -41,6 +43,51 @@ func parseCommand(cmd string) ([]string, int64, string) {
 	fmt.Println(reason)
 
 	return idList, duration, reason
+}
+
+func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, actioner *discordgo.User, reason string, expires *time.Time, permenant bool, punishmentType string) *discordgo.MessageEmbed {
+	footer := &discordgo.MessageEmbedFooter{
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+	}
+
+	fields := []*discordgo.MessageEmbedField{
+		{
+			Name:   "Server Name",
+			Value:  guild.Name,
+			Inline: true,
+		},
+		{
+			Name:  "Actioned by",
+			Value: actioner.String(),
+		},
+		{
+			Name:  "Reason",
+			Value: reason,
+		},
+	}
+
+	var expiresString string
+
+	if permenant {
+		expiresString = "Forever"
+	} else if expires != nil {
+		expiresString = expires.Format(time.RFC822)
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:  "Expires",
+			Value: expiresString,
+		},
+		)
+	}
+
+	embed := &discordgo.MessageEmbed{
+		URL:    info.WEBSITE,
+		Type:   discordgo.EmbedTypeRich,
+		Title:  fmt.Sprintf("You have been %v.", punishmentType),
+		Color:  0,
+		Footer: footer,
+		Fields: fields,
+	}
+	return embed
 }
 
 func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string, infractionUUID string) error {

@@ -65,6 +65,10 @@ func KickCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 				unableKick = append(unableKick, id)
 			}
 		}
+		guild, err := s.Guild(m.GuildID)
+		if err == nil {
+			s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, nil, false, "Kicked"))
+		}
 		err = s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
 
 		if err != nil {

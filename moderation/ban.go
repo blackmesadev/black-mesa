@@ -65,6 +65,9 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 
 	msg := "<:mesaCheck:832350526729224243> Successfully banned "
 
+	var timeExpiry time.Time
+	var timeUntil time.Duration
+
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableBan := make([]string, 0)
 	for _, id := range idList {
@@ -81,6 +84,12 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 				unableBan = append(unableBan, id)
 			}
 		}
+		timeExpiry = time.Unix(duration, 0)
+		timeUntil = time.Until(timeExpiry).Round(time.Second)
+		guild, err := s.Guild(m.GuildID)
+		if err == nil {
+			s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permBan, "Banned"))
+		}
 		err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
 		if err != nil {
 			unableBan = append(unableBan, id)
@@ -88,26 +97,26 @@ func BanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, 
 			msg += fmt.Sprintf("<@%v> ", id)
 			AddTimedBan(m.GuildID, m.Author.ID, id, duration, infractionUUID)
 		}
-		if permBan {
-			msg += "lasting `Forever` "
 
+		if permBan {
 			if hackban {
 				logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
 			} else {
 				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 			}
 		} else {
-			timeExpiry := time.Unix(duration, 0)
-			timeUntil := time.Until(timeExpiry).Round(time.Second)
-			msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
-
 			if hackban {
 				logging.LogHackTempBan(s, m.GuildID, fullName, id, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
 			} else {
 				logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
 			}
-
 		}
+	}
+	if permBan {
+		msg += "lasting `Forever` "
+	} else {
+		msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
+
 	}
 
 	if len(reason) != 0 {

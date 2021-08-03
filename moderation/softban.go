@@ -67,7 +67,11 @@ func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 				log.Println(err)
 				unableBan = append(unableBan, id)
 			}
-			err := s.GuildBanCreateWithReason(m.GuildID, id, reason, 1) // todo: make the days configurable via cmd params + config (default setting)
+			guild, err := s.Guild(m.GuildID)
+			if err == nil {
+				s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, nil, false, "Softbanned"))
+			}
+			err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 1) // todo: make the days configurable via cmd params + config (default setting)
 			if err != nil {
 				unableBan = append(unableBan, id)
 			} else {

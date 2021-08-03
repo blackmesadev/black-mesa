@@ -69,6 +69,9 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 	msg := "<:mesaCheck:832350526729224243> Successfully muted "
 
+	var timeExpiry time.Time
+	var timeUntil time.Duration
+
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableMute := make([]string, 0)
 	for _, id := range idList {
@@ -92,20 +95,26 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 				}
 			}
 			if member.User != nil {
+				timeExpiry := time.Unix(duration, 0)
+				timeUntil := time.Until(timeExpiry).Round(time.Second)
+				guild, err := s.Guild(m.GuildID)
+				if err == nil {
+					s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permMute, "Muted"))
+				}
 				if permMute {
-					msg += "lasting `Forever` "
-
 					logging.LogMute(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 
 				} else {
-					timeExpiry := time.Unix(duration, 0)
-					timeUntil := time.Until(timeExpiry).Round(time.Second)
-					msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
-
 					logging.LogTempMute(s, m.GuildID, fullName, member.User, timeUntil, reason, m.ChannelID)
 				}
 			}
 		}
+	}
+
+	if permMute {
+		msg += "lasting `Forever` "
+	} else {
+		msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
 	}
 	if len(reason) != 0 {
 		msg += fmt.Sprintf("for reason `%v` ", reason)
