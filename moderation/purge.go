@@ -2,6 +2,7 @@ package moderation
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -122,8 +123,10 @@ func PurgeAttachments(s *discordgo.Session, m *discordgo.Message, msgLimit int) 
 				}
 			}
 		}
-		s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-
+		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		if err != nil {
+			log.Println(err, msgIDList)
+		}
 		// Update at the end with newest count before waiting and deleting
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
@@ -164,8 +167,10 @@ func PurgeBot(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 				}
 			}
 		}
-		s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-
+		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		if err != nil {
+			log.Println(err, msgIDList)
+		}
 		// Update at the end with newest count before waiting and deleting
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
@@ -206,7 +211,10 @@ func PurgeImage(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 				}
 			}
 		}
-		s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		if err != nil {
+			log.Println(err, msgIDList)
+		}
 
 		// Update at the end with newest count before waiting and deleting
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
@@ -248,8 +256,10 @@ func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filte
 				}
 			}
 		}
-		s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-
+		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		if err != nil {
+			log.Println(err, msgIDList)
+		}
 		// Update at the end with newest count before waiting and deleting
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages by `%v`... [%v/%v]", filter, count, msgLimit))
 	}
@@ -290,7 +300,11 @@ func PurgeUser(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 				}
 			}
 		}
-		s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		if err != nil {
+			log.Println(err, msgIDList)
+		}
+
 		// Update at the end with newest count before waiting and deleting
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
@@ -330,8 +344,10 @@ func PurgeVideo(s *discordgo.Session, m *discordgo.Message, msgLimit int) {
 				}
 			}
 		}
-		s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-
+		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+		if err != nil {
+			log.Println(err, msgIDList)
+		}
 		// Update at the end with newest count before waiting and deleting
 		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
