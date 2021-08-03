@@ -7,7 +7,11 @@ import (
 )
 
 func (bot *Bot) OnMessageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
-	if m.Author.Bot || m == nil || m.Author == nil {
+	// stop nil pointer exceptions
+	if m == nil || m.Author == nil {
+		return
+	}
+	if m.Author.Bot {
 		return
 	} // just ignore all bot messages, good bots don't need to be moderated by us
 	if m.BeforeUpdate != nil {
