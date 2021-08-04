@@ -15,7 +15,7 @@ var (
 	req  waterlink.Requester
 )
 
-func createConnection(config structs.LavalinkConfig) {
+func LavalinkInit(config structs.LavalinkConfig) {
 	var err error
 	connOpts := waterlink.NewConnectOptions().WithUserID(config.Username).WithPassphrase(config.Password)
 	reqOpts := waterlink.NewRequesterOptions().WithPassphrase(config.Password)

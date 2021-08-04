@@ -8,6 +8,7 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/discord"
 	"github.com/blackmesadev/black-mesa/info"
+	"github.com/blackmesadev/black-mesa/music"
 	"github.com/blackmesadev/black-mesa/redis"
 )
 
@@ -24,6 +25,7 @@ func main() {
 
 	config.StartDB(configFlat.Mongo)
 	redis.ConnectRedis(configFlat.Redis)
+	music.LavalinkInit(configFlat.Lavalink)
 
 	bot := discord.CreateBot(configFlat.Token)
 
