@@ -1,17 +1,24 @@
 package structs
 
 type FlatConfig struct {
-	Token string      `json:"token"`
-	Mongo MongoConfig `json:"mongo"`
-	Redis RedisConfig `json:"redis"`
+	Token    string
+	Mongo    MongoConfig
+	Redis    RedisConfig
+	Lavalink LavalinkConfig
 }
 
 type MongoConfig struct {
-	ConnectionString string `json:"connectionString"`
-	Username         string `json:"username,omitempty"`
-	Password         string `json:"password,omitempty"`
+	ConnectionString string
+	Username         string
+	Password         string
 }
 
 type RedisConfig struct {
-	Host string `json:"host"`
+	Host string
+}
+
+type LavalinkConfig struct {
+	Host     string
+	Username string
+	Password string
 }

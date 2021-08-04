@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -15,20 +14,28 @@ import (
 var db *mongodb.DB
 
 func LoadFlatConfig() structs.FlatConfig {
-	jsonFile, err := os.Open("config.json")
-
-	if err != nil {
-		panic(err)
+	mongo := structs.MongoConfig{
+		ConnectionString: os.Getenv("MONGOURI"),
+		Username:         os.Getenv("MONGOUSER"),
+		Password:         os.Getenv("MONGOPASS"),
 	}
 
-	defer jsonFile.Close()
+	redis := structs.RedisConfig{
+		Host: os.Getenv("REDIS"),
+	}
 
-	bytes, _ := ioutil.ReadAll(jsonFile)
+	lavalink := structs.LavalinkConfig{
+		Host:     os.Getenv("LAVALINKURI"),
+		Username: os.Getenv("LAVALINKUSER"),
+		Password: os.Getenv("LAVALINKPASS"),
+	}
 
-	var result structs.FlatConfig
-	json.Unmarshal([]byte(bytes), &result)
-
-	return result
+	return structs.FlatConfig{
+		Token:    os.Getenv("TOKEN"),
+		Mongo:    mongo,
+		Redis:    redis,
+		Lavalink: lavalink,
+	}
 }
 
 func StartDB(cfg structs.MongoConfig) {
