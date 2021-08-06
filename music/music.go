@@ -25,7 +25,8 @@ func LavalinkInit(config structs.LavalinkConfig) {
 
 	conn, err = waterlink.Connect(context.TODO(), *wsHost, connOpts)
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
+		return
 	}
 
 	req = waterlink.NewRequester(*httpHost, reqOpts)
