@@ -26,7 +26,6 @@ func LoadFlatConfig() structs.FlatConfig {
 
 	lavalink := structs.LavalinkConfig{
 		Host:     os.Getenv("LAVALINKURI"),
-		Username: os.Getenv("LAVALINKUSER"),
 		Password: os.Getenv("LAVALINKPASS"),
 	}
 

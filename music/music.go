@@ -17,7 +17,7 @@ var (
 
 func LavalinkInit(config structs.LavalinkConfig) {
 	var err error
-	connOpts := waterlink.NewConnectOptions().WithUserID(config.Username).WithPassphrase(config.Password)
+	connOpts := waterlink.NewConnectOptions().WithPassphrase(config.Password)
 	reqOpts := waterlink.NewRequesterOptions().WithPassphrase(config.Password)
 
 	httpHost, _ := url.Parse(fmt.Sprintf("http://%s", config.Host))

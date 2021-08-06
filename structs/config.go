@@ -19,6 +19,5 @@ type RedisConfig struct {
 
 type LavalinkConfig struct {
 	Host     string
-	Username string
 	Password string
 }
