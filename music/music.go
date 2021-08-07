@@ -92,7 +92,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 		return
 	}
 
-	timeDuration := time.Second * time.Duration(loadTrack.Info.Length)
+	timeDuration := time.Millisecond * time.Duration(loadTrack.Info.Length)
 
 	embedFields := []*discordgo.MessageEmbedField{
 		{
