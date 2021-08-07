@@ -7,6 +7,7 @@ import (
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
 	"github.com/blackmesadev/black-mesa/moderation"
+	"github.com/blackmesadev/black-mesa/music"
 )
 
 func (r *Mux) InitRouter() {
@@ -55,4 +56,10 @@ func (r *Mux) InitRouter() {
 
 	//roles
 	r.Route("addrole", roles.AddRoleCmd)
+
+	// music
+	r.Route("play", music.PlayCmd)
+	r.Route("stop", music.StopCmd)
+	r.Route("dc", music.DisconnectCmd)
+	r.Route("disconnect", music.DisconnectCmd)
 }
