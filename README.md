@@ -2,6 +2,8 @@
 
 [![CodeFactor](https://www.codefactor.io/repository/github/blackmesadev/black-mesa/badge?s=14355c8033b3e76f4d0bf466d6726a52305a5d8b)](https://www.codefactor.io/repository/github/blackmesadev/black-mesa) ![Discord](https://img.shields.io/discord/832311430019022848) ![Lines of code](https://img.shields.io/tokei/lines/github.com/blackmesadev/black-mesa) ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/blackmesadev/black-mesa?sort=semver)
 
+# BLACK MESA IS NOT YET FULLY DOCUMENTED TO BE SELF HOSTED, CONTINUE WITH A GRAIN OF SALT
+
 Black Mesa is a Discord Moderation bot designed with **Performance**, **Reliability** and **Customization** in mind.
 
 This application is designed to be ran on Linux and has been tested to work on the following distros:
