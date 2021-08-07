@@ -117,7 +117,9 @@ func actionExpiryGoroutine() {
 					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
 				case "mute":
 					config.RemoveAction(doc.UUID, doc.UUID)
-					GetInstance().Session.GuildMemberRoleBulkAdd(doc.GuildID, doc.UserID, *doc.ReturnRoles)
+					if doc.ReturnRoles != nil {
+						GetInstance().Session.GuildMemberRoleBulkAdd(doc.GuildID, doc.UserID, *doc.ReturnRoles)
+					}
 					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
 				case "strike":
 					config.RemoveAction(doc.UUID, doc.UUID)
