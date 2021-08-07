@@ -117,8 +117,8 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 				unableMute = append(unableMute, id)
 			}
 
-			timeExpiry := time.Unix(duration, 0)
-			timeUntil := time.Until(timeExpiry).Round(time.Second)
+			timeExpiry = time.Unix(duration, 0)
+			timeUntil = time.Until(timeExpiry).Round(time.Second)
 
 			if member.User != nil {
 
