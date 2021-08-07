@@ -107,13 +107,17 @@ func actionExpiryGoroutine() {
 				fmt.Println(doc)
 				switch doc.Type {
 				case "ban":
+					config.RemoveAction(doc.UUID, doc.UUID)
 					GetInstance().Session.GuildBanDelete(doc.GuildID, doc.UserID)
 				case "role":
+					config.RemoveAction(doc.UUID, doc.UUID)
 					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
 				case "mute":
+					config.RemoveAction(doc.UUID, doc.UUID)
+					GetInstance().Session.GuildMemberRoleBulkAdd(doc.GuildID, doc.UserID, *doc.ReturnRoles)
 					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
 				case "strike":
-					// can ignore, strikes don't have anything special about them when they expire
+					config.RemoveAction(doc.UUID, doc.UUID)
 				default:
 					fmt.Println("unknown type", doc.Type)
 				}
