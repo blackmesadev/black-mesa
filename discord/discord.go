@@ -12,6 +12,7 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/mongodb"
+	"github.com/blackmesadev/black-mesa/music"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -53,6 +54,8 @@ func (bot *Bot) Start() {
 	bot.Session.AddHandler(bot.OnMessageDelete)
 	//bot.Session.AddHandler(bot.OnMemberJoin)
 	bot.Session.AddHandler(bot.OnReady)
+
+	bot.Session.AddHandler(music.VoiceUpdate)
 
 	bot.Router = NewRouter()
 	bot.Router.InitRouter()
