@@ -12,7 +12,7 @@ import (
 func PrefixCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	start := time.Now()
 
-	prefix := config.GetPrefix(m.GuildID)
+	prefix := config.GetPrefix(m.GuildID, nil)
 
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The Prefix for this Guild is `%v`", prefix))
 

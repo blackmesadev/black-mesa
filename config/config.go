@@ -68,7 +68,8 @@ func GetConfig(guildid string) (*structs.Config, error) {
 	return config, nil
 }
 
-func GetPrefix(guildid string) string {
+// Takes an optional config parameter incase there's a config struct to get it from already.
+func GetPrefix(guildid string, config *structs.Config) string {
 	tempStruct := &mongodb.MongoGuild{}
 
 	data, err := db.GetConfigProjection(guildid, "prefix")
@@ -87,21 +88,51 @@ func GetPrefix(guildid string) string {
 
 }
 
-func GetMutedRole(guildid string) string {
-	tempStruct := &mongodb.MongoGuild{}
+// Takes an optional config parameter incase there's a config struct to get it from already.
+func GetMutedRole(guildid string, config *structs.Config) string {
+	if config == nil {
+		tempStruct := &mongodb.MongoGuild{}
 
-	data, err := db.GetConfigProjection(guildid, "modules.moderation.muteRole")
-	if err != nil || len(data) == 0 {
-		return ""
+		data, err := db.GetConfigProjection(guildid, "modules.moderation.muteRole")
+		if err != nil || len(data) == 0 {
+			return ""
+		}
+
+		binData, err := json.Marshal(data)
+		if err != nil {
+			return ""
+		}
+
+		json.Unmarshal(binData, &tempStruct)
+
+		return tempStruct.Config.Modules.Moderation.MuteRole
+
+	} else {
+		return config.Modules.Moderation.MuteRole
 	}
+}
 
-	binData, err := json.Marshal(data)
-	if err != nil {
-		return ""
+// Takes an optional config parameter incase there's a config struct to get it from already.
+func GetRemoveRolesOnMute(guildid string, config *structs.Config) bool {
+	if config == nil {
+		tempStruct := &mongodb.MongoGuild{}
+
+		data, err := db.GetConfigProjection(guildid, "modules.moderation.removeRolesOnMute")
+		if err != nil || len(data) == 0 {
+			return false
+		}
+
+		binData, err := json.Marshal(data)
+		if err != nil {
+			return false
+		}
+
+		json.Unmarshal(binData, &tempStruct)
+
+		return tempStruct.Config.Modules.Moderation.RemoveRolesOnMute
+
+	} else {
+		return config.Modules.Moderation.RemoveRolesOnMute
 	}
-
-	json.Unmarshal(binData, &tempStruct)
-
-	return tempStruct.Config.Modules.Moderation.MuteRole
 
 }

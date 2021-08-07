@@ -50,12 +50,6 @@ func UnbanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
-	roleid := config.GetMutedRole(m.GuildID)
-	if roleid == "" {
-		s.ChannelMessageSend(m.ChannelID, "Invalid Muted role ID, Aborting.")
-		return
-	}
-
 	msg := "<:mesaCheck:832350526729224243> Successfully unbanned "
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator

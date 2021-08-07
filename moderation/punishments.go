@@ -19,7 +19,9 @@ func AddTimedBan(guildid string, issuer string, userid string, expiry int64, uui
 	return err
 }
 
-func AddTimedMute(guildid string, issuer string, userid string, roleid string, expiry int64, reason string, uuid string) error {
+func AddTimedMute(guildid string, issuer string, userid string, roleid string, expiry int64, reason string, uuid string, roles *[]string) error {
+	config.DeleteMute(guildid, userid) // delete existing mutes
+
 	punishment := &mongodb.Action{
 		GuildID: guildid,
 		UserID:  userid,
@@ -29,6 +31,10 @@ func AddTimedMute(guildid string, issuer string, userid string, roleid string, e
 		Expires: expiry,
 		Reason:  reason,
 		UUID:    uuid,
+	}
+
+	if roles != nil {
+		punishment.ReturnRoles = roles
 	}
 
 	_, err := config.AddAction(punishment)

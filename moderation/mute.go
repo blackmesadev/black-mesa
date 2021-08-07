@@ -59,41 +59,64 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		reason = ""
 	}
 
+	conf, err := config.GetConfig(m.GuildID)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> Unable to fetch Guild config.")
+		return
+	}
+
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
-	roleid := config.GetMutedRole(m.GuildID)
+	roleid := config.GetMutedRole(m.GuildID, conf)
 	if roleid == "" {
 		s.ChannelMessageSend(m.ChannelID, "Invalid Muted role ID, Aborting.")
 		return
 	}
 
+	removeRolesOnMute := config.GetRemoveRolesOnMute(m.GuildID, conf)
+
 	msg := "<:mesaCheck:832350526729224243> Successfully muted "
 
 	var timeExpiry time.Time
 	var timeUntil time.Duration
+	var roles *[]string
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableMute := make([]string, 0)
 	for _, id := range idList {
 		infractionUUID := uuid.New().String()
 
-		err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
+		member, err := s.State.Member(m.GuildID, id)
+		if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
+			member, err = s.GuildMember(m.GuildID, id)
+			if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
+				log.Println(err)
+				unableMute = append(unableMute, id)
+			} else {
+				s.State.MemberAdd(member)
+			}
+		}
+
+		if removeRolesOnMute {
+			roles = &member.Roles
+			go s.GuildMemberRoleBulkRemove(m.GuildID, id, *roles)
+		} else {
+			roles = nil
+		}
+
+		err = AddTimedMute(m.GuildID, m.Author.ID, id, roleid, duration, reason, infractionUUID, roles)
+
 		if err != nil {
 			unableMute = append(unableMute, id)
+			log.Println(err)
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
-			AddTimedMute(m.GuildID, m.Author.ID, id, roleid, duration, reason, infractionUUID)
 
-			member, err := s.State.Member(m.GuildID, id)
-			if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
-				member, err = s.GuildMember(m.GuildID, id)
-				if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
-					log.Println(err)
-					unableMute = append(unableMute, id)
-				} else {
-					s.State.MemberAdd(member)
-				}
+			err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
+			if err != nil {
+				unableMute = append(unableMute, id)
 			}
+
 			if member.User != nil {
 				timeExpiry := time.Unix(duration, 0)
 				timeUntil := time.Until(timeExpiry).Round(time.Second)

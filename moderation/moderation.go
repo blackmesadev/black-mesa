@@ -174,11 +174,28 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 		switch escalatingTo.Type {
 		case "mute":
+			var roles *[]string
+			if guildConfig.Modules.Moderation.RemoveRolesOnMute {
+				member, err := s.State.Member(guildId, userId)
+				if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
+					member, err = s.GuildMember(guildId, userId)
+					if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
+						log.Println(err)
+					} else {
+						s.State.MemberAdd(member)
+					}
+				}
+
+				roles = &member.Roles
+			} else {
+				roles = nil
+			}
 			err := s.GuildMemberRoleAdd(guildId, userId, guildConfig.Modules.Moderation.MuteRole)
 			if err != nil {
 				return err
 			}
-			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", infractionUUID)
+
+			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", infractionUUID, roles)
 			if err != nil {
 				return err
 			}

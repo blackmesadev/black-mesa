@@ -50,7 +50,7 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
-	roleid := config.GetMutedRole(m.GuildID)
+	roleid := config.GetMutedRole(m.GuildID, nil)
 	if roleid == "" {
 		s.ChannelMessageSend(m.ChannelID, "Invalid Muted role ID, Aborting.")
 		return
@@ -62,7 +62,14 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 	unableUnmute := make([]string, 0)
 	for _, id := range idList {
 
-		err := s.GuildMemberRoleRemove(m.GuildID, id, roleid) // change this to WithReason when implemented
+		muteInfo, err := config.GetMute(m.GuildID, id)
+		if err != nil || muteInfo == nil {
+			s.ChannelMessageSend(m.ChannelID, "<:mesaCheck:832350526729224243> Unable to fetch previous roles.")
+		} else {
+			go s.GuildMemberRoleBulkAdd(m.GuildID, id, *muteInfo.ReturnRoles)
+		}
+
+		err = s.GuildMemberRoleRemove(m.GuildID, id, roleid) // change this to WithReason when implemented
 		if err != nil {
 			unableUnmute = append(unableUnmute, id)
 		} else {
@@ -73,6 +80,8 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 				continue
 			}
 			logging.LogUnmute(s, m.GuildID, fullName, possibleUser.User, reason)
+
+			config.DeleteMute(m.GuildID, id)
 		}
 	}
 

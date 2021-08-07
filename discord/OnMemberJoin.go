@@ -30,7 +30,7 @@ func (bot *Bot) OnMemberJoin(s *discordgo.Session, m *discordgo.GuildMemberAdd) 
 		return
 	}
 
-	roleid := config.GetMutedRole(m.GuildID)
+	roleid := config.GetMutedRole(m.GuildID, nil)
 
 	err = s.GuildMemberRoleAdd(m.GuildID, m.User.ID, roleid)
 	if err != nil {

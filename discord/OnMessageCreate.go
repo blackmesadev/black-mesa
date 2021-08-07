@@ -12,7 +12,9 @@ import (
 )
 
 func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreate) {
-	if mc.Author.Bot { return } // just ignore all bot messages, good bots don't need to be moderated by us
+	if mc.Author.Bot {
+		return
+	} // just ignore all bot messages, good bots don't need to be moderated by us
 
 	var err error
 
@@ -80,7 +82,7 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 		}
 	}
 
-	prefix := config.GetPrefix(mc.GuildID)
+	prefix := config.GetPrefix(mc.GuildID, nil)
 
 	if !ctx.IsDirected && len(prefix) > 0 {
 		if strings.HasPrefix(ctx.Content, prefix) {

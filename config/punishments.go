@@ -20,3 +20,11 @@ func GetPunishments(guildid string, userid string) ([]*mongodb.Action, error) {
 func GetActions(guildid string, userid string) ([]*mongodb.Action, error) {
 	return db.GetActions(guildid, userid)
 }
+
+func GetMute(guildid string, userid string) (*mongodb.Action, error) {
+	return db.GetMute(guildid, userid)
+}
+
+func DeleteMute(guildid string, userid string) (*mongo.DeleteResult, error) {
+	return db.DeleteMute(guildid, userid)
+}
