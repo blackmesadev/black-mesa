@@ -117,9 +117,11 @@ func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 				unableMute = append(unableMute, id)
 			}
 
+			timeExpiry := time.Unix(duration, 0)
+			timeUntil := time.Until(timeExpiry).Round(time.Second)
+
 			if member.User != nil {
-				timeExpiry := time.Unix(duration, 0)
-				timeUntil := time.Until(timeExpiry).Round(time.Second)
+
 				guild, err := s.Guild(m.GuildID)
 				if err == nil {
 					s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permMute, "Muted"))
