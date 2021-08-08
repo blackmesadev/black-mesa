@@ -85,7 +85,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 		loadTrack = resp.Tracks[0]
 	}
 
-	opts := play.NewOptions().WithVolume(100)
+	opts := play.NewOptions().WithVolume(100).WithPaused(false)
 	err = conn.Play(guildID, loadTrack.ID, opts)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
@@ -133,9 +133,11 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 
 }
 
-func stopSong(s *discordgo.Session, channelID, guildID string) {
+func stopSong(s *discordgo.Session, channelID, guildID string) error {
 	err := conn.Stop(guildID)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to stop track `%v`", consts.EMOJI_CROSS, err))
+		return err
 	}
+	return nil
 }
