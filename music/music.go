@@ -1,6 +1,7 @@
 package music
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"runtime"
@@ -242,6 +243,10 @@ func setVolume(s *discordgo.Session, channelID, guildID, volume string) error {
 	volumeInt, err := strconv.Atoi(volume)
 	if err != nil {
 		return err
+	}
+
+	if volumeInt < 0 || volumeInt > 1000 {
+		return errors.New("Volume is out of range, must be within [0, 1000]")
 	}
 
 	err = players[guildID].Volume(volumeInt)
