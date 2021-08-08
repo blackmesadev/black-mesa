@@ -16,18 +16,16 @@ func VoiceUpdate(s *discordgo.Session, vu *discordgo.VoiceServerUpdate) {
 		Token:    vu.Token,
 	}
 
-	p, err := lavalink.GetPlayer(vu.GuildID)
-	if err != nil {
-		log.Println("Unable to get player", vu, err)
+	// attempt to get existing player if existing
+	if p, err := lavalink.GetPlayer(vu.GuildID); err == nil {
+		err = p.Forward(s.State.SessionID, vsu)
+		if err != nil {
+			log.Println("Unable to forward", vu, err)
+		}
 		return
 	}
 
-	err = p.Forward(s.State.SessionID, vsu)
-	if err != nil {
-		log.Println("Unable to forward data to player", vu, err)
-		return
-	}
-
+	// create a new player then.
 	node, err := lavalink.BestNode()
 	if err != nil {
 		log.Println("Unable to fetch best node", err)
