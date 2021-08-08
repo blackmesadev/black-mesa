@@ -11,7 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
-	"github.com/foxbot/gavalink"
+	"github.com/blackmesadev/gavalink"
 )
 
 var (
@@ -70,6 +70,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	node, err := lavalink.BestNode()
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch lavalink node `%v`", consts.EMOJI_CROSS, err))
+		return
 	}
 
 	tracks, err := node.LoadTracks(identifier)

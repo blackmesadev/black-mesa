@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/blackmesadev/discordgo"
-	"github.com/foxbot/gavalink"
+	"github.com/blackmesadev/gavalink"
 )
 
 var players = make(map[string]*gavalink.Player)
