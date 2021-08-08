@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	VERSION = "0.11.1"
+	VERSION = "0.11.2"
 
 	WEBSITE = "https://blackmesa.bot"
 
