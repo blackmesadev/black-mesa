@@ -60,6 +60,17 @@ func (r *Mux) InitRouter() {
 	// music
 	r.Route("play", music.PlayCmd)
 	r.Route("stop", music.StopCmd)
+
 	r.Route("dc", music.DisconnectCmd)
 	r.Route("disconnect", music.DisconnectCmd)
+
+	r.Route("np", music.NowPlayingCmd)
+	r.Route("nowplaying", music.NowPlayingCmd)
+
+	r.Route("seek", music.SeekCmd)
+
+	r.Route("vol", music.VolumeCmd)
+	r.Route("volume", music.VolumeCmd)
+
+	r.Route("goto", music.GotoCmd)
 }

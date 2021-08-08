@@ -14,4 +14,5 @@ const (
 	EMOJI_KICK              = "<:mesaKick:869665034312253460>"
 	EMOJI_CROSS             = "<:mesaCross:832350526414127195>"
 	EMOJI_CHECK             = "<:mesaCheck:832350526729224243>"
+	EMOJI_COMMAND           = "<:mesaCommand:832350527131746344>"
 )

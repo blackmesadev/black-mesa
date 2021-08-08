@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -133,7 +134,15 @@ func stopSong(s *discordgo.Session, channelID, guildID string) error {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to stop track `%v`", consts.EMOJI_CROSS, err))
 		return err
 	} else {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Stopped.", consts.EMOJI_CHECK))
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Stopped", consts.EMOJI_CHECK))
+	}
+	return nil
+}
+
+func silentStop(s *discordgo.Session, guildID string) error {
+	err := players[guildID].Stop()
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -143,8 +152,6 @@ func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to destroy player `%v`", consts.EMOJI_CROSS, err))
 		return err
-	} else {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Destroyed.", consts.EMOJI_CHECK))
 	}
 	return nil
 }
@@ -152,8 +159,95 @@ func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
 func nowPlaying(s *discordgo.Session, channelID, guildID string) {
 	track := players[guildID].Track()
 	if track == "" {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Nothing playing.", consts.EMOJI_CROSS))
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Nothing playing", consts.EMOJI_CROSS))
 		return
 	}
 	s.ChannelMessageSend(channelID, track)
+}
+
+func seek(s *discordgo.Session, channelID, guildID, duration string) {
+	parsedDuration, err := time.ParseDuration(duration)
+	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to parse duration, the format is: `1h30m45s`", consts.EMOJI_CROSS))
+	}
+	err = players[guildID].Seek(int(parsedDuration.Milliseconds()))
+	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to seek `%v`", consts.EMOJI_CROSS, err))
+	}
+}
+
+func rawSeek(s *discordgo.Session, channelID, guildID string, duration time.Duration) {
+	err := players[guildID].Seek(int(duration.Milliseconds()))
+	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to seek `%v`", consts.EMOJI_CROSS, err))
+	}
+}
+
+func getPosition(guildID string) time.Duration {
+	return time.Duration(players[guildID].Position()) * time.Millisecond
+}
+
+func playerInfo(s *discordgo.Session, channelID, guildID string) {
+	player := players[guildID]
+
+	var status string
+
+	if player.Track() == "" {
+		status = "Stopped"
+	} else if player.Paused() {
+		status = "Paused"
+	} else {
+		status = "Playing"
+	}
+
+	embedFields := []*discordgo.MessageEmbedField{
+		{
+			Name:   "Status",
+			Value:  status,
+			Inline: true,
+		},
+		{
+			Name:   "Track",
+			Value:  player.Track(),
+			Inline: true,
+		},
+		{
+			Name:   "Volume",
+			Value:  strconv.Itoa(player.GetVolume()),
+			Inline: true,
+		},
+	}
+
+	footer := &discordgo.MessageEmbedFooter{
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+	}
+
+	embed := &discordgo.MessageEmbed{
+		Title:  fmt.Sprintf("Black Mesa Music Status"),
+		Type:   discordgo.EmbedTypeRich,
+		Footer: footer,
+		Color:  0, // Black int value
+		Fields: embedFields,
+	}
+
+	s.ChannelMessageSendEmbed(channelID, embed)
+
+}
+
+func getVolume(s *discordgo.Session, channelID, guildID string) string {
+	return strconv.Itoa(players[guildID].GetVolume())
+}
+
+func setVolume(s *discordgo.Session, channelID, guildID, volume string) error {
+	volumeInt, err := strconv.Atoi(volume)
+	if err != nil {
+		return err
+	}
+
+	err = players[guildID].Volume(volumeInt)
+	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to set volume. `%v`", consts.EMOJI_CROSS, err))
+		return err
+	}
+	return nil
 }
