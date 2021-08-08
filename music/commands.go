@@ -2,7 +2,6 @@ package music
 
 import (
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/consts"
@@ -115,10 +114,6 @@ func VolumeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 
 	err := setVolume(s, m.ChannelID, m.GuildID, args[0])
 	if err != nil {
-		if err.(*strconv.NumError) != nil {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `volume <volume:int>`", consts.EMOJI_CROSS))
-			return
-		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v Failed to set Volume `%v`", consts.EMOJI_CROSS, err))
 		return
 	}

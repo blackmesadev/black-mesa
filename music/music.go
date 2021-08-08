@@ -1,6 +1,8 @@
 package music
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -157,13 +159,98 @@ func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
 	return nil
 }
 
+func getTrackInfo(base64Track string) (*gavalink.TrackInfo, error) {
+	var track *gavalink.TrackInfo
+
+	trackBytes, err := base64.StdEncoding.DecodeString(base64Track)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(trackBytes, track)
+	if err != nil {
+		return nil, err
+	}
+
+	return track, nil
+}
+
+func getTimeString(track *gavalink.TrackInfo) (timeDurationString string, timeElapsedString string) {
+	timeDuration := time.Unix(0, int64(track.Length*int(time.Millisecond)))
+	timeElapsed := time.Unix(0, int64(track.Position*int(time.Millisecond)))
+
+	// We only need to do upto a day because thats the limit anyway.
+	if timeDuration.Day() > 0 {
+		timeDurationString = timeDuration.Format("01:15:04:05")
+	}
+	if timeDuration.Hour() > 0 {
+		timeDurationString = timeDuration.Format("15:04:05")
+	} else {
+		timeDurationString = timeDuration.Format("04:05")
+	}
+
+	if timeElapsed.Day() > 0 {
+		timeElapsedString = timeDuration.Format("01:15:04:05")
+	}
+	if timeElapsed.Hour() > 0 {
+		timeElapsedString = timeDuration.Format("15:04:05")
+	} else {
+		timeElapsedString = timeDuration.Format("04:05")
+	}
+
+	return
+
+}
+
 func nowPlaying(s *discordgo.Session, channelID, guildID string) {
-	track := players[guildID].Track()
-	if track == "" {
+
+	base64Track := players[guildID].Track()
+
+	if base64Track == "" {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Nothing playing", consts.EMOJI_CROSS))
 		return
 	}
-	s.ChannelMessageSend(channelID, track)
+
+	track, err := getTrackInfo(base64Track)
+	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Unable to fetch track info `%v`", consts.EMOJI_CROSS, err))
+		return
+	}
+
+	timeDurationString, timeElapsedString := getTimeString(track)
+
+	embedFields := []*discordgo.MessageEmbedField{
+		{
+			Name:   "Author",
+			Value:  track.Author,
+			Inline: true,
+		},
+		{
+			Name:   "Title",
+			Value:  track.Title,
+			Inline: true,
+		},
+		{
+			Name:   "Time Elapsed",
+			Value:  fmt.Sprintf("%v/%v", timeDurationString, timeElapsedString),
+			Inline: true,
+		},
+	}
+
+	footer := &discordgo.MessageEmbedFooter{
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+	}
+
+	embed := &discordgo.MessageEmbed{
+		URL:    track.URI,
+		Title:  fmt.Sprintf("Playing %v", track.Title),
+		Type:   discordgo.EmbedTypeRich,
+		Footer: footer,
+		Color:  0, // Black int value
+		Fields: embedFields,
+	}
+
+	s.ChannelMessageSendEmbed(channelID, embed)
 }
 
 func seek(s *discordgo.Session, channelID, guildID, duration string) {
@@ -242,7 +329,7 @@ func getVolume(s *discordgo.Session, channelID, guildID string) string {
 func setVolume(s *discordgo.Session, channelID, guildID, volume string) error {
 	volumeInt, err := strconv.Atoi(volume)
 	if err != nil {
-		return err
+		return err.(*strconv.NumError).Err
 	}
 
 	if volumeInt < 0 || volumeInt > 1000 {
