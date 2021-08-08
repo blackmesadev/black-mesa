@@ -33,7 +33,12 @@ func StopCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		return
 	}
 
-	stopSong(s, m.ChannelID, m.GuildID)
+	err := stopSong(s, m.ChannelID, m.GuildID)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v Stopped.", consts.EMOJI_CHECK))
+	} else {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v Failed to stop: %v", consts.EMOJI_CHECK, err))
+	}
 
 }
 
