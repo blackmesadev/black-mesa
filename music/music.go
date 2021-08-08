@@ -1,10 +1,8 @@
 package music
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"net/url"
 	"runtime"
 	"strings"
 	"time"
@@ -13,31 +11,26 @@ import (
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
-	"github.com/lukasl-dev/waterlink"
-	"github.com/lukasl-dev/waterlink/entity/track"
-	"github.com/lukasl-dev/waterlink/usecase/play"
+	"github.com/foxbot/gavalink"
 )
 
 var (
-	conn waterlink.Connection
-	req  waterlink.Requester
+	lavalink *gavalink.Lavalink
 )
 
-func LavalinkInit(config structs.LavalinkConfig) {
-	var err error
-	connOpts := waterlink.NewConnectOptions().WithPassphrase(config.Password)
-	reqOpts := waterlink.NewRequesterOptions().WithPassphrase(config.Password)
+func LavalinkInit(r *discordgo.Ready, config structs.LavalinkConfig) {
+	lavalink = gavalink.NewLavalink("1", r.User.ID)
 
-	httpHost, _ := url.Parse(fmt.Sprintf("http://%s", config.Host))
-	wsHost, _ := url.Parse(fmt.Sprintf("ws://%s", config.Host))
+	err := lavalink.AddNodes(gavalink.NodeConfig{
+		REST:      fmt.Sprintf("http://%s", config.Host),
+		WebSocket: fmt.Sprintf("ws://%s", config.Host),
+		Password:  config.Password,
+	})
 
-	conn, err = waterlink.Connect(context.TODO(), *wsHost, connOpts)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-
-	req = waterlink.NewRequester(*httpHost, reqOpts)
 
 	log.Println("Lavalink connected.")
 
@@ -74,40 +67,40 @@ func findMemberChannel(s *discordgo.Session, guildID, userID string) string {
 }
 
 func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
-	resp, err := req.LoadTracks(identifier)
+	node, err := lavalink.BestNode()
 	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch lavalink node `%v`", consts.EMOJI_CROSS, err))
+	}
+
+	tracks, err := node.LoadTracks(identifier)
+	if err != nil || tracks.Type != gavalink.TrackLoaded {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to load track `%v`", consts.EMOJI_CROSS, err))
 		return
 	}
 
-	var loadTrack track.Track
-	if len(resp.Tracks) > 0 {
-		loadTrack = resp.Tracks[0]
-	}
-
-	opts := play.NewOptions().WithVolume(100).WithPaused(false)
-	err = conn.Play(guildID, loadTrack.ID, opts)
+	track := tracks.Tracks[0]
+	err = players[guildID].Play(track.Data)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
 		return
 	}
 
-	timeDuration := time.Millisecond * time.Duration(loadTrack.Info.Length)
+	timeDuration := time.Millisecond * time.Duration(track.Info.Length)
 
 	embedFields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "Author",
-			Value:  loadTrack.Info.Author,
+			Value:  track.Info.Author,
 			Inline: true,
 		},
 		{
 			Name:   "Title",
-			Value:  loadTrack.Info.Title,
+			Value:  track.Info.Title,
 			Inline: true,
 		},
 		{
 			Name:   "ID",
-			Value:  loadTrack.Info.Identifier,
+			Value:  track.Info.Identifier,
 			Inline: true,
 		},
 		{
@@ -122,7 +115,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Title:  fmt.Sprintf("Playing %v", loadTrack.Info.Title),
+		Title:  fmt.Sprintf("Playing %v", track.Info.Title),
 		Type:   discordgo.EmbedTypeRich,
 		Footer: footer,
 		Color:  0, // Black int value
@@ -134,7 +127,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 }
 
 func stopSong(s *discordgo.Session, channelID, guildID string) error {
-	err := conn.Stop(guildID)
+	err := players[guildID].Stop()
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to stop track `%v`", consts.EMOJI_CROSS, err))
 		return err
@@ -142,4 +135,24 @@ func stopSong(s *discordgo.Session, channelID, guildID string) error {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Stopped.", consts.EMOJI_CHECK))
 	}
 	return nil
+}
+
+func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
+	err := players[guildID].Destroy()
+	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to destroy player `%v`", consts.EMOJI_CROSS, err))
+		return err
+	} else {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Destroyed.", consts.EMOJI_CHECK))
+	}
+	return nil
+}
+
+func nowPlaying(s *discordgo.Session, channelID, guildID string) {
+	track := players[guildID].Track()
+	if track == "" {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Nothing playing.", consts.EMOJI_CROSS))
+		return
+	}
+	s.ChannelMessageSend(channelID, track)
 }

@@ -45,6 +45,18 @@ func DisconnectCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Co
 
 	stopSong(s, m.ChannelID, m.GuildID)
 
+	destroyPlayer(s, m.ChannelID, m.GuildID)
+
 	s.ChannelVoiceLeave(m.GuildID)
+
+}
+
+func NowPlayingCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if m.GuildID == "" {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild.", consts.EMOJI_CROSS))
+		return
+	}
+
+	nowPlaying(s, m.ChannelID, m.GuildID)
 
 }

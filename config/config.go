@@ -24,16 +24,17 @@ func LoadFlatConfig() structs.FlatConfig {
 		Host: os.Getenv("REDIS"),
 	}
 
-	lavalink := structs.LavalinkConfig{
+	return structs.FlatConfig{
+		Token: os.Getenv("TOKEN"),
+		Mongo: mongo,
+		Redis: redis,
+	}
+}
+
+func LoadLavalinkConfig() structs.LavalinkConfig {
+	return structs.LavalinkConfig{
 		Host:     os.Getenv("LAVALINKURI"),
 		Password: os.Getenv("LAVALINKPASS"),
-	}
-
-	return structs.FlatConfig{
-		Token:    os.Getenv("TOKEN"),
-		Mongo:    mongo,
-		Redis:    redis,
-		Lavalink: lavalink,
 	}
 }
 
