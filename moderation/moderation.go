@@ -187,6 +187,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 				}
 
 				roles = &member.Roles
+				go s.GuildMemberRoleBulkRemove(guildId, userId, *roles)
 			} else {
 				roles = nil
 			}
