@@ -76,4 +76,6 @@ func (r *Mux) InitRouter() {
 
 	r.Route("back", music.BackwardCmd)
 	r.Route("backward", music.BackwardCmd)
+
+	r.Route("queue", music.QueueCmd)
 }

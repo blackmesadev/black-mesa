@@ -76,57 +76,86 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	tracks, err := node.LoadTracks(identifier)
-	if err != nil || tracks.Type != gavalink.TrackLoaded {
+	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to load track `%v`", consts.EMOJI_CROSS, err))
 		return
 	}
 
-	track := tracks.Tracks[0]
-	err = players[guildID].Play(track.Data)
-	if err != nil {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
+	if tracks.Type == gavalink.PlaylistLoaded {
+		for i, track := range tracks.Tracks {
+			if i == 0 {
+				player := players[guildID]
+				if player.Track() != "" {
+					ok, err := addQueue(guildID, track.Data)
+					if !ok || err != nil {
+						log.Println("Failed to add track to queue", err, track.Info)
+					}
+				} else {
+					err = players[guildID].Play(track.Data)
+				}
+
+				if err != nil {
+					s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
+					return
+				}
+			} else {
+				ok, err := addQueue(guildID, track.Data)
+				if !ok || err != nil {
+					log.Println("Failed to add track to queue", err, track.Info)
+				}
+			}
+		}
+	}
+
+	if tracks.Type == gavalink.TrackLoaded {
+		player := players[guildID]
+		track := tracks.Tracks[0]
+		if player.Track() != "" {
+			ok, err := addQueue(guildID, track.Data)
+			if !ok || err != nil {
+				log.Println("Failed to add track to queue", err, track.Info)
+			}
+			return
+		}
+		err = player.Play(track.Data)
+		sendPlayEmbed(s, channelID, track)
+		if err != nil {
+			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
+			return
+		}
+	}
+
+	if tracks.Type == gavalink.LoadFailed {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `LOAD_FAILED`", consts.EMOJI_CROSS))
 		return
 	}
 
-	timeDuration := time.Millisecond * time.Duration(track.Info.Length)
-
-	embedFields := []*discordgo.MessageEmbedField{
-		{
-			Name:   "Author",
-			Value:  track.Info.Author,
-			Inline: true,
-		},
-		{
-			Name:   "Title",
-			Value:  track.Info.Title,
-			Inline: true,
-		},
-		{
-			Name:   "ID",
-			Value:  track.Info.Identifier,
-			Inline: true,
-		},
-		{
-			Name:   "Duration",
-			Value:  timeDuration.String(),
-			Inline: true,
-		},
+	if tracks.Type == gavalink.SearchResult {
+		player := players[guildID]
+		if len(tracks.Tracks) == 0 {
+			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to find track", consts.EMOJI_CROSS))
+			return
+		}
+		track := tracks.Tracks[0]
+		if player.Track() != "" {
+			ok, err := addQueue(guildID, track.Data)
+			if !ok || err != nil {
+				log.Println("Failed to add track to queue", err, track.Info)
+			}
+			return
+		}
+		err = player.Play(track.Data)
+		sendPlayEmbed(s, channelID, track)
+		if err != nil {
+			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
+			return
+		}
 	}
 
-	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+	if tracks.Type == gavalink.NoMatches {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to find track `NO_MATCHES`", consts.EMOJI_CROSS))
+		return
 	}
-
-	embed := &discordgo.MessageEmbed{
-		Title:  fmt.Sprintf("Playing %v", track.Info.Title),
-		Type:   discordgo.EmbedTypeRich,
-		Footer: footer,
-		Color:  0, // Black int value
-		Fields: embedFields,
-	}
-
-	s.ChannelMessageSendEmbed(channelID, embed)
-
 }
 
 func stopSong(s *discordgo.Session, channelID, guildID string) error {
