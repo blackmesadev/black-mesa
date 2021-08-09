@@ -157,7 +157,7 @@ func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
 	return nil
 }
 
-func getTimeString(track *gavalink.TrackInfo) (timeDurationString string, timeElapsedString string) {
+func getTimeString(track *gavalink.TrackInfo) (timeElapsedString string, timeDurationString string) {
 	timeDuration := time.Unix(0, int64(track.Length*int(time.Millisecond)))
 	timeElapsed := time.Unix(0, int64(track.Position*int(time.Millisecond)))
 
@@ -172,12 +172,12 @@ func getTimeString(track *gavalink.TrackInfo) (timeDurationString string, timeEl
 	}
 
 	if timeElapsed.Day() > 0 {
-		timeElapsedString = timeDuration.Format("01:15:04:05")
+		timeElapsedString = timeElapsed.Format("01:15:04:05")
 	}
 	if timeElapsed.Hour() > 0 {
-		timeElapsedString = timeDuration.Format("15:04:05")
+		timeElapsedString = timeElapsed.Format("15:04:05")
 	} else {
-		timeElapsedString = timeDuration.Format("04:05")
+		timeElapsedString = timeElapsed.Format("04:05")
 	}
 
 	return
@@ -214,7 +214,7 @@ func nowPlaying(s *discordgo.Session, channelID, guildID string) {
 		},
 		{
 			Name:   "Time Elapsed",
-			Value:  fmt.Sprintf("%v/%v", timeDurationString, timeElapsedString),
+			Value:  fmt.Sprintf("%v/%v", timeElapsedString, timeDurationString),
 			Inline: true,
 		},
 	}
