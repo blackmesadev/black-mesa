@@ -76,14 +76,14 @@ func SeekCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 	seek(s, m.ChannelID, m.GuildID, args[0])
 }
 
-func GotoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func ForwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild.", consts.EMOJI_CROSS))
 		return
 	}
 
 	if len(args) == 0 {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `goto <time:duration>`", consts.EMOJI_COMMAND))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `forward <time:duration>`", consts.EMOJI_COMMAND))
 		return
 	}
 
@@ -91,11 +91,36 @@ func GotoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 	parsedDuration, err := time.ParseDuration(args[0])
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `goto <time:duration>`", consts.EMOJI_COMMAND))
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `forward <time:duration>`", consts.EMOJI_COMMAND))
 		return
 	}
 
 	newDuration := currentDuration + parsedDuration
+
+	rawSeek(s, m.ChannelID, m.GuildID, newDuration)
+
+}
+
+func BackwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if m.GuildID == "" {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild.", consts.EMOJI_CROSS))
+		return
+	}
+
+	if len(args) == 0 {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `backward <time:duration>`", consts.EMOJI_COMMAND))
+		return
+	}
+
+	currentDuration := getPosition(m.GuildID)
+
+	parsedDuration, err := time.ParseDuration(args[0])
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `backward <time:duration>`", consts.EMOJI_COMMAND))
+		return
+	}
+
+	newDuration := currentDuration - parsedDuration
 
 	rawSeek(s, m.ChannelID, m.GuildID, newDuration)
 

@@ -72,5 +72,8 @@ func (r *Mux) InitRouter() {
 	r.Route("vol", music.VolumeCmd)
 	r.Route("volume", music.VolumeCmd)
 
-	r.Route("goto", music.GotoCmd)
+	r.Route("forward", music.ForwardCmd)
+
+	r.Route("back", music.BackwardCmd)
+	r.Route("backward", music.BackwardCmd)
 }
