@@ -199,7 +199,7 @@ func nowPlaying(s *discordgo.Session, channelID, guildID string) {
 		return
 	}
 
-	timeDurationString, timeElapsedString := getTimeString(track)
+	timeElapsedString, timeDurationString := getTimeString(track)
 
 	embedFields := []*discordgo.MessageEmbedField{
 		{
