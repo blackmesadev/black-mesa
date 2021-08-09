@@ -2,6 +2,8 @@ package util
 
 import "github.com/blackmesadev/discordgo"
 
+const ZeroWidth = "\u200B"
+
 func IsDevInstance(s *discordgo.Session) bool {
 	user, err := s.User("@me")
 	if err != nil {
