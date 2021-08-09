@@ -1,8 +1,6 @@
 package music
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -159,22 +157,6 @@ func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
 	return nil
 }
 
-func getTrackInfo(base64Track string) (*gavalink.TrackInfo, error) {
-	var track *gavalink.TrackInfo
-
-	trackBytes, err := base64.StdEncoding.DecodeString(base64Track)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(trackBytes, track)
-	if err != nil {
-		return nil, err
-	}
-
-	return track, nil
-}
-
 func getTimeString(track *gavalink.TrackInfo) (timeDurationString string, timeElapsedString string) {
 	timeDuration := time.Unix(0, int64(track.Length*int(time.Millisecond)))
 	timeElapsed := time.Unix(0, int64(track.Position*int(time.Millisecond)))
@@ -211,7 +193,7 @@ func nowPlaying(s *discordgo.Session, channelID, guildID string) {
 		return
 	}
 
-	track, err := getTrackInfo(base64Track)
+	track, err := gavalink.DecodeString(base64Track)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Unable to fetch track info `%v`", consts.EMOJI_CROSS, err))
 		return
