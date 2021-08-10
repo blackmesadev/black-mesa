@@ -76,7 +76,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	next, err := getNext(guildID)
-	if err != nil && next != nil {
+	if err == nil && next != nil {
 		player := players[guildID]
 		track := *next
 		err = player.Play(track.Data)
