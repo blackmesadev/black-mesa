@@ -134,8 +134,17 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	if tracks.Type == gavalink.LoadFailed {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `LOAD_FAILED`", consts.EMOJI_CROSS))
-		return
+		next, err := getNext(guildID)
+		if err != nil && next != nil {
+			player := players[guildID]
+			track := *next
+			err = player.Play(track.Data)
+			sendPlayEmbed(s, channelID, track)
+		} else {
+			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `LOAD_FAILED`", consts.EMOJI_CROSS))
+			return
+		}
+
 	}
 
 	if tracks.Type == gavalink.SearchResult {
