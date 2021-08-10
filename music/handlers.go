@@ -1,6 +1,7 @@
 package music
 
 import (
+	"errors"
 	"log"
 
 	"github.com/blackmesadev/discordgo"
@@ -9,7 +10,18 @@ import (
 
 var players = make(map[string]*gavalink.Player)
 
+var globalSession *discordgo.Session
+
+var eh interface {
+	OnTrackEnd(player *gavalink.Player, track string, reason string) error
+	OnTrackException(player *gavalink.Player, track string, reason string) error
+	OnTrackStuck(player *gavalink.Player, track string, threshold int) error
+}
+
 func VoiceUpdate(s *discordgo.Session, vu *discordgo.VoiceServerUpdate) {
+	if globalSession == nil {
+		globalSession = s
+	}
 	vsu := gavalink.VoiceServerUpdate{
 		Endpoint: vu.Endpoint,
 		GuildID:  vu.GuildID,
@@ -32,9 +44,7 @@ func VoiceUpdate(s *discordgo.Session, vu *discordgo.VoiceServerUpdate) {
 		return
 	}
 
-	eventHandler := new(gavalink.DummyEventHandler) // dummy for now, will do more with this in the future
-
-	player, err := node.CreatePlayer(vu.GuildID, s.State.SessionID, vsu, eventHandler)
+	player, err := node.CreatePlayer(vu.GuildID, s.State.SessionID, vsu, eh)
 
 	if err != nil {
 		log.Println("Unable to create player", err)
@@ -42,4 +52,25 @@ func VoiceUpdate(s *discordgo.Session, vu *discordgo.VoiceServerUpdate) {
 	}
 
 	players[vu.GuildID] = player
+}
+
+func OnTrackEnd(player *gavalink.Player, track string, reason string) error {
+	if globalSession == nil {
+		return errors.New("no session")
+	}
+
+	next, err := getNext(player.GuildID())
+	if err != nil {
+		return err
+	}
+
+	playSong(globalSession, "", player.GuildID(), next.Data)
+	return nil
+}
+
+func OnTrackException(player *gavalink.Player, track string, reason string) error {
+	return nil
+}
+func OnTrackStuck(player *gavalink.Player, track string, threshold int) error {
+	return nil
 }
