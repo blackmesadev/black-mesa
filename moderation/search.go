@@ -14,15 +14,14 @@ import (
 )
 
 func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
-		return
-	}
-
 	idList := util.SnowflakeRegex.FindAllString(m.Content, -1)
 
 	if len(idList) == 0 {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `search <target:user[]>`")
+		idList = append(idList, m.Author.ID)
+	}
+
+	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) && idList[0] != m.Author.ID {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
 		return
 	}
 
