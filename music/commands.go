@@ -17,9 +17,10 @@ func PlayCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		return
 	}
 
+	var arg string
+
 	if len(args) == 0 {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must specify a URL.", consts.EMOJI_CROSS))
-		return
+		arg = ""
 	}
 
 	ok := joinMemberChannel(s, m.ChannelID, m.GuildID, m.Author.ID)
@@ -27,7 +28,7 @@ func PlayCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 		return
 	}
 
-	playSong(s, m.ChannelID, m.GuildID, args[0])
+	playSong(s, m.ChannelID, m.GuildID, arg)
 
 }
 

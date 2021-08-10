@@ -91,7 +91,11 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 						log.Println("Failed to add track to queue", err, track.Info)
 					}
 				} else {
-					err = players[guildID].Play(track.Data)
+					next, err := getNext(guildID)
+					if err != nil && next != nil {
+						track = *next
+					}
+					err = player.Play(track.Data)
 				}
 
 				if err != nil {
@@ -116,6 +120,10 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 				log.Println("Failed to add track to queue", err, track.Info)
 			}
 			return
+		}
+		next, err := getNext(guildID)
+		if err != nil && next != nil {
+			track = *next
 		}
 		err = player.Play(track.Data)
 		sendPlayEmbed(s, channelID, track)
@@ -143,6 +151,10 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 				log.Println("Failed to add track to queue", err, track.Info)
 			}
 			return
+		}
+		next, err := getNext(guildID)
+		if err != nil && next != nil {
+			track = *next
 		}
 		err = player.Play(track.Data)
 		sendPlayEmbed(s, channelID, track)
