@@ -75,6 +75,14 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 		return
 	}
 
+	next, err := getNext(guildID)
+	if err != nil && next != nil {
+		player := players[guildID]
+		track := *next
+		err = player.Play(track.Data)
+		sendPlayEmbed(s, channelID, track)
+	}
+
 	tracks, err := node.LoadTracks(identifier)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to load track `%v`", consts.EMOJI_CROSS, err))
@@ -91,17 +99,13 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 						log.Println("Failed to add track to queue", err, track.Info)
 					}
 				} else {
-					next, err := getNext(guildID)
-					if err != nil && next != nil {
-						track = *next
-					}
 					err = player.Play(track.Data)
+					if err != nil {
+						s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
+						return
+					}
 				}
 
-				if err != nil {
-					s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
-					return
-				}
 			} else {
 				ok, err := addQueue(guildID, track.Data)
 				if !ok || err != nil {
@@ -121,10 +125,6 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 			}
 			return
 		}
-		next, err := getNext(guildID)
-		if err != nil && next != nil {
-			track = *next
-		}
 		err = player.Play(track.Data)
 		sendPlayEmbed(s, channelID, track)
 		if err != nil {
@@ -134,17 +134,8 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	if tracks.Type == gavalink.LoadFailed {
-		next, err := getNext(guildID)
-		if err != nil && next != nil {
-			player := players[guildID]
-			track := *next
-			err = player.Play(track.Data)
-			sendPlayEmbed(s, channelID, track)
-		} else {
-			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `LOAD_FAILED`", consts.EMOJI_CROSS))
-			return
-		}
-
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `LOAD_FAILED`", consts.EMOJI_CROSS))
+		return
 	}
 
 	if tracks.Type == gavalink.SearchResult {
@@ -160,10 +151,6 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 				log.Println("Failed to add track to queue", err, track.Info)
 			}
 			return
-		}
-		next, err := getNext(guildID)
-		if err != nil && next != nil {
-			track = *next
 		}
 		err = player.Play(track.Data)
 		sendPlayEmbed(s, channelID, track)
