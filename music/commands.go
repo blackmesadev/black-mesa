@@ -21,6 +21,8 @@ func PlayCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 	if len(args) == 0 {
 		arg = ""
+	} else {
+		arg = args[0]
 	}
 
 	ok := joinMemberChannel(s, m.ChannelID, m.GuildID, m.Author.ID)
