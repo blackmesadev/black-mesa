@@ -6,7 +6,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.7.1
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/blackmesadev/discordgo v0.25.6
-	github.com/blackmesadev/gavalink v1.0.4
+	github.com/blackmesadev/gavalink v1.0.5
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-redis/redis/v8 v8.8.2
 	github.com/google/uuid v1.3.0
