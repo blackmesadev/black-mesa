@@ -58,14 +58,16 @@ func OnTrackEnd(player *gavalink.Player, track string, reason string) error {
 		return errors.New("no session")
 	}
 
-	next, err := getNext(player.GuildID())
-	if err != nil {
-		return err
-	}
+	if reason == gavalink.ReasonFinished {
+		next, err := getNext(player.GuildID())
+		if err != nil {
+			return err
+		}
 
-	err = player.Play(next.Data)
-	if err != nil {
-		return err
+		err = player.Play(next.Data)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
