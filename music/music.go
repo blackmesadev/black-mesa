@@ -336,6 +336,7 @@ func seek(s *discordgo.Session, channelID, guildID, duration string) {
 	parsedDuration, err := time.ParseDuration(duration)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to parse duration, the format is: `1h30m45s`", consts.EMOJI_CROSS))
+		return
 	}
 	player, ok := players[guildID]
 	if !ok {
