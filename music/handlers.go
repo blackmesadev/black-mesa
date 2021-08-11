@@ -63,7 +63,10 @@ func OnTrackEnd(player *gavalink.Player, track string, reason string) error {
 		return err
 	}
 
-	playSong(globalSession, "", player.GuildID(), next.Data)
+	err = player.Play(next.Data)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
