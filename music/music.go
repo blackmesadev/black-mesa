@@ -77,7 +77,24 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 
 	next, err := getNext(guildID)
 	if err == nil && next != nil {
-		player := players[guildID]
+		player, ok := players[guildID]
+		if !ok {
+			// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
+			var count int
+			for count < 5 {
+				time.Sleep(500 * time.Millisecond)
+				player, ok = players[guildID]
+				if ok {
+					break
+				}
+				count++
+			}
+			// test that it worked
+			if !ok {
+				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+				return
+			}
+		}
 		track := *next
 		err = player.Play(track.Data)
 		sendPlayEmbed(s, channelID, track)
@@ -92,7 +109,24 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	if tracks.Type == gavalink.PlaylistLoaded {
 		for i, track := range tracks.Tracks {
 			if i == 0 {
-				player := players[guildID]
+				player, ok := players[guildID]
+				if !ok {
+					// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
+					var count int
+					for count < 5 {
+						time.Sleep(500 * time.Millisecond)
+						player, ok = players[guildID]
+						if ok {
+							break
+						}
+						count++
+					}
+					// test that it worked
+					if !ok {
+						s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+						return
+					}
+				}
 				if player.Track() != "" {
 					ok, err := addQueue(guildID, track.Data)
 					if !ok || err != nil {
@@ -116,7 +150,24 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	if tracks.Type == gavalink.TrackLoaded {
-		player := players[guildID]
+		player, ok := players[guildID]
+		if !ok {
+			// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
+			var count int
+			for count < 5 {
+				time.Sleep(500 * time.Millisecond)
+				player, ok = players[guildID]
+				if ok {
+					break
+				}
+				count++
+			}
+			// test that it worked
+			if !ok {
+				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+				return
+			}
+		}
 		track := tracks.Tracks[0]
 		if player.Track() != "" {
 			ok, err := addQueue(guildID, track.Data)
@@ -139,7 +190,24 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	if tracks.Type == gavalink.SearchResult {
-		player := players[guildID]
+		player, ok := players[guildID]
+		if !ok {
+			// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
+			var count int
+			for count < 5 {
+				time.Sleep(500 * time.Millisecond)
+				player, ok = players[guildID]
+				if ok {
+					break
+				}
+				count++
+			}
+			// test that it worked
+			if !ok {
+				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+				return
+			}
+		}
 		if len(tracks.Tracks) == 0 {
 			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to find track", consts.EMOJI_CROSS))
 			return
@@ -167,7 +235,11 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 }
 
 func stopSong(s *discordgo.Session, channelID, guildID string) error {
-	err := players[guildID].Stop()
+	player, ok := players[guildID]
+	if !ok {
+		return ErrNoPlayer
+	}
+	err := player.Stop()
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to stop track `%v`", consts.EMOJI_CROSS, err))
 		return err
@@ -178,7 +250,11 @@ func stopSong(s *discordgo.Session, channelID, guildID string) error {
 }
 
 func silentStop(s *discordgo.Session, guildID string) error {
-	err := players[guildID].Stop()
+	player, ok := players[guildID]
+	if !ok {
+		return ErrNoPlayer
+	}
+	err := player.Stop()
 	if err != nil {
 		return err
 	}
@@ -186,7 +262,11 @@ func silentStop(s *discordgo.Session, guildID string) error {
 }
 
 func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
-	err := players[guildID].Destroy()
+	player, ok := players[guildID]
+	if !ok {
+		return ErrNoPlayer
+	}
+	err := player.Destroy()
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to destroy player `%v`", consts.EMOJI_CROSS, err))
 		return err
@@ -222,9 +302,12 @@ func getTimeString(track *gavalink.TrackInfo) (timeElapsedString string, timeDur
 }
 
 func nowPlaying(s *discordgo.Session, channelID, guildID string) {
-
-	base64Track := players[guildID].Track()
-
+	player, ok := players[guildID]
+	if !ok {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+		return
+	}
+	base64Track := player.Track()
 	if base64Track == "" {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Nothing playing", consts.EMOJI_CROSS))
 		return
@@ -277,25 +360,44 @@ func seek(s *discordgo.Session, channelID, guildID, duration string) {
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to parse duration, the format is: `1h30m45s`", consts.EMOJI_CROSS))
 	}
-	err = players[guildID].Seek(int(parsedDuration.Milliseconds()))
+	player, ok := players[guildID]
+	if !ok {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+		return
+	}
+	err = player.Seek(int(parsedDuration.Milliseconds()))
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to seek `%v`", consts.EMOJI_CROSS, err))
 	}
 }
 
 func rawSeek(s *discordgo.Session, channelID, guildID string, duration time.Duration) {
-	err := players[guildID].Seek(int(duration.Milliseconds()))
+	player, ok := players[guildID]
+	if !ok {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+		return
+	}
+	err := player.Seek(int(duration.Milliseconds()))
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to seek `%v`", consts.EMOJI_CROSS, err))
 	}
 }
 
-func getPosition(guildID string) time.Duration {
-	return time.Duration(players[guildID].Position()) * time.Millisecond
+func getPosition(guildID string) *time.Duration {
+	player, ok := players[guildID]
+	if !ok {
+		return nil
+	}
+	pos := time.Duration(player.Position()) * time.Millisecond
+	return &pos
 }
 
 func playerInfo(s *discordgo.Session, channelID, guildID string) {
-	player := players[guildID]
+	player, ok := players[guildID]
+	if !ok {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+		return
+	}
 
 	var status string
 
@@ -342,10 +444,21 @@ func playerInfo(s *discordgo.Session, channelID, guildID string) {
 }
 
 func getVolume(s *discordgo.Session, channelID, guildID string) string {
-	return strconv.Itoa(players[guildID].GetVolume())
+	player, ok := players[guildID]
+	if !ok {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+		return ""
+	}
+	return strconv.Itoa(player.GetVolume())
 }
 
 func setVolume(s *discordgo.Session, channelID, guildID, volume string) error {
+	player, ok := players[guildID]
+	if !ok {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+		return ErrNoPlayer
+	}
+
 	volumeInt, err := strconv.Atoi(volume)
 	if err != nil {
 		return err.(*strconv.NumError).Err
@@ -355,7 +468,7 @@ func setVolume(s *discordgo.Session, channelID, guildID, volume string) error {
 		return errors.New("Volume is out of range, must be within [0, 1000]")
 	}
 
-	err = players[guildID].Volume(volumeInt)
+	err = player.Volume(volumeInt)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to set volume. `%v`", consts.EMOJI_CROSS, err))
 		return err

@@ -11,6 +11,7 @@ import (
 )
 
 var ErrEmptyQueue = errors.New("empty queue")
+var ErrNoPlayer = errors.New("no player")
 
 var queue map[string][]*gavalink.TrackInfo
 

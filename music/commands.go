@@ -92,6 +92,10 @@ func ForwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 	}
 
 	currentDuration := getPosition(m.GuildID)
+	if currentDuration == nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `An error occured while calculating duration.`", consts.EMOJI_CROSS))
+		return
+	}
 
 	parsedDuration, err := time.ParseDuration(args[0])
 	if err != nil {
@@ -99,7 +103,7 @@ func ForwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		return
 	}
 
-	newDuration := currentDuration + parsedDuration
+	newDuration := *currentDuration + parsedDuration
 
 	rawSeek(s, m.ChannelID, m.GuildID, newDuration)
 
@@ -117,6 +121,10 @@ func BackwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 	}
 
 	currentDuration := getPosition(m.GuildID)
+	if currentDuration == nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `An error occured while calculating duration.`", consts.EMOJI_CROSS))
+		return
+	}
 
 	parsedDuration, err := time.ParseDuration(args[0])
 	if err != nil {
@@ -124,7 +132,7 @@ func BackwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 		return
 	}
 
-	newDuration := currentDuration - parsedDuration
+	newDuration := *currentDuration - parsedDuration
 
 	rawSeek(s, m.ChannelID, m.GuildID, newDuration)
 
