@@ -45,6 +45,15 @@ func StopCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 }
 
+func SkipCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if m.GuildID == "" {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
+		return
+	}
+
+	skipSong(s, m.ChannelID, m.GuildID)
+}
+
 func DisconnectCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))

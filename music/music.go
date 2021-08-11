@@ -258,6 +258,26 @@ func stopSong(s *discordgo.Session, channelID, guildID string) error {
 	return nil
 }
 
+func skipSong(s *discordgo.Session, channelID, guildID string) error {
+	player, ok := players[guildID]
+	if !ok {
+		return ErrNoPlayer
+	}
+
+	next, err := getNext(player.GuildID())
+	if err != nil {
+		return err
+	}
+
+	err = player.Play(next.Data)
+	if err != nil {
+		return err
+	}
+
+	sendPlayEmbed(s, channelID, *next)
+	return nil
+}
+
 func silentStop(s *discordgo.Session, guildID string) error {
 	player, ok := players[guildID]
 	if !ok {
