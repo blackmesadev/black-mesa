@@ -107,6 +107,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	if tracks.Type == gavalink.PlaylistLoaded {
+		trackCount := len(tracks.Tracks)
 		for i, track := range tracks.Tracks {
 			if i == 0 {
 				player, ok := players[guildID]
@@ -131,6 +132,7 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 					ok, err := addQueue(guildID, track.Data)
 					if !ok || err != nil {
 						log.Println("Failed to add track to queue", err, track.Info)
+						trackCount--
 					}
 				} else {
 					err = player.Play(track.Data)
@@ -144,9 +146,12 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 				ok, err := addQueue(guildID, track.Data)
 				if !ok || err != nil {
 					log.Println("Failed to add track to queue", err, track.Info)
+					trackCount--
 				}
 			}
 		}
+
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Queued `%v` tracks successfully", consts.EMOJI_CHECK, trackCount))
 	}
 
 	if tracks.Type == gavalink.TrackLoaded {
@@ -173,6 +178,8 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 			ok, err := addQueue(guildID, track.Data)
 			if !ok || err != nil {
 				log.Println("Failed to add track to queue", err, track.Info)
+			} else {
+				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Queued `%v`", consts.EMOJI_CHECK, track.Info.Title))
 			}
 			return
 		}
@@ -217,6 +224,8 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 			ok, err := addQueue(guildID, track.Data)
 			if !ok || err != nil {
 				log.Println("Failed to add track to queue", err, track.Info)
+			} else {
+				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Queued `%v`", consts.EMOJI_CHECK, track.Info.Title))
 			}
 			return
 		}
