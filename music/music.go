@@ -75,29 +75,31 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 		return
 	}
 
-	next, err := getNext(guildID)
-	if err == nil && next != nil {
-		player, ok := players[guildID]
-		if !ok {
-			// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
-			var count int
-			for count < 5 {
-				time.Sleep(500 * time.Millisecond)
-				player, ok = players[guildID]
-				if ok {
-					break
-				}
-				count++
+	player, ok := players[guildID]
+	if !ok {
+		// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
+		var count int
+		for count < 5 {
+			time.Sleep(500 * time.Millisecond)
+			player, ok = players[guildID]
+			if ok {
+				break
 			}
-			// test that it worked
-			if !ok {
-				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-				return
-			}
+			count++
 		}
-		track := *next
-		err = player.Play(track.Data)
-		sendPlayEmbed(s, channelID, track)
+		// test that it worked
+		if !ok {
+			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
+			return
+		}
+	}
+	if player.Track() == "" {
+		next, err := getNext(guildID)
+		if err == nil && next != nil {
+			track := *next
+			err = player.Play(track.Data)
+			sendPlayEmbed(s, channelID, track)
+		}
 	}
 
 	if identifier == "" {
@@ -111,71 +113,26 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 
 	if tracks.Type == gavalink.PlaylistLoaded {
 		trackCount := len(tracks.Tracks)
-		for i, track := range tracks.Tracks {
-			if i == 0 {
-				player, ok := players[guildID]
-				if !ok {
-					// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
-					var count int
-					for count < 5 {
-						time.Sleep(500 * time.Millisecond)
-						player, ok = players[guildID]
-						if ok {
-							break
-						}
-						count++
-					}
-					// test that it worked
-					if !ok {
-						s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-						return
-					}
-				}
-				if player.Track() != "" {
-					ok, err := addQueue(guildID, track.Data)
-					if !ok || err != nil {
-						log.Println("Failed to add track to queue", err, track.Info)
-						trackCount--
-					}
-				} else {
-					err = player.Play(track.Data)
-					if err != nil {
-						s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
-						return
-					}
-				}
-
-			} else {
+		for _, track := range tracks.Tracks {
+			if player.Track() != "" {
 				ok, err := addQueue(guildID, track.Data)
 				if !ok || err != nil {
 					log.Println("Failed to add track to queue", err, track.Info)
 					trackCount--
 				}
+			} else {
+				err = player.Play(track.Data)
+				if err != nil {
+					s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
+					return
+				}
 			}
-		}
 
+		}
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Queued `%v` tracks successfully", consts.EMOJI_CHECK, trackCount))
 	}
 
 	if tracks.Type == gavalink.TrackLoaded {
-		player, ok := players[guildID]
-		if !ok {
-			// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
-			var count int
-			for count < 5 {
-				time.Sleep(500 * time.Millisecond)
-				player, ok = players[guildID]
-				if ok {
-					break
-				}
-				count++
-			}
-			// test that it worked
-			if !ok {
-				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-				return
-			}
-		}
 		track := tracks.Tracks[0]
 		if player.Track() != "" {
 			ok, err := addQueue(guildID, track.Data)
@@ -200,24 +157,6 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 	}
 
 	if tracks.Type == gavalink.SearchResult {
-		player, ok := players[guildID]
-		if !ok {
-			// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
-			var count int
-			for count < 5 {
-				time.Sleep(500 * time.Millisecond)
-				player, ok = players[guildID]
-				if ok {
-					break
-				}
-				count++
-			}
-			// test that it worked
-			if !ok {
-				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-				return
-			}
-		}
 		if len(tracks.Tracks) == 0 {
 			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to find track", consts.EMOJI_CROSS))
 			return
