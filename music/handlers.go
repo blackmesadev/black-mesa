@@ -64,6 +64,11 @@ func OnTrackEnd(player *gavalink.Player, track string, reason string) error {
 			return err
 		}
 
+		// end of queue
+		if next == nil {
+			return nil
+		}
+
 		err = player.Play(next.Data)
 		if err != nil {
 			return err
