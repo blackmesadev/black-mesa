@@ -269,6 +269,12 @@ func skipSong(s *discordgo.Session, channelID, guildID string) error {
 		return err
 	}
 
+	// if there is no song, we should just stop
+	if next == nil {
+		silentStop(s, guildID)
+		return nil
+	}
+
 	err = player.Play(next.Data)
 	if err != nil {
 		return err
