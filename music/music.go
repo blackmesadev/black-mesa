@@ -100,6 +100,9 @@ func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
 		sendPlayEmbed(s, channelID, track)
 	}
 
+	if identifier == "" {
+		return
+	}
 	tracks, err := node.LoadTracks(identifier)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to load track `%v`", consts.EMOJI_CROSS, err))
