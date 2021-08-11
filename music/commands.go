@@ -51,11 +51,11 @@ func DisconnectCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Co
 		return
 	}
 
+	s.ChannelVoiceLeave(m.GuildID)
+
 	silentStop(s, m.GuildID)
 
 	destroyPlayer(s, m.ChannelID, m.GuildID)
-
-	s.ChannelVoiceLeave(m.GuildID)
 
 }
 
