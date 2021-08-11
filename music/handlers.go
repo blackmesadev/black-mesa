@@ -12,12 +12,6 @@ var players = make(map[string]*gavalink.Player)
 
 var globalSession *discordgo.Session
 
-var eh interface {
-	OnTrackEnd(player *gavalink.Player, track string, reason string) error
-	OnTrackException(player *gavalink.Player, track string, reason string) error
-	OnTrackStuck(player *gavalink.Player, track string, threshold int) error
-}
-
 func VoiceUpdate(s *discordgo.Session, vu *discordgo.VoiceServerUpdate) {
 	if globalSession == nil {
 		globalSession = s
@@ -42,6 +36,11 @@ func VoiceUpdate(s *discordgo.Session, vu *discordgo.VoiceServerUpdate) {
 	if err != nil {
 		log.Println("Unable to fetch best node", err)
 		return
+	}
+	eh := gavalink.EventHandler{
+		OnTrackEnd:       OnTrackEnd,
+		OnTrackException: OnTrackException,
+		OnTrackStuck:     OnTrackStuck,
 	}
 
 	player, err := node.CreatePlayer(vu.GuildID, s.State.SessionID, vsu, eh)
