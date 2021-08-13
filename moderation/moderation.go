@@ -120,7 +120,29 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		user = member.User
 	}
 
+	guild, err := s.State.Guild(guildId)
+	if err != nil {
+		guild, err = s.Guild(guildId)
+		if err != nil {
+			return err
+		}
+	}
+
+	issuerMember, err := s.State.Member(guildId, issuer)
+	if err != nil {
+		user, err = s.User(issuer)
+		if err != nil {
+			return err
+		}
+	} else {
+		user = issuerMember.User
+	}
+
 	logging.LogStrike(s, guildId, issuer, user, weight, reason, location, infractionUUID)
+
+	if err == nil {
+		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerMember.User, reason, nil, false, "Kicked"))
+	}
 
 	// escalate punishments
 	guildConfig, err := config.GetConfig(guildId)
