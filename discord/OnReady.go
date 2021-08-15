@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/music"
 	"github.com/blackmesadev/black-mesa/util"
@@ -23,7 +24,7 @@ func (bot *Bot) OnReady(s *discordgo.Session, r *discordgo.Ready) {
 			{
 				Name:      fmt.Sprintf("Black Mesa %v", info.VERSION),
 				Type:      discordgo.ActivityTypeCustom,
-				URL:       info.WEBSITE,
+				URL:       consts.WEBSITE,
 				CreatedAt: time.Now(),
 			},
 		},

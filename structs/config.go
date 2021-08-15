@@ -5,6 +5,7 @@ type FlatConfig struct {
 	Mongo    MongoConfig
 	Redis    RedisConfig
 	Lavalink LavalinkConfig
+	API      APIConfig
 }
 
 type MongoConfig struct {
@@ -20,4 +21,10 @@ type RedisConfig struct {
 type LavalinkConfig struct {
 	Host     string
 	Password string
+}
+
+type APIConfig struct {
+	Host  string
+	Port  string
+	Token string
 }

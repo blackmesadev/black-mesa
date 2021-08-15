@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/consts"
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -13,11 +14,7 @@ import (
 )
 
 const (
-	VERSION = "0.11.12"
-
-	WEBSITE = "https://blackmesa.bot"
-
-	DISCORDINVITE = "https://discord.gg/fnGQSAuuSj"
+	VERSION = "0.12.0"
 )
 
 var r *redis.Client
@@ -87,7 +84,7 @@ func BotInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 		},
 	}
 	embed := &discordgo.MessageEmbed{
-		URL:    WEBSITE,
+		URL:    consts.WEBSITE,
 		Type:   discordgo.EmbedTypeRich,
 		Title:  "Black Mesa Info",
 		Color:  0,

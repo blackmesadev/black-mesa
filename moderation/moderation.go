@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/mongodb"
@@ -80,7 +81,7 @@ func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, act
 	}
 
 	embed := &discordgo.MessageEmbed{
-		URL:    info.WEBSITE,
+		URL:    consts.WEBSITE,
 		Type:   discordgo.EmbedTypeRich,
 		Title:  fmt.Sprintf("You have been %v.", punishmentType),
 		Color:  0,
@@ -141,7 +142,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	logging.LogStrike(s, guildId, issuer, user, weight, reason, location, infractionUUID)
 
 	if err == nil {
-		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerMember.User, reason, nil, false, "Kicked"))
+		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerMember.User, reason, nil, false, "Striked"))
 	}
 
 	// escalate punishments
