@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/blackmesadev/black-mesa/apiwrapper"
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/discord"
 	"github.com/blackmesadev/black-mesa/info"
@@ -24,6 +25,7 @@ func main() {
 
 	config.StartDB(configFlat.Mongo)
 	redis.ConnectRedis(configFlat.Redis)
+	apiwrapper.InitAPI(configFlat.API)
 
 	bot := discord.CreateBot(configFlat.Token)
 
