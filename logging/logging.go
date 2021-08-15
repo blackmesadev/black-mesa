@@ -281,3 +281,15 @@ func LogStrikeEscalationFail(s *discordgo.Session, guildid string, targetID stri
 		"",
 	)
 }
+
+func LogPurge(s *discordgo.Session, message *discordgo.Message, uuid string) {
+	fullName := message.Author.Username + "#" + message.Author.Discriminator
+
+	addLog(s,
+		message.GuildID,
+		consts.EMOJI_MESSAGE_DELETE,
+		fmt.Sprintf("A Purge has occured by `%v` which can be viewed here: %v", fullName, consts.ExternalPurgesEndpoint+uuid),
+		false,
+		"",
+	)
+}
