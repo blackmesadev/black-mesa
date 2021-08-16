@@ -16,7 +16,7 @@ func (c *APIClient) SendPurges(purges *structs.PurgeStruct) (*http.Response, err
 		return nil, err
 	}
 
-	reqPath := c.BaseURL + "/purges/" + purges.UUID
+	reqPath := c.BaseURL + "/messages/purgeadd/" + purges.UUID
 
 	req, err := c.NewRequest("POST", reqPath, data)
 	return c.Do(req)

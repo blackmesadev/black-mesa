@@ -1,5 +1,5 @@
 package consts
 
 const (
-	ExternalPurgesEndpoint = WEBSITE + "/purges/"
+	ExternalPurgesEndpoint = WEBSITE + "/messages/purges/"
 )
