@@ -24,10 +24,17 @@ func LoadFlatConfig() structs.FlatConfig {
 		Host: os.Getenv("REDIS"),
 	}
 
+	api := structs.APIConfig{
+		Host:  os.Getenv("APIHOST"),
+		Port:  os.Getenv("APIPORT"),
+		Token: os.Getenv("APITOKEN"),
+	}
+
 	return structs.FlatConfig{
 		Token: os.Getenv("TOKEN"),
 		Mongo: mongo,
 		Redis: redis,
+		API:   api,
 	}
 }
 
