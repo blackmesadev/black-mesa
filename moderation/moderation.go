@@ -110,6 +110,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	}
 
 	var user *discordgo.User
+	var issuerUser *discordgo.User
 
 	member, err := s.State.Member(guildId, userId)
 	if err != nil {
@@ -131,15 +132,16 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 	issuerMember, err := s.State.Member(guildId, issuer)
 	if err != nil {
-		user, err = s.User(issuer)
+		issuerUser, err = s.User(issuer)
 		if err != nil {
 			return err
 		}
 	} else {
-		user = issuerMember.User
+		issuerUser = issuerMember.User
 	}
 
-	logging.LogStrike(s, guildId, issuer, user, weight, reason, location, infractionUUID)
+	issuerFull := issuerUser.Username + "#" + issuerUser.Discriminator
+	logging.LogStrike(s, guildId, issuerFull, user, weight, reason, location, infractionUUID)
 
 	if err == nil {
 		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerMember.User, reason, nil, false, "Striked"))
