@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/util"
@@ -61,10 +62,25 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 		}
 	}
 
+	var createdUnix int
+	snowflakeInt, err := strconv.Atoi(userId)
+	if err != nil {
+		createdUnix = 0
+	}
+
+	createdUnix = snowflakeInt>>22 + 1420070400000 // bitsift and add discord epoch for unix timestamp
+
+	timestamp := time.Unix(int64(createdUnix), 0)
+
 	fields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "ID",
 			Value:  fmt.Sprintf("`%v`", member.User.ID),
+			Inline: true,
+		},
+		{
+			Name:   "Created",
+			Value:  fmt.Sprintf("`%v`", timestamp.Format("02/01/2006 15:04:05PM")),
 			Inline: true,
 		},
 		{
