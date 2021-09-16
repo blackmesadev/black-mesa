@@ -187,6 +187,16 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 				return false, fmt.Sprintf("Censor->BlockedSubString (%v)", str), 1, filterProcessingStart
 			}
 		}
+
+		// IPs
+		if censorLevel.FilterIPs {
+			content = censor.ReplaceNonStandardSpace(content)
+			ok := censor.IPCheck(content)
+			if !ok {
+				return false, fmt.Sprintf("Censor->IP"), 1, filterProcessingStart
+			}
+
+		}
 	}
 
 	// Channel censors
@@ -239,6 +249,16 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			if !ok {
 				return false, fmt.Sprintf("Censor->BlockedSubString (%v)", str), 1, filterProcessingStart
 			}
+		}
+
+		// IPs
+		if censorLevel.FilterIPs {
+			content = censor.ReplaceNonStandardSpace(content)
+			ok := censor.IPCheck(content)
+			if !ok {
+				return false, fmt.Sprintf("Censor->IP"), 1, filterProcessingStart
+			}
+
 		}
 	}
 
