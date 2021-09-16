@@ -96,7 +96,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		infractionUUID := uuid.New().String()
-		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, "AutoMod", weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID, infractionUUID) // strike
+		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, s.State.User.ID, weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID, infractionUUID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
 		}

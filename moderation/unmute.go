@@ -66,7 +66,9 @@ func UnmuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 		if err != nil || muteInfo == nil {
 			s.ChannelMessageSend(m.ChannelID, "<:mesaCheck:832350526729224243> Unable to fetch previous roles.")
 		} else {
-			go s.GuildMemberRoleBulkAdd(m.GuildID, id, *muteInfo.ReturnRoles)
+			if muteInfo.ReturnRoles != nil {
+				go s.GuildMemberRoleBulkAdd(m.GuildID, id, *muteInfo.ReturnRoles)
+			}
 		}
 
 		err = s.GuildMemberRoleRemove(m.GuildID, id, roleid) // change this to WithReason when implemented
