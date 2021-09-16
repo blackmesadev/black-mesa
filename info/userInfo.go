@@ -75,22 +75,22 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 	fields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "ID",
-			Value:  fmt.Sprintf("`%v`", member.User.ID),
+			Value:  member.User.ID,
 			Inline: true,
 		},
 		{
 			Name:   "Created",
-			Value:  fmt.Sprintf("`%v`", timestamp.Format(time.RFC3339)),
+			Value:  timestamp.Format(time.RFC3339),
 			Inline: true,
 		},
 		{
 			Name:   "Joined",
-			Value:  fmt.Sprintf("`%v`", member.JoinedAt),
+			Value:  string(member.JoinedAt),
 			Inline: true,
 		},
 		{
 			Name:   "Top Role",
-			Value:  fmt.Sprintf("`%v`", highestRole.Name),
+			Value:  highestRole.Name,
 			Inline: true,
 		},
 	}
@@ -98,7 +98,7 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 	if member.Nick != "" {
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name:   "Nickname",
-			Value:  fmt.Sprintf("`%v`", member.Nick),
+			Value:  member.Nick,
 			Inline: true,
 		})
 	}

@@ -51,6 +51,16 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 		}
 	}
 
+	var createdUnix int
+	snowflakeInt, err := strconv.Atoi(guild.ID)
+	if err != nil {
+		createdUnix = 0
+	}
+
+	createdUnix = snowflakeInt>>22 + 1420070400000 // bitsift and add discord epoch for unix timestamp
+
+	timestamp := time.UnixMilli(int64(createdUnix))
+
 	fields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "ID",
@@ -65,6 +75,11 @@ func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Con
 		{
 			Name:   "Region",
 			Value:  guild.Region,
+			Inline: true,
+		},
+		{
+			Name:   "Created",
+			Value:  timestamp.Format(time.RFC3339),
 			Inline: true,
 		},
 		{
