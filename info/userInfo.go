@@ -70,7 +70,7 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 
 	createdUnix = snowflakeInt>>22 + 1420070400000 // bitsift and add discord epoch for unix timestamp
 
-	timestamp := time.Unix(int64(createdUnix), 0)
+	timestamp := time.UnixMilli(int64(createdUnix))
 
 	fields := []*discordgo.MessageEmbedField{
 		{
@@ -80,7 +80,7 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 		},
 		{
 			Name:   "Created",
-			Value:  fmt.Sprintf("`%v`", timestamp.Format("02/01/2006 15:04:05PM")),
+			Value:  fmt.Sprintf("`%v`", timestamp.Format(time.RFC3339)),
 			Inline: true,
 		},
 		{
