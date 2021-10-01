@@ -52,7 +52,7 @@ func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 		}
 		field := &discordgo.MessageEmbedField{
 			Name:   strings.Title(punishment.Type),
-			Value:  fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v", punishment.Reason, issuer, punishment.UUID),
+			Value:  fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v", util.FilteredCommand(punishment.Reason), issuer, punishment.UUID),
 			Inline: true,
 		}
 		embedFields = append(embedFields, field)
