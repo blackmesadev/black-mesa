@@ -19,7 +19,7 @@ var ApiInstance *APIClient
 
 func InitAPI(apiConf structs.APIConfig) {
 	ApiInstance = &APIClient{
-		BaseURL:    fmt.Sprintf("%v:%v", apiConf.Host, apiConf.Port),
+		BaseURL:    fmt.Sprintf("http://%v:%v", apiConf.Host, apiConf.Port),
 		Token:      apiConf.Token,
 		httpClient: http.DefaultClient,
 	}
