@@ -10,6 +10,7 @@ import (
 	"github.com/blackmesadev/black-mesa/automod/censor"
 	"github.com/blackmesadev/black-mesa/automod/spam"
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/moderation"
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
@@ -67,14 +68,14 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		if !ok {
 			log.Printf("addExemptMessage failed on %v, %v", m.GuildID, m.ID)
 		}
-		go RemoveMessage(s, m)                   // remove
-		if strings.HasPrefix(reason, "Censor") { // log
+		go RemoveMessage(s, m)                        // remove
+		if strings.HasPrefix(reason, consts.CENSOR) { // log
 			logging.LogMessageCensor(s, m, reason)
 		} else {
 			logging.LogMessageViolation(s, m, reason)
 		}
 
-		if strings.HasPrefix(reason, "Spam->Messages") {
+		if strings.HasPrefix(reason, consts.SPAM_MESSAGES) {
 			// add a ratelimit on striking (if someone spams hard in one incident they should only receive a mute instead of being
 			// escalated to a ban due to automod delay)
 			if _, ok := chillax[m.GuildID]; !ok {
@@ -96,7 +97,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 		}
 
 		infractionUUID := uuid.New().String()
-		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, s.State.User.ID, weight, fmt.Sprintf("Violated AutoMod rules [%v]", reason), 0, m.ChannelID, infractionUUID) // strike
+		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, s.State.User.ID, weight, reason, 0, m.ChannelID, infractionUUID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
 		}
@@ -150,12 +151,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			}
 			ok, invite := censor.InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Invite (%v)", invite), 1, filterProcessingStart
+				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
 		} else if len(*censorLevel.InvitesBlacklist) != 0 {
 			ok, invite := censor.InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), 1, filterProcessingStart
+				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
 		}
 
@@ -164,12 +165,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorLevel.FilterDomains {
 			ok, domain := censor.DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Domain (%v)", domain), 1, filterProcessingStart
+				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
 		} else if len(*censorLevel.DomainBlacklist) != 0 {
 			ok, domain := censor.DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), 1, filterProcessingStart
+				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
 		}
 
@@ -179,12 +180,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			content = censor.ReplaceNonStandardSpace(content)
 			ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
 			if !ok {
-				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), 1, filterProcessingStart
+				return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 			}
 
 			ok, str = censor.SubStringsCheck(content, censorLevel.BlockedSubstrings)
 			if !ok {
-				return false, fmt.Sprintf("Censor->BlockedSubString (%v)", str), 1, filterProcessingStart
+				return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 			}
 		}
 
@@ -193,7 +194,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			content = censor.ReplaceNonStandardSpace(content)
 			ok := censor.IPCheck(content)
 			if !ok {
-				return false, fmt.Sprintf("Censor->IP"), 1, filterProcessingStart
+				return false, consts.CENSOR_IP, 1, filterProcessingStart
 			}
 
 		}
@@ -205,7 +206,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		//if censorChannel.FilterZalgo {
 		//	ok := censor.ZalgoCheck(content)
 		//	if !ok {
-		//		return false, "Censor->FilterZalgo", 1, filterProcessingStart
+		//		return false, consts.CENSOR_ZALGO, 1, filterProcessingStart
 		//	}
 		//}
 
@@ -213,13 +214,13 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorChannel.FilterInvites {
 			ok, invite := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Invite (%v)", invite), 1, filterProcessingStart
+				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
 
 		} else if len(*censorChannel.InvitesBlacklist) != 0 {
 			ok, invite := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->InvitesBlacklist (%v)", invite), 1, filterProcessingStart
+				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
 		}
 
@@ -228,12 +229,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorChannel.FilterDomains {
 			ok, domain := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->Domain (%v)", domain), 1, filterProcessingStart
+				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
 		} else if len(*censorChannel.DomainBlacklist) != 0 {
 			ok, domain := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
 			if !ok {
-				return false, fmt.Sprintf("Censor->DomainsBlacklist (%v)", domain), 1, filterProcessingStart
+				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
 		}
 
@@ -242,12 +243,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorChannel.FilterStrings {
 			ok, str := censor.StringsCheck(content, censorChannel.BlockedStrings)
 			if !ok {
-				return false, fmt.Sprintf("Censor->BlockedString (%v)", str), 1, filterProcessingStart
+				return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 			}
 
 			ok, str = censor.SubStringsCheck(content, censorChannel.BlockedSubstrings)
 			if !ok {
-				return false, fmt.Sprintf("Censor->BlockedSubString (%v)", str), 1, filterProcessingStart
+				return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 			}
 		}
 
@@ -256,7 +257,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			content = censor.ReplaceNonStandardSpace(content)
 			ok := censor.IPCheck(content)
 			if !ok {
-				return false, fmt.Sprintf("Censor->IP"), 1, filterProcessingStart
+				return false, consts.CENSOR_IP, 1, filterProcessingStart
 			}
 
 		}
@@ -277,7 +278,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Messages (%v/%v)", limit, ten), 1, filterProcessingStart
+			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", limit, ten), 1, filterProcessingStart
 		}
 	}
 SkipMessages:
@@ -291,7 +292,7 @@ SkipMessages:
 		ok, count := spam.ProcessMaxNewlines(m.Content, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
-			return false, fmt.Sprintf("Spam->NewLines (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
+			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
 SkipNewlines:
@@ -305,12 +306,12 @@ SkipNewlines:
 		ok, count := spam.ProcessMaxMentions(m, limit)
 		if !ok {
 			//                                                      1 strike for every mention over the limit
-			return false, fmt.Sprintf("Spam->Mentions (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 		ok, count = spam.ProcessMaxRoleMentions(m, limit)
 		if !ok {
 			// see above
-			return false, fmt.Sprintf("Spam->RoleMentions (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
 SkipMentions:
@@ -323,7 +324,7 @@ SkipMentions:
 
 		ok, count := spam.ProcessMaxLinks(m.Content, limit)
 		if !ok {
-			return false, fmt.Sprintf("Spam->Links (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
+			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
 SkipLinks:
@@ -338,7 +339,7 @@ SkipLinks:
 		ok, percent := spam.ProcessMaxUppercase(m.Content, limit, minLength)
 		if !ok {
 			// flat rate because there's basically no calculation we can do here
-			return false, fmt.Sprintf("Spam->Uppercase (%v%% > %v%%)", percent, limit), 1, filterProcessingStart
+			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, limit), 1, filterProcessingStart
 		}
 	}
 SkipUppercase:
@@ -352,7 +353,7 @@ SkipUppercase:
 		ok, count := spam.ProcessMaxEmojis(m, limit)
 		if !ok {
 			//                                                             1 strike per limit violation
-			return false, fmt.Sprintf("Spam->Emojis (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
+			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
 		}
 	}
 SkipEmoji:
@@ -366,7 +367,7 @@ SkipEmoji:
 		ok, count := spam.ProcessMaxAttachments(m, limit)
 		if !ok {
 			//                                                       1 strike per attachment over the limit
-			return false, fmt.Sprintf("Spam->Attachments (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
+			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
 		}
 	}
 SkipAttachments:
