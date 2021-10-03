@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"github.com/blackmesadev/black-mesa/admin"
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/guilds"
 	"github.com/blackmesadev/black-mesa/guilds/roles"
@@ -12,6 +13,10 @@ import (
 
 func (r *Mux) InitRouter() {
 	// Command Router
+
+	// admin
+	r.Route("adminleave", admin.LeaveCmd)
+	r.Route("forcelevel", admin.ForceLevelCmd)
 
 	// misc
 	r.Route("help", misc.HelpCmd)

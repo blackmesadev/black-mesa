@@ -1,14 +1,18 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // The concept here is that it will look for the most specific permission
@@ -122,6 +126,44 @@ func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
 	}
 
 	return highestLevel
+}
+
+func SetLevel(s *discordgo.Session, guildid string, userid string, level int64) error {
+	col := db.GetMongoClient().Database("black-mesa").Collection("guilds")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	filters := &bson.M{"guildID": guildid}
+
+	update := &bson.M{"$set": bson.M{"config.levels." + userid: level}}
+
+	_, err := col.UpdateOne(ctx, filters, update)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
+		return err
+	}
+	return nil
+}
+
+func SetPermission(s *discordgo.Session, guildid string, permission string, level int64) error {
+	col := db.GetMongoClient().Database("black-mesa").Collection("guilds")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	filters := &bson.M{"guildID": guildid}
+
+	update := &bson.M{"$set": bson.M{"config.permissions." + permission: level}}
+
+	_, err := col.UpdateOne(ctx, filters, update)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
+		return err
+	}
+	return nil
 }
 
 func CheckPermission(s *discordgo.Session, guildid string, userid string, permission string) bool {
