@@ -18,9 +18,11 @@ type APIClient struct {
 var ApiInstance *APIClient
 
 func InitAPI(apiConf structs.APIConfig) {
-	ApiInstance.BaseURL = fmt.Sprintf("%v:%v", apiConf.Host, apiConf.Port)
-	ApiInstance.Token = apiConf.Token
-	ApiInstance.httpClient = http.DefaultClient
+	ApiInstance = &APIClient{
+		BaseURL:    fmt.Sprintf("%v:%v", apiConf.Host, apiConf.Port),
+		Token:      apiConf.Token,
+		httpClient: http.DefaultClient,
+	}
 }
 
 // Initialize Client functions
