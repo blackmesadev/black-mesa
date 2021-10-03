@@ -135,14 +135,27 @@ func SetLevel(s *discordgo.Session, guildid string, userid string, level int64) 
 
 	filters := &bson.M{"guildID": guildid}
 
-	update := &bson.M{"$set": bson.M{"config.levels." + userid: level}}
+	// If level is set to zero or below, just remove it
+	if level > 0 {
 
-	_, err := col.UpdateOne(ctx, filters, update)
-	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			log.Println(err)
+		update := &bson.M{"$set": bson.M{"config.levels." + userid: level}}
+
+		_, err := col.UpdateOne(ctx, filters, update)
+		if err != nil {
+			if err != mongo.ErrNoDocuments {
+				log.Println(err)
+			}
+			return err
 		}
-		return err
+	} else {
+		delete := &bson.M{"$and": []bson.M{{"config.levels": userid}, {"guildID": guildid}}}
+
+		_, err := col.DeleteOne(ctx, delete)
+		if err != nil {
+			if err != mongo.ErrNoDocuments {
+				log.Println(err)
+			}
+		}
 	}
 	return nil
 }
