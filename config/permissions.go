@@ -149,7 +149,7 @@ func SetLevel(s *discordgo.Session, guildid string, userid string, level int64) 
 		}
 	} else {
 		filter := &bson.M{"guildID": guildid}
-		update := &bson.M{"$pull": bson.M{"config.levels": userid}}
+		update := &bson.M{"$unset": bson.M{"config.levels": userid}}
 
 		_, err := col.UpdateOne(ctx, filter, update)
 		if err != nil {
