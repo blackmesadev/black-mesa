@@ -30,14 +30,11 @@ func InitAPI(apiConf structs.APIConfig) {
 func (c *APIClient) NewRequest(method string, path string, data []byte) (*http.Request, error) {
 	var err error
 
-	uri := c.BaseURL + path
-	fmt.Println(uri)
-
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, uri, bytes.NewBuffer(data))
+	req, err := http.NewRequest(method, path, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
 	}
