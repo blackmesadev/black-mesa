@@ -11,4 +11,6 @@ const (
 	PERMISSION_STRIKE       = "moderation.strike"
 	PERMISSION_UNBAN        = "moderation.unban"
 	PERMISSION_UNMUTE       = "moderation.unmute"
+
+	PERMISSION_VIEWPERMS = "guild.viewperms"
 )
