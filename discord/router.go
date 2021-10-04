@@ -4,6 +4,7 @@ import (
 	"github.com/blackmesadev/black-mesa/admin"
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/guilds"
+	"github.com/blackmesadev/black-mesa/guilds/permissions"
 	"github.com/blackmesadev/black-mesa/guilds/roles"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
@@ -58,6 +59,12 @@ func (r *Mux) InitRouter() {
 
 	// guilds
 	r.Route("prefix", guilds.PrefixCmd)
+
+	r.Route("level", permissions.GetUserLevelCmd)
+	r.Route("getlevel", permissions.GetUserLevelCmd)
+
+	r.Route("cmdlevel", permissions.GetCommandLevelCmd)
+	r.Route("getcmdlevel", permissions.GetCommandLevelCmd)
 
 	//roles
 	r.Route("addrole", roles.AddRoleCmd)
