@@ -293,3 +293,13 @@ func LogPurge(s *discordgo.Session, message *discordgo.Message, uuid string) {
 		"",
 	)
 }
+
+func LogError(s *discordgo.Session, guildid string, targetID string, action string, err error) {
+	addLog(s,
+		guildid,
+		consts.EMOJI_CROSS,
+		fmt.Sprintf("An unknown error occured: `%v` while targetting `%v` for `%v`", err.Error(), targetID, action),
+		false,
+		"",
+	)
+}
