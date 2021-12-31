@@ -85,7 +85,7 @@ func UserInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 		},
 		{
 			Name:   "Joined",
-			Value:  string(member.JoinedAt),
+			Value:  member.JoinedAt.Format(time.RFC3339),
 			Inline: true,
 		},
 		{
