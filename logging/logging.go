@@ -19,7 +19,7 @@ func addLog(s *discordgo.Session, guildId string, emoji string, line string, pub
 		return
 	}
 
-	if cfg.Modules.Logging.ChannelID == "" { // no channel set up
+	if cfg.Modules.Logging.ChannelID == "" || channelId == cfg.Modules.Logging.ChannelID { // no channel set up or channel is logging channel
 		return
 	}
 
