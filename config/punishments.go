@@ -17,6 +17,10 @@ func GetPunishments(guildid string, userid string) ([]*mongodb.Action, error) {
 	return db.GetPunishments(guildid, userid)
 }
 
+func GetPunishmentByUUID(guildid string, uuid string) (*mongodb.Action, error) {
+	return db.GetPunishmentByUUID(guildid, uuid)
+}
+
 func GetActions(guildid string, userid string) ([]*mongodb.Action, error) {
 	return db.GetActions(guildid, userid)
 }

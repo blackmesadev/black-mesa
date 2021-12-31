@@ -214,6 +214,32 @@ func (db *DB) GetMute(guildid string, userid string) (*Action, error) {
 	return mute, err
 }
 
+func (db *DB) GetPunishmentByUUID(guildid string, uuid string) (*Action, error) {
+	var action *Action
+
+	col := db.client.Database("black-mesa").Collection("actions")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := bson.M{
+		"guildID": guildid,
+		"uuid":    uuid,
+	}
+
+	cursor, err := col.Find(ctx, query)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
+		return nil, err
+	}
+
+	for cursor.Next(ctx) {
+		cursor.Decode(&action)
+	}
+	return action, err
+}
+
 func (db *DB) DeleteMute(guildid string, userid string) (*mongo.DeleteResult, error) {
 
 	col := db.client.Database("black-mesa").Collection("actions")
