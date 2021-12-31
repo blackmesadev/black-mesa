@@ -8,7 +8,7 @@ import (
 )
 
 func FilteredCommand(input string) (output string) {
-	var blockedString string
+	blockedString := input
 
 	if strings.Contains(input, consts.CENSOR_STRINGS) {
 		blockedString = strings.TrimSpace(strings.TrimPrefix(input, consts.CENSOR_STRINGS))
