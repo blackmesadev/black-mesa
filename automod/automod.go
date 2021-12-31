@@ -278,6 +278,10 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
 		if !ok {
+			err := spam.ClearMaxMessages(m.Author.ID, m.GuildID)
+			if err != nil {
+				logging.LogError(s, m.GuildID, m.Author.ID, "spam.ClearMaxMessages", err)
+			}
 			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", limit, ten), 1, filterProcessingStart
 		}
 	}

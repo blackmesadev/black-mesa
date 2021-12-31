@@ -40,3 +40,20 @@ func ProcessMaxMessages(userId string, guildId string, max int64, timeLimit time
 
 	return true
 }
+
+func ClearMaxMessages(userId string, guildId string) error {
+
+	if r == nil {
+		r = bmRedis.GetRedis()
+	}
+
+	key := fmt.Sprintf("spam:maxMessages:%v:%v", guildId, userId)
+
+	res := r.Del(r.Context(), key)
+
+	if res.Err() != redis.Nil {
+		return res.Err()
+	}
+
+	return nil
+}
