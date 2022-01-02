@@ -74,11 +74,6 @@ func GuildInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messa
 			Inline: true,
 		},
 		{
-			Name:   "Region",
-			Value:  guild.Region,
-			Inline: true,
-		},
-		{
 			Name:   "Created",
 			Value:  timestamp.Format(time.RFC3339),
 			Inline: true,
@@ -126,6 +121,14 @@ func GuildInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messa
 		})
 		invite = fmt.Sprintf("https://discord.gg/%v", guild.VanityURLCode)
 
+	}
+
+	if guild.PreferredLocale != "" {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Locale",
+			Value:  guild.PreferredLocale,
+			Inline: true,
+		})
 	}
 
 	thumbnail := &discordgo.MessageEmbedThumbnail{
