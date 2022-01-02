@@ -1,16 +1,31 @@
 package consts
 
 const (
-	PERMISSION_BAN          = "moderation.ban"
-	PERMISSION_KICK         = "moderation.kick"
-	PERMISSION_MUTE         = "moderation.mute"
-	PERMISSION_PURGE        = "moderation.purge"
-	PERMISSION_REMOVEACTION = "moderation.remove"
-	PERMISSION_SEARCH       = "moderation.search"
-	PERMISSION_SOFTBAN      = "moderation.softban"
-	PERMISSION_STRIKE       = "moderation.strike"
-	PERMISSION_UNBAN        = "moderation.unban"
-	PERMISSION_UNMUTE       = "moderation.unmute"
+	CATEGORY_MODERATION = "moderation"
+	CATEGORY_ADMIN      = "admin"
+	CATEGORY_GUILD      = "guild"
+	CATEGORY_ROLES      = "roles"
 
-	PERMISSION_VIEWPERMS = "guild.viewperms"
+	PERMISSION_BAN          = CATEGORY_MODERATION + ".ban"
+	PERMISSION_KICK         = CATEGORY_MODERATION + ".kick"
+	PERMISSION_MUTE         = CATEGORY_MODERATION + ".mute"
+	PERMISSION_PURGE        = CATEGORY_MODERATION + ".purge"
+	PERMISSION_REMOVEACTION = CATEGORY_MODERATION + ".remove"
+	PERMISSION_SEARCH       = CATEGORY_MODERATION + ".search"
+	PERMISSION_SOFTBAN      = CATEGORY_MODERATION + ".softban"
+	PERMISSION_STRIKE       = CATEGORY_MODERATION + ".strike"
+	PERMISSION_UNBAN        = CATEGORY_MODERATION + ".unban"
+	PERMISSION_UNMUTE       = CATEGORY_MODERATION + ".unmute"
+
+	PERMISSION_CONFIGGET = CATEGORY_ADMIN + ".get"
+	PERMISSION_CONFIGSET = CATEGORY_ADMIN + ".set"
+	PERMISSION_MAKEMUTE  = CATEGORY_ADMIN + ".makemute"
+	PERMISSION_SETUP     = CATEGORY_ADMIN + ".setup"
+
+	PERMISSION_VIEWCMDLEVEL  = CATEGORY_GUILD + ".viewcommandlevel"
+	PERMISSION_VIEWUSERLEVEL = CATEGORY_GUILD + ".viewuserlevel"
+
+	PERMISSION_ROLEADD    = CATEGORY_ROLES + ".add"
+	PERMISSION_ROLEREMOVE = CATEGORY_ROLES + ".remove"
+	PERMISSION_ROLECREATE = CATEGORY_ROLES + ".create"
 )

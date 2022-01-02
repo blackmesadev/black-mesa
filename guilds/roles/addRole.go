@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -14,8 +15,8 @@ import (
 )
 
 func AddRoleCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, "roles.add") {
-		config.NoPermissionHandler(s, m, conf, "roles.add")
+	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_ROLEADD) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_ROLEADD)
 		return
 	}
 

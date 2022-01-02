@@ -3,13 +3,14 @@ package config
 import (
 	"fmt"
 
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 )
 
 func MakeMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !CheckPermission(s, m.GuildID, m.Author.ID, "admin") {
-		NoPermissionHandler(s, m, conf, "admin")
+	if !CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_MAKEMUTE) {
+		NoPermissionHandler(s, m, conf, consts.PERMISSION_MAKEMUTE)
 		return
 	}
 

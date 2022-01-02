@@ -6,14 +6,15 @@ import (
 	"log"
 	"strings"
 
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 )
 
 func GetConfigCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	allowed := CheckPermission(s, m.GuildID, m.Author.ID, "admin.get")
+	allowed := CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_CONFIGGET)
 	if !allowed {
-		NoPermissionHandler(s, m, conf, "admin.get")
+		NoPermissionHandler(s, m, conf, consts.PERMISSION_CONFIGGET)
 		return
 	}
 
