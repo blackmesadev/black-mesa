@@ -40,6 +40,7 @@ func (r *Mux) InitRouter() {
 	r.Route("strike", moderation.StrikeCmd)
 	r.Route("search", moderation.SearchCmd)
 	r.Route("purge", moderation.PurgeCmd)
+	r.Route("clean", moderation.PurgeCmd)
 
 	// moderation funny commands
 	r.Route("fuckoff", moderation.KickCmd)
