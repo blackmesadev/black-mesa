@@ -9,9 +9,9 @@ import (
 )
 
 func SetConfigCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	allowed := CheckPermission(s, m.GuildID, m.Author.ID, "config.set")
+	allowed := CheckPermission(s, m.GuildID, m.Author.ID, "admin.set")
 	if !allowed {
-		NoPermissionHandler(s, m, conf, "config.set")
+		NoPermissionHandler(s, m, conf, "admin.set")
 		return
 	}
 

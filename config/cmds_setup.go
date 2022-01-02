@@ -10,9 +10,9 @@ import (
 )
 
 func SetupCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	allowed := CheckPermission(s, m.GuildID, m.Author.ID, "config.setup")
+	allowed := CheckPermission(s, m.GuildID, m.Author.ID, "admin.setup")
 	if !allowed {
-		NoPermissionHandler(s, m, conf, "config.setup")
+		NoPermissionHandler(s, m, conf, "admin.setup")
 		return
 	}
 	g, err := s.Guild(m.GuildID)
