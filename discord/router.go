@@ -69,6 +69,10 @@ func (r *Mux) InitRouter() {
 
 	//roles
 	r.Route("addrole", roles.AddRoleCmd)
+	r.Route("removerole", roles.RemoveRoleCmd)
+	r.Route("rmrole", roles.RemoveRoleCmd)
+	r.Route("createrole", roles.CreateRoleCmd)
+	r.Route("mkrole", roles.CreateRoleCmd)
 
 	// music
 	r.Route("play", music.PlayCmd)
