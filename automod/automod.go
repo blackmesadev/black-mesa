@@ -3,7 +3,6 @@ package automod
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,7 +21,6 @@ import (
 )
 
 var chillax = make(map[string]map[string]int64) // chllax[guildId][userId] -> exemptions remaining
-var cdnRegex = regexp.MustCompile(`(cdn\.discord(?:\.com|app\.com))`)
 
 var r *redis.Client
 
@@ -145,10 +143,6 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		// Invites
 		if censorLevel.FilterInvites {
-			cdnCheck := cdnRegex.FindAllString(content, -1)
-			if len(cdnCheck) >= 1 {
-				return true, "", 0, filterProcessingStart
-			}
 			ok, invite := censor.InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
 			if !ok {
 				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
