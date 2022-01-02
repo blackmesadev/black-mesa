@@ -130,6 +130,30 @@ func GetMutedRole(guildid string, config *structs.Config) string {
 }
 
 // Takes an optional config parameter incase there's a config struct to get it from already.
+func GetLoggingChannel(guildid string, config *structs.Config) string {
+	if config == nil || config.Modules.Moderation == nil {
+		tempStruct := &mongodb.MongoGuild{}
+
+		data, err := db.GetConfigProjection(guildid, "modules.logging.channelID")
+		if err != nil || len(data) == 0 {
+			return ""
+		}
+
+		binData, err := json.Marshal(data)
+		if err != nil {
+			return ""
+		}
+
+		json.Unmarshal(binData, &tempStruct)
+
+		return tempStruct.Config.Modules.Logging.ChannelID
+
+	} else {
+		return config.Modules.Logging.ChannelID
+	}
+}
+
+// Takes an optional config parameter incase there's a config struct to get it from already.
 func GetRemoveRolesOnMute(guildid string, config *structs.Config) bool {
 	if config == nil || config.Modules.Moderation == nil {
 		tempStruct := &mongodb.MongoGuild{}
