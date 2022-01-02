@@ -75,10 +75,16 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, idList []string) (
 		} else {
 			issuer = punishment.Issuer
 		}
+		var expiring string
+		if punishment.Expires == 0 {
+			expiring = "Never"
+		} else {
+			expiring = time.Unix(punishment.Expires, 0).Format(time.RFC3339)
+		}
 		field := &discordgo.MessageEmbedField{
 			Name: strings.Title(punishment.Type),
 			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v\n**Expiring:** %v",
-				util.FilteredCommand(punishment.Reason), issuer, punishment.UUID, time.Unix(punishment.Expires, 0)),
+				util.FilteredCommand(punishment.Reason), issuer, punishment.UUID, expiring),
 			Inline: true,
 		}
 		embedFields = append(embedFields, field)
