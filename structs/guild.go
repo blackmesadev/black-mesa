@@ -109,10 +109,10 @@ type StrikeEscalation struct {
 }
 
 type Modules struct {
-	Guild      *Guild
-	Automod    *Automod
-	Logging    *Logging
-	Moderation *Moderation
+	Guild      *Guild      `json:"guild" bson:"guild"`
+	Automod    *Automod    `json:"automod" bson:"automod"`
+	Logging    *Logging    `json:"logging" bson:"logging"`
+	Moderation *Moderation `json:"moderation" bson:"moderation"`
 }
 
 type Config struct {
