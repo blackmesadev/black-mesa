@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/logging"
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/discordgo"
@@ -32,6 +33,9 @@ func (bot *Bot) OnMessageDelete(s *discordgo.Session, m *discordgo.MessageDelete
 	}
 
 	if m.BeforeDelete != nil && !result {
+		if m.ChannelID == config.GetLoggingChannel(m.GuildID, nil) {
+			return
+		}
 		logging.LogMessageDelete(s, m.BeforeDelete)
 	} // not cached otherwise
 }
