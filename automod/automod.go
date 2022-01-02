@@ -171,15 +171,24 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		// Strings / Substrings
 
 		if censorLevel.FilterStrings {
-			content = censor.ReplaceNonStandardSpace(content)
-			ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
-			if !ok {
-				return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+			var contentList []string
+			if len(m.Attachments) > 0 {
+				for _, attachment := range m.Attachments {
+					contentList = append(contentList, attachment.Filename)
+				}
 			}
+			contentList = append(contentList, content)
+			for _, content := range contentList {
+				content = censor.ReplaceNonStandardSpace(content)
+				ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
+				if !ok {
+					return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+				}
 
-			ok, str = censor.SubStringsCheck(content, censorLevel.BlockedSubstrings)
-			if !ok {
-				return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+				ok, str = censor.SubStringsCheck(content, censorLevel.BlockedSubstrings)
+				if !ok {
+					return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+				}
 			}
 		}
 
