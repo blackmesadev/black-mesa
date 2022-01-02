@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"os"
 
@@ -73,7 +74,11 @@ func GetConfig(guildid string) (*structs.Config, error) {
 		return nil, err
 	}
 
-	return config, nil
+	if config == nil {
+		err = errors.New("config is nil")
+	}
+
+	return config, err
 }
 
 // Takes an optional config parameter incase there's a config struct to get it from already.
