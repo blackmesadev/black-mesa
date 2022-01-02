@@ -9,14 +9,15 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"github.com/google/uuid"
 )
 
-func MuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_KICK) {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
+func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_MUTE) {
+		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_MUTE)
 		return
 	}
 

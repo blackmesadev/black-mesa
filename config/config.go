@@ -78,27 +78,31 @@ func GetConfig(guildid string) (*structs.Config, error) {
 
 // Takes an optional config parameter incase there's a config struct to get it from already.
 func GetPrefix(guildid string, config *structs.Config) string {
-	tempStruct := &mongodb.MongoGuild{}
+	if config == nil || config.Prefix == "" {
+		tempStruct := &mongodb.MongoGuild{}
 
-	data, err := db.GetConfigProjection(guildid, "prefix")
-	if err != nil || len(data) == 0 {
-		return "!"
+		data, err := db.GetConfigProjection(guildid, "prefix")
+		if err != nil || len(data) == 0 {
+			return "!"
+		}
+
+		binData, err := json.Marshal(data)
+		if err != nil {
+			return "!"
+		}
+
+		json.Unmarshal(binData, &tempStruct)
+
+		return tempStruct.Config.Prefix
+	} else {
+		return config.Prefix
 	}
-
-	binData, err := json.Marshal(data)
-	if err != nil {
-		return "!"
-	}
-
-	json.Unmarshal(binData, &tempStruct)
-
-	return tempStruct.Config.Prefix
 
 }
 
 // Takes an optional config parameter incase there's a config struct to get it from already.
 func GetMutedRole(guildid string, config *structs.Config) string {
-	if config == nil {
+	if config == nil || config.Modules.Moderation == nil {
 		tempStruct := &mongodb.MongoGuild{}
 
 		data, err := db.GetConfigProjection(guildid, "modules.moderation.muteRole")
@@ -122,7 +126,7 @@ func GetMutedRole(guildid string, config *structs.Config) string {
 
 // Takes an optional config parameter incase there's a config struct to get it from already.
 func GetRemoveRolesOnMute(guildid string, config *structs.Config) bool {
-	if config == nil {
+	if config == nil || config.Modules.Moderation == nil {
 		tempStruct := &mongodb.MongoGuild{}
 
 		data, err := db.GetConfigProjection(guildid, "modules.moderation.removeRolesOnMute")
@@ -141,6 +145,31 @@ func GetRemoveRolesOnMute(guildid string, config *structs.Config) bool {
 
 	} else {
 		return config.Modules.Moderation.RemoveRolesOnMute
+	}
+
+}
+
+// Takes an optional config parameter incase there's a config struct to get it from already.
+func GetDisplayNoPermission(guildid string, config *structs.Config) bool {
+	if config == nil || config.Modules.Moderation == nil {
+		tempStruct := &mongodb.MongoGuild{}
+
+		data, err := db.GetConfigProjection(guildid, "modules.moderation.displayNoPermission")
+		if err != nil || len(data) == 0 {
+			return false
+		}
+
+		binData, err := json.Marshal(data)
+		if err != nil {
+			return false
+		}
+
+		json.Unmarshal(binData, &tempStruct)
+
+		return tempStruct.Config.Modules.Moderation.DisplayNoPermission
+
+	} else {
+		return config.Modules.Moderation.DisplayNoPermission
 	}
 
 }

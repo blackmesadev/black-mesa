@@ -3,6 +3,7 @@ package discord
 import (
 	"strings"
 
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -15,7 +16,7 @@ type Route struct {
 }
 
 // HandlerFunc is the function signature required for a message route handler.
-type HandlerFunc func(*discordgo.Session, *discordgo.Message, *discordgo.Context, []string)
+type HandlerFunc func(*discordgo.Session, *structs.Config, *discordgo.Message, *discordgo.Context, []string)
 
 // Mux is the main struct for all mux methods.
 type Mux struct {

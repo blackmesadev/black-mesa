@@ -3,10 +3,11 @@ package config
 import (
 	"fmt"
 
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 )
 
-func MakeMuteCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func MakeMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !CheckPermission(s, m.GuildID, m.Author.ID, "admin") {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
 		return

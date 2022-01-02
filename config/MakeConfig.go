@@ -114,6 +114,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		ConfirmActionsMessage:       true,
 		ConfirmActionsMessageExpiry: 0,
 		ConfirmActionsReaction:      false,
+		DisplayNoPermission:         true,
 		MuteRole:                    "",
 		ReasonEditLevel:             50,
 		NotifyActions:               true,

@@ -9,13 +9,14 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
-func SoftBanCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func SoftBanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SOFTBAN) {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
+		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_SOFTBAN)
 		return
 	}
 

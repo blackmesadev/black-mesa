@@ -5,14 +5,15 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
-func PrefixCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func PrefixCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	start := time.Now()
 
-	prefix := config.GetPrefix(m.GuildID, nil)
+	prefix := config.GetPrefix(m.GuildID, conf)
 
 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The Prefix for this Guild is `%v`", prefix))
 

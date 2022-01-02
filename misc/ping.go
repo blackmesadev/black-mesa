@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 )
 
-func PingCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func PingCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	recievedTime := time.Now()
 
 	discordLatency := s.HeartbeatLatency().Milliseconds()

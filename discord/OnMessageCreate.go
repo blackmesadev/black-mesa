@@ -82,7 +82,12 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 		}
 	}
 
-	prefix := config.GetPrefix(mc.GuildID, nil)
+	conf, err := config.GetConfig(mc.GuildID)
+	if err != nil {
+		return
+	}
+
+	prefix := config.GetPrefix(mc.GuildID, conf)
 
 	if !ctx.IsDirected && len(prefix) > 0 {
 		if strings.HasPrefix(ctx.Content, prefix) {
@@ -98,11 +103,11 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 	r, params, args := bot.Router.Match(ctx.Content)
 	if r != nil {
 		ctx.Fields = params
-		r.Run(s, mc.Message, ctx, args)
+		r.Run(s, conf, mc.Message, ctx, args)
 		return
 	}
 
 	if bot.Router.Default != nil && (ctx.HasMentionFirst) {
-		bot.Router.Default.Run(s, mc.Message, ctx, make([]string, 0))
+		bot.Router.Default.Run(s, conf, mc.Message, ctx, make([]string, 0))
 	}
 }

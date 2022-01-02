@@ -11,11 +11,12 @@ import (
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
-func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	idList := util.SnowflakeRegex.FindAllString(m.Content, -1)
 
 	uuidList := util.UuidRegex.FindAllString(m.Content, -1)
@@ -25,7 +26,7 @@ func SearchCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 	}
 
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) && idList[0] != m.Author.ID {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
+		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
 		return
 	}
 

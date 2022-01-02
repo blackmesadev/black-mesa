@@ -5,11 +5,12 @@ import (
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
-func GetUserLevelCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func GetUserLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	idList := util.SnowflakeRegex.FindAllString(m.Content, -1)
 
 	if len(idList) == 0 {
@@ -17,7 +18,7 @@ func GetUserLevelCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.
 	}
 
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWPERMS) && idList[0] != m.Author.ID {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You do not have permission for that.")
+		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWPERMS)
 		return
 	}
 

@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
 var failureMsg = fmt.Sprintf("%v Unable to fetch Guild data.", consts.EMOJI_CROSS)
 
-func GuildInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func GuildInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	start := time.Now()
 
 	footer := &discordgo.MessageEmbedFooter{

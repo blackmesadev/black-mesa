@@ -8,6 +8,7 @@ import (
 
 	"github.com/blackmesadev/black-mesa/consts"
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"github.com/go-redis/redis/v8"
@@ -19,7 +20,7 @@ const (
 
 var r *redis.Client
 
-func BotInfoCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func BotInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	start := time.Now()
 
 	if r == nil {

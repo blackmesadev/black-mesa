@@ -8,11 +8,12 @@ import (
 
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/info"
+	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
-func PlayCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func PlayCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -35,7 +36,7 @@ func PlayCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 }
 
-func StopCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func StopCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -45,7 +46,7 @@ func StopCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 
 }
 
-func SkipCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func SkipCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -54,7 +55,7 @@ func SkipCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 	skipSong(s, m.ChannelID, m.GuildID)
 }
 
-func DisconnectCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func DisconnectCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -68,7 +69,7 @@ func DisconnectCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Co
 
 }
 
-func NowPlayingCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func NowPlayingCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -78,7 +79,7 @@ func NowPlayingCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Co
 
 }
 
-func SeekCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func SeekCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -92,7 +93,7 @@ func SeekCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context,
 	seek(s, m.ChannelID, m.GuildID, args[0])
 }
 
-func ForwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func ForwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -121,7 +122,7 @@ func ForwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Conte
 
 }
 
-func BackwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func BackwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -150,7 +151,7 @@ func BackwardCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Cont
 
 }
 
-func VolumeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func VolumeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -171,7 +172,7 @@ func VolumeCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Contex
 
 }
 
-func QueueCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func QueueCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -222,5 +223,5 @@ func QueueCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context
 
 }
 
-func AddQueueCmd(s *discordgo.Session, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+func AddQueueCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 }
