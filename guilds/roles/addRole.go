@@ -15,7 +15,7 @@ import (
 
 func AddRoleCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, "roles.add") {
-		util.NoPermissionHandler(s, m, conf, "roles.add")
+		config.NoPermissionHandler(s, m, conf, "roles.add")
 		return
 	}
 

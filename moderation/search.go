@@ -26,7 +26,7 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	}
 
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) && idList[0] != m.Author.ID {
-		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
 		return
 	}
 

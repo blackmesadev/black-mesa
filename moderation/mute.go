@@ -17,7 +17,7 @@ import (
 
 func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_MUTE) {
-		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_MUTE)
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_MUTE)
 		return
 	}
 

@@ -6,13 +6,12 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/structs"
-	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )
 
 func GetCommandLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWPERMS) {
-		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWPERMS)
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWPERMS)
 		return
 	}
 	msg := "```\nCommand Permission Levels:\n"

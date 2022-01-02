@@ -21,7 +21,7 @@ import (
 
 func PurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE) {
-		util.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE)
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE)
 		return
 	}
 
