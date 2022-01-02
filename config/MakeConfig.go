@@ -22,7 +22,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 
 	perms := make(map[string]int64)
 	perms["guild"] = 0
-	perms["administration"] = 100
+	perms["admin"] = 100
 	perms["moderation"] = 50
 	perms["roles"] = 100
 	perms["logging"] = 100
