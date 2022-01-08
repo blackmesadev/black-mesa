@@ -5,28 +5,34 @@ import (
 	"log"
 
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func (bot *Bot) OnMemberJoin(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
-	// we only need to check if it exists so we can ignore the actual data since
-	// if the driver doesnt find anything it will return a mongo.ErrNoDocuments error type
-	_, err := db.Find(context.TODO(), bson.M{
+	cur, err := db.Find(context.TODO(), bson.M{
 		"guildID": m.GuildID,
 		"userID":  m.User.ID,
 		"type":    "mute",
 	})
 
-	if err == mongo.ErrNoDocuments {
+	if err != nil {
+		log.Println(err)
 		return
 	}
 
-	if err != nil {
-		log.Println(err)
+	var mute *mongodb.Action
+
+	for cur.Next(context.TODO()) {
+		mute = &mongodb.Action{}
+		cur.Decode(mute)
+	}
+
+	// double check that this is a valid mute after decoding
+	if mute == nil || mute.Type != "mute" {
 		return
 	}
 
