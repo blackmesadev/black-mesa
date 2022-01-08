@@ -201,6 +201,15 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			}
 
 		}
+
+		// Regex
+		if censorLevel.FilterRegex {
+			content = censor.ReplaceNonStandardSpace(content)
+			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
+			if !ok {
+				return false, fmt.Sprintf("%v (`%v`)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
+			}
+		}
 	}
 
 	// Channel censors
@@ -256,7 +265,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		// IPs
-		if censorLevel.FilterIPs {
+		if censorChannel.FilterIPs {
 			content = censor.ReplaceNonStandardSpace(content)
 			ok := censor.IPCheck(content)
 			if !ok {
@@ -266,7 +275,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		// Regex
-		if censorLevel.FilterRegex {
+		if censorChannel.FilterRegex {
 			content = censor.ReplaceNonStandardSpace(content)
 			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
 			if !ok {
