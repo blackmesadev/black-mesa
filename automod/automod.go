@@ -264,6 +264,15 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			}
 
 		}
+
+		// Regex
+		if censorLevel.FilterRegex {
+			content = censor.ReplaceNonStandardSpace(content)
+			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
+			if !ok {
+				return false, fmt.Sprintf("%v (`%v`)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
+			}
+		}
 	}
 
 	if conf.Modules.Automod.SpamLevels[userLevel] == nil {
