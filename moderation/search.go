@@ -25,7 +25,7 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		idList = append(idList, m.Author.ID)
 	}
 
-	if idList[0] != m.Author.ID {
+	if idList[0] == m.Author.ID {
 		for _, id := range idList {
 			if id == m.Author.ID {
 				if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCHSELF) {
