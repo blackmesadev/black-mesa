@@ -1,6 +1,9 @@
 package mongodb
 
-import "github.com/blackmesadev/black-mesa/structs"
+import (
+	"github.com/blackmesadev/black-mesa/structs"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type MongoGuild struct {
 	GuildID string          `json:"guildID" bson:"guildID"`
@@ -8,6 +11,10 @@ type MongoGuild struct {
 }
 
 type Action struct {
+	// for timestamps
+	ID primitive.ObjectID `bson:"_id"`
+
+	// action data
 	GuildID string `bson:"guildID"`
 	UserID  string `bson:"userID"`
 	Issuer  string `bson:"issuer"`
