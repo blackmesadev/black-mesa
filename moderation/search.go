@@ -158,6 +158,13 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 		issuer = punishment.Issuer
 	}
 
+	var expiring string
+	if punishment.Expires == 0 {
+		expiring = "Never"
+	} else {
+		expiring = time.Unix(punishment.Expires, 0).Format(time.RFC3339)
+	}
+
 	if ShouldCensor(s, conf, m.GuildID, m.Author.ID) {
 		punishment.Reason = util.FilteredCommand(punishment.Reason)
 	}
@@ -166,7 +173,7 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 		{
 			Name: strings.Title(punishment.Type),
 			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:**%v\n**Expiring:** %v",
-				punishment.Reason, issuer, time.Unix(punishment.Expires, 0)),
+				punishment.Reason, issuer, expiring),
 			Inline: true,
 		},
 	}
