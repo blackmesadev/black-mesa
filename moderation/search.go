@@ -25,20 +25,23 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		idList = append(idList, m.Author.ID)
 	}
 
-	if idList[0] == m.Author.ID {
-		for _, id := range idList {
-			if id == m.Author.ID {
-				if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCHSELF) {
-					config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCHSELF)
-					return
-				}
+	selfSearch := true
+	for _, id := range idList {
+		if id == m.Author.ID {
+			if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCHSELF) {
+				config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCHSELF)
+				return
 			}
+		} else {
+			selfSearch = false
 		}
 	}
 
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
-		return
+	if !selfSearch {
+		if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) {
+			config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
+			return
+		}
 	}
 
 	if len(idList) > 1 || len(uuidList) > 1 {
