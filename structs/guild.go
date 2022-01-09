@@ -34,6 +34,7 @@ type Guild struct {
 	AutoRole            *[]string         `json:"autoRole" bson:"autoRole"` // slice of ids
 	ReactRoles          *ReactRoles       `json:"reactRoles" bson:"reactRoles"`
 	UnsafePermissions   bool              `json:"unsafePermissions" bson:"unsafePermissions"`
+	StaffLevel          int64             `json:"staffLevel" bson:"staffLevel"`
 }
 
 type Censor struct {
@@ -89,6 +90,8 @@ type Logging struct {
 }
 
 type Moderation struct {
+	CensorSearches              bool                       `json:"censorSearches" bson:"censorSearches"`
+	CensorStaffSearches         bool                       `json:"censorStaffSearches" bson:"censorStaffSearches"`
 	ConfirmActionsMessage       bool                       `json:"confirmActionsMessage" bson:"confirmActionsMessage"`
 	ConfirmActionsMessageExpiry int64                      `json:"confirmActionsMessageExpiry" bson:"confirmActionsMessageExpiry"`
 	ConfirmActionsReaction      bool                       `json:"confirmActionsReaction" bson:"confirmActionsReaction"`
