@@ -131,9 +131,9 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	}
 
 	issuerMember, err := s.State.Member(guildId, issuer)
-	if err != nil {
+	if err != nil || issuerMember == nil {
 		issuerUser, err = s.User(issuer)
-		if err != nil {
+		if err != nil || issuerUser == nil {
 			return err
 		}
 	} else {
@@ -144,7 +144,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	logging.LogStrike(s, guildId, issuerFull, user, weight, reason, location, infractionUUID)
 
 	if err == nil {
-		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerMember.User, reason, nil, false, "Striked"))
+		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerUser, reason, nil, false, "Striked"))
 	}
 
 	// escalate punishments
