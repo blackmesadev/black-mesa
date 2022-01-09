@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	VERSION = "0.14.6"
+	VERSION = "0.14.7"
 )
 
 var r *redis.Client
