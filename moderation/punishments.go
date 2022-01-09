@@ -3,6 +3,7 @@ package moderation
 import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/mongodb"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func AddTimedBan(guildid string, issuer string, userid string, expiry int64, uuid string) error {
@@ -20,6 +21,10 @@ func AddTimedBan(guildid string, issuer string, userid string, expiry int64, uui
 }
 
 func AddTimedMute(guildid string, issuer string, userid string, roleid string, expiry int64, reason string, uuid string, roles *[]string) error {
+	currentMute, err := config.GetMute(guildid, userid)
+	if err != nil && err != mongo.ErrNoDocuments {
+		return err
+	}
 	config.DeleteMute(guildid, userid) // delete existing mutes
 
 	punishment := &mongodb.Action{
@@ -33,11 +38,15 @@ func AddTimedMute(guildid string, issuer string, userid string, roleid string, e
 		UUID:    uuid,
 	}
 
+	if currentMute != nil {
+		roles = currentMute.ReturnRoles
+	}
+
 	if roles != nil {
 		punishment.ReturnRoles = roles
 	}
 
-	_, err := config.AddAction(punishment)
+	_, err = config.AddAction(punishment)
 	return err
 }
 
