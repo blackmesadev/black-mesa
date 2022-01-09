@@ -26,7 +26,15 @@ func FilteredCommand(input string) (output string) {
 	if strings.Contains(input, consts.CENSOR_REGEX) {
 		blockedString = strings.TrimSpace(strings.TrimPrefix(input, consts.CENSOR_REGEX))
 		outputLength := len(blockedString)
-		output = fmt.Sprintf("%v `(%c%v%c)`", consts.CENSOR_REGEX, blockedString[1], strings.Repeat("*", outputLength-4), blockedString[outputLength-2])
+		var outputString string
+		repeatLength := outputLength - 4
+		// total length of 16
+		if repeatLength > 14 {
+			outputString = strings.Repeat("*", 11) + "..."
+		} else {
+			outputString = strings.Repeat("*", repeatLength)
+		}
+		output = fmt.Sprintf("%v `(%c%v%c)`", consts.CENSOR_REGEX, blockedString[1], outputString, blockedString[outputLength-2])
 	}
 
 	return
