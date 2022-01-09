@@ -186,9 +186,8 @@ func ShouldCensor(s *discordgo.Session, conf *structs.Config, guildid string, us
 			return false
 		}
 	}
-
-	if conf.Modules.Moderation.CensorStaffSearches && config.IsStaff(s, conf, guildid, userid) {
-		return true
+	if config.IsStaff(s, conf, guildid, userid) {
+		return conf.Modules.Moderation.CensorStaffSearches
 	}
 
 	return conf.Modules.Moderation.CensorSearches
