@@ -25,7 +25,18 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		idList = append(idList, m.Author.ID)
 	}
 
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) && idList[0] != m.Author.ID {
+	if idList[0] != m.Author.ID {
+		for _, id := range idList {
+			if id == m.Author.ID {
+				if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCHSELF) {
+					config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCHSELF)
+					return
+				}
+			}
+		}
+	}
+
+	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) {
 		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
 		return
 	}
@@ -41,10 +52,13 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	}
 
 	var err error
+
 	if len(idList) == 1 {
-		_, err = SearchByUser(s, m, idList)
+		_, err = SearchByUser(s, m, conf, idList,
+			ShouldCensor(s, conf, m.GuildID, m.Author.ID))
 	} else {
-		_, err = SearchByUUID(s, m, uuidList)
+		_, err = SearchByUUID(s, m, conf, uuidList,
+			ShouldCensor(s, conf, m.GuildID, m.Author.ID))
 	}
 
 	if err != nil {
@@ -53,7 +67,7 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 
 }
 
-func SearchByUser(s *discordgo.Session, m *discordgo.Message, idList []string) (*discordgo.Message, error) {
+func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Config, idList []string, censored bool) (*discordgo.Message, error) {
 
 	punishmentList, err := config.GetPunishments(m.GuildID, idList[0])
 	if err != nil {
@@ -81,10 +95,15 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, idList []string) (
 		} else {
 			expiring = time.Unix(punishment.Expires, 0).Format(time.RFC3339)
 		}
+
+		if ShouldCensor(s, conf, m.GuildID, m.Author.ID) {
+			punishment.Reason = util.FilteredCommand(punishment.Reason)
+		}
+
 		field := &discordgo.MessageEmbedField{
 			Name: strings.Title(punishment.Type),
 			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v\n**Expiring:** %v",
-				util.FilteredCommand(punishment.Reason), issuer, punishment.UUID, expiring),
+				punishment.Reason, issuer, punishment.UUID, expiring),
 			Inline: true,
 		}
 		embedFields = append(embedFields, field)
@@ -113,7 +132,7 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, idList []string) (
 
 }
 
-func SearchByUUID(s *discordgo.Session, m *discordgo.Message, uuidList []string) (*discordgo.Message, error) {
+func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Config, uuidList []string, censored bool) (*discordgo.Message, error) {
 
 	punishment, err := config.GetPunishmentByUUID(m.GuildID, uuidList[0])
 	if err != nil {
@@ -153,4 +172,21 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, uuidList []string)
 	}
 
 	return s.ChannelMessageSendEmbed(m.ChannelID, embed)
+}
+
+func ShouldCensor(s *discordgo.Session, conf *structs.Config, guildid string, userid string) bool {
+	if conf == nil {
+		var err error
+		conf, err = config.GetConfig(guildid)
+		if err != nil {
+			log.Printf("Failed to get config for %v (%v)\n", guildid, err)
+			return false
+		}
+	}
+
+	if conf.Modules.Moderation.CensorStaffSearches && config.IsStaff(s, conf, guildid, userid) {
+		return true
+	}
+
+	return conf.Modules.Moderation.CensorSearches
 }
