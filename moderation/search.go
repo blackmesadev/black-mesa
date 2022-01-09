@@ -157,11 +157,16 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 	} else {
 		issuer = punishment.Issuer
 	}
+
+	if ShouldCensor(s, conf, m.GuildID, m.Author.ID) {
+		punishment.Reason = util.FilteredCommand(punishment.Reason)
+	}
+
 	embedFields := []*discordgo.MessageEmbedField{
 		{
 			Name: strings.Title(punishment.Type),
 			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:**%v\n**Expiring:** %v",
-				util.FilteredCommand(punishment.Reason), issuer, time.Unix(punishment.Expires, 0)),
+				punishment.Reason, issuer, time.Unix(punishment.Expires, 0)),
 			Inline: true,
 		},
 	}
