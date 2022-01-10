@@ -12,7 +12,7 @@ type MongoGuild struct {
 
 type Action struct {
 	// for timestamps
-	ID primitive.ObjectID `bson:"_id"`
+	ID primitive.ObjectID `bson:"_id,omitempty"`
 
 	// action data
 	GuildID string `bson:"guildID"`
