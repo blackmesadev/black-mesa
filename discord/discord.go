@@ -21,11 +21,10 @@ import (
 var instance *Bot
 
 type Bot struct {
-	Session  *discordgo.Session
-	Token    string `json:"token"`
-	Commands map[string]interface{}
-	Version  string
-	Router   *Mux
+	Session *discordgo.Session
+	Token   string `json:"token"`
+	Version string
+	Router  *Mux
 }
 
 func CreateBot(token string) *Bot {
