@@ -119,7 +119,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 	censorChannel := automod.CensorChannels[m.ChannelID]
 
-	// levels take priority
+	// channels take priority
 	userLevel := config.GetLevel(s, m.GuildID, m.Author.ID)
 
 	i := 0
@@ -130,6 +130,78 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 	}
 
 	censorLevel := automod.CensorLevels[util.GetClosestLevel(automodCensorLevels, userLevel)]
+
+	// Channel censors
+	if censorChannel != nil {
+		// Zalgo
+		//if censorChannel.FilterZalgo {
+		//	ok := censor.ZalgoCheck(content)
+		//	if !ok {
+		//		return false, consts.CENSOR_ZALGO, 1, filterProcessingStart
+		//	}
+		//}
+
+		// Invites
+		if censorChannel.FilterInvites {
+			ok, invite := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
+			if !ok {
+				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
+			}
+
+		} else if len(*censorChannel.InvitesBlacklist) != 0 {
+			ok, invite := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
+			if !ok {
+				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
+			}
+		}
+
+		// Domains
+
+		if censorChannel.FilterDomains {
+			ok, domain := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
+			if !ok {
+				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
+			}
+		} else if len(*censorChannel.DomainBlacklist) != 0 {
+			ok, domain := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
+			if !ok {
+				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
+			}
+		}
+
+		// Strings / Substrings
+
+		if censorChannel.FilterStrings {
+			ok, str := censor.StringsCheck(content, censorChannel.BlockedStrings)
+			if !ok {
+				return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+			}
+
+			ok, str = censor.SubStringsCheck(content, censorChannel.BlockedSubstrings)
+			if !ok {
+				return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+			}
+		}
+
+		// IPs
+		if censorChannel.FilterIPs {
+			content = censor.ReplaceNonStandardSpace(content)
+			ok := censor.IPCheck(content)
+			if !ok {
+				return false, consts.CENSOR_IP, 1, filterProcessingStart
+			}
+
+		}
+
+		// Regex
+		if censorChannel.FilterRegex {
+			content = censor.ReplaceNonStandardSpace(content)
+			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
+			if !ok {
+				return false, fmt.Sprintf("%v (`%v`)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
+			}
+		}
+	}
 
 	// Level censors
 	if censorLevel != nil {
@@ -208,78 +280,6 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
 			if !ok {
 				return false, fmt.Sprintf("%v (%v)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
-			}
-		}
-	}
-
-	// Channel censors
-	if censorChannel != nil {
-		// Zalgo
-		//if censorChannel.FilterZalgo {
-		//	ok := censor.ZalgoCheck(content)
-		//	if !ok {
-		//		return false, consts.CENSOR_ZALGO, 1, filterProcessingStart
-		//	}
-		//}
-
-		// Invites
-		if censorChannel.FilterInvites {
-			ok, invite := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
-			if !ok {
-				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
-			}
-
-		} else if len(*censorChannel.InvitesBlacklist) != 0 {
-			ok, invite := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
-			if !ok {
-				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
-			}
-		}
-
-		// Domains
-
-		if censorChannel.FilterDomains {
-			ok, domain := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
-			if !ok {
-				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
-			}
-		} else if len(*censorChannel.DomainBlacklist) != 0 {
-			ok, domain := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
-			if !ok {
-				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
-			}
-		}
-
-		// Strings / Substrings
-
-		if censorChannel.FilterStrings {
-			ok, str := censor.StringsCheck(content, censorChannel.BlockedStrings)
-			if !ok {
-				return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
-			}
-
-			ok, str = censor.SubStringsCheck(content, censorChannel.BlockedSubstrings)
-			if !ok {
-				return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
-			}
-		}
-
-		// IPs
-		if censorChannel.FilterIPs {
-			content = censor.ReplaceNonStandardSpace(content)
-			ok := censor.IPCheck(content)
-			if !ok {
-				return false, consts.CENSOR_IP, 1, filterProcessingStart
-			}
-
-		}
-
-		// Regex
-		if censorChannel.FilterRegex {
-			content = censor.ReplaceNonStandardSpace(content)
-			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
-			if !ok {
-				return false, fmt.Sprintf("%v (`%v`)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
 			}
 		}
 	}
@@ -396,6 +396,22 @@ SkipEmoji:
 		}
 	}
 SkipAttachments:
+	{
+		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxAttachments
 
-	return true, "", 0, filterProcessingStart
+		if limit == 0 {
+			goto SkipLength
+		}
+
+		ok, count := spam.ProcessMaxAttachments(m, limit)
+		if !ok {
+			//                                                       1 strike per attachment over the limit
+			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
+
+		}
+	}
+SkipLength:
+	{
+		return true, "", 0, filterProcessingStart
+	}
 }
