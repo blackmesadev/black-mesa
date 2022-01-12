@@ -10,6 +10,7 @@ const (
 	SPAM_MESSAGES    = "Spam->Messages"
 	SPAM_NEWLINES    = "Spam->Newlines"
 	SPAM_UPPERCASE   = "Spam->Uppercase"
+	SPAM_MAXLENTH    = "Spam->MaximumLength"
 
 	// Censor
 	CENSOR                     = "Censor"

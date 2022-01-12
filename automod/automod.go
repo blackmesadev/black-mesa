@@ -117,10 +117,10 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		return true, "", 0, filterProcessingStart
 	}
 
-	censorChannel := automod.CensorChannels[m.ChannelID]
-
-	// channels take priority
 	userLevel := config.GetLevel(s, m.GuildID, m.Author.ID)
+
+	censorChannel := automod.CensorChannels[m.ChannelID]
+	spamChannel := automod.SpamChannels[m.ChannelID]
 
 	i := 0
 	automodCensorLevels := make([]int64, len(automod.CensorLevels))
@@ -129,7 +129,17 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		i++
 	}
 
+	i = 0
+	automodSpamLevels := make([]int64, len(automod.SpamLevels))
+	for k := range automod.SpamLevels {
+		automodSpamLevels[i] = k
+		i++
+	}
+
 	censorLevel := automod.CensorLevels[util.GetClosestLevel(automodCensorLevels, userLevel)]
+	spamLevel := automod.SpamLevels[util.GetClosestLevel(automodSpamLevels, userLevel)]
+
+	// !!channels take priority!!
 
 	// Channel censors
 	if censorChannel != nil {
@@ -284,134 +294,139 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 	}
 
-	if conf.Modules.Automod.SpamLevels[userLevel] == nil {
-		return true, "", 0, filterProcessingStart
-	}
+	// Channel Spam
+	if spamChannel != nil {
 
-	// Spam
-	{ // messages
-		ten, _ := time.ParseDuration("10s")
-		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxMessages
-
-		if limit == 0 {
-			goto SkipMessages
-		}
-
-		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, limit, ten, false)
+		// Messages
+		interval := time.Duration(spamChannel.Interval) * time.Second
+		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, spamChannel.MaxMessages, interval, false)
 		if !ok {
 			err := spam.ClearMaxMessages(m.Author.ID, m.GuildID)
 			if err != nil {
 				logging.LogError(s, m.GuildID, m.Author.ID, "spam.ClearMaxMessages", err)
 			}
-			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", limit, ten), 1, filterProcessingStart
-		}
-	}
-SkipMessages:
-	{ // newlines
-		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxNewlines
-
-		if limit == 0 {
-			goto SkipNewlines
+			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", spamChannel.MaxMessages, interval.String()), 1, filterProcessingStart
 		}
 
-		ok, count := spam.ProcessMaxNewlines(m.Content, limit)
+		// newlines
+
+		ok, count := spam.ProcessMaxNewlines(m.Content, spamChannel.MaxNewlines)
 		if !ok {
-			//                                                             1 strike per limit violation
-			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
-		}
-	}
-SkipNewlines:
-	{ // mentions
-		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxMentions
-
-		if limit == 0 {
-			goto SkipMentions
+			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxNewlines), 1, filterProcessingStart
 		}
 
-		ok, count := spam.ProcessMaxMentions(m, limit)
+		// mentions
+
+		ok, count = spam.ProcessMaxMentions(m, spamChannel.MaxMentions)
 		if !ok {
-			//                                                      1 strike for every mention over the limit
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxMentions), 1, filterProcessingStart
 		}
-		ok, count = spam.ProcessMaxRoleMentions(m, limit)
+		ok, count = spam.ProcessMaxRoleMentions(m, spamChannel.MaxMentions)
 		if !ok {
-			// see above
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
-		}
-	}
-SkipMentions:
-	{ // links
-		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxLinks
-
-		if limit == 0 {
-			goto SkipLinks
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxMentions), 1, filterProcessingStart
 		}
 
-		ok, count := spam.ProcessMaxLinks(m.Content, limit)
+		// links
+
+		ok, count = spam.ProcessMaxLinks(m.Content, spamChannel.MaxLinks)
 		if !ok {
-			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
-		}
-	}
-SkipLinks:
-	{ // uppercase
-		limit := 0.0
-
-		if limit == 0.0 {
-			goto SkipUppercase
+			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxLinks), 1, filterProcessingStart
 		}
 
-		minLength := 20
-		ok, percent := spam.ProcessMaxUppercase(m.Content, limit, minLength)
+		// uppercase
+		ok, percent := spam.ProcessMaxUppercase(m.Content, spamChannel.MaxUppercasePercent, int(spamChannel.MinUppercaseLimit))
 		if !ok {
-			// flat rate because there's basically no calculation we can do here
-			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, limit), 1, filterProcessingStart
+			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, spamChannel.MaxUppercasePercent), 1, filterProcessingStart
 		}
-	}
-SkipUppercase:
-	{ // emoji
-		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxEmojis
+		// emoji
 
-		if limit == 0 {
-			goto SkipEmoji
-		}
-
-		ok, count := spam.ProcessMaxEmojis(m, limit)
+		ok, count = spam.ProcessMaxEmojis(m, spamChannel.MaxEmojis)
 		if !ok {
-			//                                                             1 strike per limit violation
-			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count / limit), filterProcessingStart
-		}
-	}
-SkipEmoji:
-	{ // attachments
-		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxAttachments
-
-		if limit == 0 {
-			goto SkipAttachments
+			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxEmojis), 1, filterProcessingStart
 		}
 
-		ok, count := spam.ProcessMaxAttachments(m, limit)
+		// attachments
+
+		ok, count = spam.ProcessMaxAttachments(m, spamChannel.MaxAttachments)
 		if !ok {
-			//                                                       1 strike per attachment over the limit
-			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
-		}
-	}
-SkipAttachments:
-	{
-		limit := conf.Modules.Automod.SpamLevels[userLevel].MaxAttachments
-
-		if limit == 0 {
-			goto SkipLength
+			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxAttachments), 1, filterProcessingStart
 		}
 
-		ok, count := spam.ProcessMaxAttachments(m, limit)
+		// length
+
+		ok, count = spam.ProcessMaxLength(m, spamChannel.MaxCharacters)
 		if !ok {
-			//                                                       1 strike per attachment over the limit
-			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, limit), int64(count - limit), filterProcessingStart
+			return false, consts.SPAM_MAXLENTH + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxCharacters), 1, filterProcessingStart
 
 		}
 	}
-SkipLength:
-	{
-		return true, "", 0, filterProcessingStart
+
+	// Level Spam
+	if spamLevel != nil {
+
+		// Messages
+		interval := time.Duration(spamLevel.Interval) * time.Second
+		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, spamLevel.MaxMessages, interval, false)
+		if !ok {
+			err := spam.ClearMaxMessages(m.Author.ID, m.GuildID)
+			if err != nil {
+				logging.LogError(s, m.GuildID, m.Author.ID, "spam.ClearMaxMessages", err)
+			}
+			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", spamLevel.MaxMessages, interval.String()), 1, filterProcessingStart
+		}
+
+		// newlines
+
+		ok, count := spam.ProcessMaxNewlines(m.Content, spamLevel.MaxNewlines)
+		if !ok {
+			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxNewlines), 1, filterProcessingStart
+		}
+
+		// mentions
+
+		ok, count = spam.ProcessMaxMentions(m, spamLevel.MaxMentions)
+		if !ok {
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxMentions), 1, filterProcessingStart
+		}
+		ok, count = spam.ProcessMaxRoleMentions(m, spamLevel.MaxMentions)
+		if !ok {
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxMentions), 1, filterProcessingStart
+		}
+
+		// links
+
+		ok, count = spam.ProcessMaxLinks(m.Content, spamLevel.MaxLinks)
+		if !ok {
+			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxLinks), 1, filterProcessingStart
+		}
+
+		// uppercase
+		ok, percent := spam.ProcessMaxUppercase(m.Content, spamLevel.MaxUppercasePercent, int(spamLevel.MinUppercaseLimit))
+		if !ok {
+			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, spamLevel.MaxUppercasePercent), 1, filterProcessingStart
+		}
+		// emoji
+
+		ok, count = spam.ProcessMaxEmojis(m, spamLevel.MaxEmojis)
+		if !ok {
+			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxEmojis), 1, filterProcessingStart
+		}
+
+		// attachments
+
+		ok, count = spam.ProcessMaxAttachments(m, spamLevel.MaxAttachments)
+		if !ok {
+			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxAttachments), 1, filterProcessingStart
+		}
+
+		// length
+
+		ok, count = spam.ProcessMaxLength(m, spamLevel.MaxCharacters)
+		if !ok {
+			return false, consts.SPAM_MAXLENTH + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxCharacters), 1, filterProcessingStart
+
+		}
 	}
+
+	return true, "", 0, filterProcessingStart
 }

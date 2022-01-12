@@ -54,21 +54,23 @@ type Censor struct {
 }
 
 type Spam struct {
-	Punishment         string
-	PunishmentDuration int64 `json:"punishmentDuration" bson:"punishmentDuration"` // seconds
-	Count              int64 `json:"count" bson:"count"`                           // amount per interval
-	Interval           int64 `json:"interval" bson:"interval"`                     // seconds
-	MaxMessages        int64 `json:"maxMessages" bson:"maxMessages"`
-	MaxMentions        int64 `json:"maxMentions" bson:"maxMentions"`
-	MaxLinks           int64 `json:"maxLinks" bson:"maxLinks"`
-	MaxAttachments     int64 `json:"maxAttachments" bson:"maxAttachments"`
-	MaxEmojis          int64 `json:"maxEmojis" bson:"maxEmojis"`
-	MaxNewlines        int64 `json:"maxNewlines" bson:"maxNewlines"`
-	MaxDuplicates      int64 `json:"maxDuplicates" bson:"maxDuplicates"`
-	MaxCharacters      int64 `json:"maxCharacters" bson:"maxCharacters"`
-	Clean              bool  `json:"clean" bson:"clean"`
-	CleanCount         int64 `json:"cleanCount" bson:"cleanCount"`
-	CleanDuration      int64 `json:"cleanDuration" bson:"cleanDuration"`
+	Punishment          string
+	PunishmentDuration  int64   `json:"punishmentDuration" bson:"punishmentDuration"` // seconds
+	Count               int64   `json:"count" bson:"count"`                           // amount per interval
+	Interval            int64   `json:"interval" bson:"interval"`                     // seconds
+	MaxMessages         int64   `json:"maxMessages" bson:"maxMessages"`
+	MaxMentions         int64   `json:"maxMentions" bson:"maxMentions"`
+	MaxLinks            int64   `json:"maxLinks" bson:"maxLinks"`
+	MaxAttachments      int64   `json:"maxAttachments" bson:"maxAttachments"`
+	MaxEmojis           int64   `json:"maxEmojis" bson:"maxEmojis"`
+	MaxNewlines         int64   `json:"maxNewlines" bson:"maxNewlines"`
+	MaxDuplicates       int64   `json:"maxDuplicates" bson:"maxDuplicates"`
+	MaxCharacters       int64   `json:"maxCharacters" bson:"maxCharacters"`
+	MaxUppercasePercent float64 `json:"maxUppercasePercent" bson:"maxUppercasePercent"`
+	MinUppercaseLimit   int64   `json:"minUppercaseLimit" bson:"minUppercaseLimit"`
+	Clean               bool    `json:"clean" bson:"clean"`
+	CleanCount          int64   `json:"cleanCount" bson:"cleanCount"`
+	CleanDuration       int64   `json:"cleanDuration" bson:"cleanDuration"`
 }
 
 type Automod struct {

@@ -12,6 +12,10 @@ var r *redis.Client
 
 func ProcessMaxMessages(userId string, guildId string, max int64, timeLimit time.Duration, resetOnContinuedSpam bool) bool {
 
+	if max == 0 {
+		return true
+	}
+
 	if r == nil {
 		r = bmRedis.GetRedis()
 	}
