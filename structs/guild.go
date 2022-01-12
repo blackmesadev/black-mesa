@@ -65,6 +65,7 @@ type Spam struct {
 	MaxEmojis          int64 `json:"maxEmojis" bson:"maxEmojis"`
 	MaxNewlines        int64 `json:"maxNewlines" bson:"maxNewlines"`
 	MaxDuplicates      int64 `json:"maxDuplicates" bson:"maxDuplicates"`
+	MaxCharacters      int64 `json:"maxCharacters" bson:"maxCharacters"`
 	Clean              bool  `json:"clean" bson:"clean"`
 	CleanCount         int64 `json:"cleanCount" bson:"cleanCount"`
 	CleanDuration      int64 `json:"cleanDuration" bson:"cleanDuration"`
