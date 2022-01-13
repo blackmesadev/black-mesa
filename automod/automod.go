@@ -214,7 +214,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 	}
 
 	// Level censors
-	if censorLevel != nil {
+	if censorLevel != nil && censorChannel == nil {
 		// Zalgo
 		//if censorLevel.FilterZalgo {
 		//	ok := censor.ZalgoCheck(content)
@@ -362,7 +362,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 	}
 
 	// Level Spam
-	if spamLevel != nil {
+	if spamLevel != nil && spamChannel == nil {
 
 		// Messages
 		interval := time.Duration(spamLevel.Interval) * time.Second
