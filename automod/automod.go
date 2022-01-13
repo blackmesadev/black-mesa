@@ -202,6 +202,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		}
 
+		// Obnoxious Unicode
 		if censorChannel.FilterObnoxiousUnicode {
 			ok := censor.ObnoxiousUnicodeCheck(content)
 			if !ok {
@@ -300,6 +301,14 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			ok := censor.ExtendedUnicodeCheck(content)
 			if !ok {
 				return false, consts.CENSOR_NOTENGLISH, 1, filterProcessingStart
+			}
+		}
+
+		// Obnoxious Unicode
+		if censorLevel.FilterObnoxiousUnicode {
+			ok := censor.ObnoxiousUnicodeCheck(content)
+			if !ok {
+				return false, consts.CENSOR_OBNOXIOUSUNICODE, 1, filterProcessingStart
 			}
 		}
 
