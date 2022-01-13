@@ -110,7 +110,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 	automod := conf.Modules.Automod
 
-	content := m.Content
+	content := clean(m.Content)
 
 	if len(automod.SpamLevels) == 0 && len(automod.SpamChannels) == 0 &&
 		len(automod.CensorLevels) == 0 && len(automod.SpamChannels) == 0 {
@@ -182,7 +182,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		// Strings / Substrings
 
 		if censorChannel.FilterStrings {
-			ok, str := censor.StringsCheck(content, censorChannel.BlockedStrings)
+			ok, str := censor.StringsCheck(replaceNonStandardSpace(m.Content), censorChannel.BlockedStrings)
 			if !ok {
 				return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 			}
@@ -195,7 +195,6 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		// IPs
 		if censorChannel.FilterIPs {
-			content = censor.ReplaceNonStandardSpace(content)
 			ok := censor.IPCheck(content)
 			if !ok {
 				return false, consts.CENSOR_IP, 1, filterProcessingStart
@@ -203,10 +202,24 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		}
 
+		if censorChannel.FilterObnoxiousUnicode {
+			ok := censor.ObnoxiousUnicodeCheck(content)
+			if !ok {
+				return false, consts.CENSOR_OBNOXIOUSUNICODE, 1, filterProcessingStart
+			}
+		}
+
+		//Non english characters
+		if censorChannel.FilterEnglish {
+			ok := censor.ExtendedUnicodeCheck(content)
+			if !ok {
+				return false, consts.CENSOR_NOTENGLISH, 1, filterProcessingStart
+			}
+		}
+
 		// Regex
 		if censorChannel.FilterRegex {
-			content = censor.ReplaceNonStandardSpace(content)
-			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
+			matches, ok := censor.RegexCheck(content, censorChannel.Regex)
 			if !ok {
 				return false, fmt.Sprintf("%v (`%v`)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
 			}
@@ -261,7 +274,6 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			}
 			contentList = append(contentList, content)
 			for _, content := range contentList {
-				content = censor.ReplaceNonStandardSpace(content)
 				ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
 				if !ok {
 					return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
@@ -276,7 +288,6 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		// IPs
 		if censorLevel.FilterIPs {
-			content = censor.ReplaceNonStandardSpace(content)
 			ok := censor.IPCheck(content)
 			if !ok {
 				return false, consts.CENSOR_IP, 1, filterProcessingStart
@@ -284,9 +295,16 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		}
 
+		//Non english characters
+		if censorLevel.FilterEnglish {
+			ok := censor.ExtendedUnicodeCheck(content)
+			if !ok {
+				return false, consts.CENSOR_NOTENGLISH, 1, filterProcessingStart
+			}
+		}
+
 		// Regex
 		if censorLevel.FilterRegex {
-			content = censor.ReplaceNonStandardSpace(content)
 			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
 			if !ok {
 				return false, fmt.Sprintf("%v (%v)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart

@@ -38,19 +38,21 @@ type Guild struct {
 }
 
 type Censor struct {
-	FilterZalgo       bool      `json:"filterZalgo" bson:"filterZalgo"`
-	FilterInvites     bool      `json:"filterInvites" bson:"filterInvites"`
-	FilterDomains     bool      `json:"filterDomains" bson:"filterDomains"`
-	FilterStrings     bool      `json:"filterStrings" bson:"filterStrings"`
-	FilterIPs         bool      `json:"filterIPs" bson:"filterIPs"`
-	FilterRegex       bool      `json:"filterRegex" bson:"filterRegex"`
-	InvitesWhitelist  *[]string `json:"invitesWhitelist" bson:"invitesWhitelist"`   // slice of invitelinks/ids
-	InvitesBlacklist  *[]string `json:"invitesBlacklist" bson:"invitesBlacklist"`   // slice of invitelinks/ids
-	DomainWhitelist   *[]string `json:"domainWhitelist" bson:"domainWhitelist"`     // slice of domains
-	DomainBlacklist   *[]string `json:"domainBlacklist" bson:"domainBlacklist"`     // slice of domains
-	BlockedSubstrings *[]string `json:"blockedSubstrings" bson:"blockedSubstrings"` // slice of substrings
-	BlockedStrings    *[]string `json:"blockedStrings" bson:"blockedStrings"`       // slice of strings
-	Regex             string    `json:"regex" bson:"regex"`
+	FilterZalgo            bool      `json:"filterZalgo" bson:"filterZalgo"`
+	FilterInvites          bool      `json:"filterInvites" bson:"filterInvites"`
+	FilterDomains          bool      `json:"filterDomains" bson:"filterDomains"`
+	FilterStrings          bool      `json:"filterStrings" bson:"filterStrings"`
+	FilterIPs              bool      `json:"filterIPs" bson:"filterIPs"`
+	FilterRegex            bool      `json:"filterRegex" bson:"filterRegex"`
+	FilterEnglish          bool      `json:"filterEnglish" bson:"filterEnglish"`
+	FilterObnoxiousUnicode bool      `json:"filterObnoxiousUnicode" bson:"filterObnoxiousUnicode"`
+	InvitesWhitelist       *[]string `json:"invitesWhitelist" bson:"invitesWhitelist"`   // slice of invitelinks/ids
+	InvitesBlacklist       *[]string `json:"invitesBlacklist" bson:"invitesBlacklist"`   // slice of invitelinks/ids
+	DomainWhitelist        *[]string `json:"domainWhitelist" bson:"domainWhitelist"`     // slice of domains
+	DomainBlacklist        *[]string `json:"domainBlacklist" bson:"domainBlacklist"`     // slice of domains
+	BlockedSubstrings      *[]string `json:"blockedSubstrings" bson:"blockedSubstrings"` // slice of substrings
+	BlockedStrings         *[]string `json:"blockedStrings" bson:"blockedStrings"`       // slice of strings
+	Regex                  string    `json:"regex" bson:"regex"`
 }
 
 type Spam struct {
