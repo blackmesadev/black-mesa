@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
@@ -15,36 +14,9 @@ import (
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
-
-func parseCommand(cmd string) ([]string, int64, string) {
-	var reason string
-
-	idList := util.SnowflakeRegex.FindAllString(cmd, -1)
-
-	params := util.SnowflakeRegex.Split(cmd, -1)
-
-	if params[len(params)-1][:1] == ">" {
-		reason = params[len(params)-1][1:]
-	} else {
-		reason = params[len(params)-1]
-	}
-
-	durationStr := strings.Fields(reason)[0]
-	duration := util.ParseTime(durationStr)
-
-	reason = strings.ReplaceAll(reason, durationStr, "")
-
-	reason = strings.TrimSpace(reason)
-
-	fmt.Println(idList)
-	fmt.Println(duration)
-	fmt.Println(params)
-	fmt.Println(reason)
-
-	return idList, duration, reason
-}
 
 func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, actioner *discordgo.User, reason string, expires *time.Time, permenant bool, punishmentType string) *discordgo.MessageEmbed {
 	footer := &discordgo.MessageEmbedFooter{
@@ -91,7 +63,8 @@ func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, act
 	return embed
 }
 
-func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string, infractionUUID string) error {
+func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string) error {
+	infractionUUID := uuid.New().String()
 	strike := &mongodb.Action{
 		GuildID: guildId,
 		UserID:  userId,
@@ -221,7 +194,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 				return err
 			}
 
-			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", infractionUUID, roles)
+			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", uuid.New().String(), roles)
 			if err != nil {
 				return err
 			}
@@ -237,7 +210,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedBan(guildId, "AutoMod", userId, duration, infractionUUID)
+			err = AddTimedBan(guildId, "AutoMod", userId, duration, uuid.New().String())
 			if err != nil {
 				return err
 			}
