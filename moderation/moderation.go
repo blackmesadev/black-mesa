@@ -210,7 +210,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedBan(guildId, "AutoMod", userId, duration, uuid.New().String())
+			err = AddTimedBan(guildId, "AutoMod", userId, duration, reason, uuid.New().String())
 			if err != nil {
 				return err
 			}
