@@ -75,7 +75,12 @@ type Spam struct {
 	CleanDuration       int64   `json:"cleanDuration" bson:"cleanDuration"`
 }
 
+type GuildOptions struct {
+	MinimumAccountAge string `json:"minimumAccountAge" bson:"minimumAccountAge"`
+}
+
 type Automod struct {
+	GuildOptions     *GuildOptions      `json:"guildOptions" bson:"guildOptions"`
 	CensorLevels     map[int64]*Censor  `json:"censorLevels" bson:"censorLevels"`
 	CensorChannels   map[string]*Censor `json:"censorChannels" bson:"censorChannels"`
 	SpamLevels       map[int64]*Spam    `json:"spamLevels" bson:"spamLevels"`

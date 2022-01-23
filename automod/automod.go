@@ -109,6 +109,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 	automod := conf.Modules.Automod
 
 	content := clean(m.Content)
+	lowerContent := strings.ToLower(content)
 
 	if len(automod.SpamLevels) == 0 && len(automod.SpamChannels) == 0 &&
 		len(automod.CensorLevels) == 0 && len(automod.SpamChannels) == 0 {
@@ -151,13 +152,13 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		// Invites
 		if censorChannel.FilterInvites {
-			ok, invite := censor.InvitesWhitelistCheck(content, censorChannel.InvitesWhitelist)
+			ok, invite := censor.InvitesWhitelistCheck(lowerContent, censorChannel.InvitesWhitelist)
 			if !ok {
 				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
 
 		} else if len(*censorChannel.InvitesBlacklist) != 0 {
-			ok, invite := censor.InvitesBlacklistCheck(content, censorChannel.InvitesBlacklist)
+			ok, invite := censor.InvitesBlacklistCheck(lowerContent, censorChannel.InvitesBlacklist)
 			if !ok {
 				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
@@ -166,12 +167,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		// Domains
 
 		if censorChannel.FilterDomains {
-			ok, domain := censor.DomainsWhitelistCheck(content, censorChannel.DomainWhitelist)
+			ok, domain := censor.DomainsWhitelistCheck(lowerContent, censorChannel.DomainWhitelist)
 			if !ok {
 				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
 		} else if len(*censorChannel.DomainBlacklist) != 0 {
-			ok, domain := censor.DomainsBlacklistCheck(content, censorChannel.DomainBlacklist)
+			ok, domain := censor.DomainsBlacklistCheck(lowerContent, censorChannel.DomainBlacklist)
 			if !ok {
 				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
@@ -180,14 +181,23 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		// Strings / Substrings
 
 		if censorChannel.FilterStrings {
-			ok, str := censor.StringsCheck(replaceNonStandardSpace(m.Content), censorChannel.BlockedStrings)
-			if !ok {
-				return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+			var contentList []string
+			if len(m.Attachments) > 0 {
+				for _, attachment := range m.Attachments {
+					contentList = append(contentList, strings.ToLower(attachment.Filename))
+				}
 			}
+			contentList = append(contentList, lowerContent)
+			for _, c := range contentList {
+				ok, str := censor.StringsCheck(c, censorChannel.BlockedStrings)
+				if !ok {
+					return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+				}
 
-			ok, str = censor.SubStringsCheck(content, censorChannel.BlockedSubstrings)
-			if !ok {
-				return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+				ok, str = censor.SubStringsCheck(c, censorChannel.BlockedSubstrings)
+				if !ok {
+					return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+				}
 			}
 		}
 
@@ -268,17 +278,17 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			var contentList []string
 			if len(m.Attachments) > 0 {
 				for _, attachment := range m.Attachments {
-					contentList = append(contentList, attachment.Filename)
+					contentList = append(contentList, strings.ToLower(attachment.Filename))
 				}
 			}
-			contentList = append(contentList, content)
-			for _, content := range contentList {
-				ok, str := censor.StringsCheck(content, censorLevel.BlockedStrings)
+			contentList = append(contentList, lowerContent)
+			for _, c := range contentList {
+				ok, str := censor.StringsCheck(c, censorLevel.BlockedStrings)
 				if !ok {
 					return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 				}
 
-				ok, str = censor.SubStringsCheck(content, censorLevel.BlockedSubstrings)
+				ok, str = censor.SubStringsCheck(c, censorLevel.BlockedSubstrings)
 				if !ok {
 					return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 				}
