@@ -6,13 +6,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func AddTimedBan(guildid string, issuer string, userid string, expiry int64, uuid string) error {
+func AddTimedBan(guildid string, issuer string, userid string, expiry int64, reason string, uuid string) error {
 	punishment := &mongodb.Action{
 		GuildID: guildid,
 		UserID:  userid,
 		Issuer:  issuer,
 		Type:    "ban",
 		Expires: expiry,
+		Reason:  reason,
 		UUID:    uuid,
 	}
 
