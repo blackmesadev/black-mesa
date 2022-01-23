@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// returns a int64 unix timestamp representative of when the punishment can be lifted
+// returns a int64 unix timestamp representative of a time string
 func ParseTime(strTime string) int64 {
 	var unixTime int64
 
