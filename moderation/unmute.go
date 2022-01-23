@@ -11,6 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
@@ -34,12 +35,12 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	}
 
 	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `unmute <target:user[]> [time:duration] [reason:string...]`")
+		s.ChannelMessageSend(m.ChannelID, consts.EMOJI_COMMAND+" `unmute <target:user[]> [time:duration] [reason:string...]`")
 		return
 	}
 
 	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
+		s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" You can not target one or more of these users.")
 		return
 	}
 
@@ -57,7 +58,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		return
 	}
 
-	msg := "<:mesaCheck:832350526729224243> Successfully unmuted "
+	msg := consts.EMOJI_CHECK + " Successfully unmuted "
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableUnmute := make([]string, 0)
@@ -65,7 +66,11 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 
 		muteInfo, err := config.GetMute(m.GuildID, id)
 		if err != nil || muteInfo == nil {
-			s.ChannelMessageSend(m.ChannelID, "<:mesaCheck:832350526729224243> Unable to fetch previous roles.")
+			if err == mongo.ErrNoDocuments || err == mongo.ErrNilDocument {
+				s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" Unable to find associated mute, user is likely not muted. Attempting to unmute anyway.")
+			} else {
+				s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" Unable to fetch previous roles. Attempting to unmute anyway.")
+			}
 		} else {
 			if muteInfo.ReturnRoles != nil {
 				go s.GuildMemberRoleBulkAdd(m.GuildID, id, *muteInfo.ReturnRoles)
