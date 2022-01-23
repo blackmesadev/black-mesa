@@ -11,8 +11,6 @@ import (
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
-
-	"github.com/google/uuid"
 )
 
 func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
@@ -71,9 +69,8 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	unableStrike := make([]string, 0)
 	for _, id := range idList {
 
-		infractionUUID := uuid.New().String()
 		msg += fmt.Sprintf("<@%v> ", id)
-		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID, infractionUUID)
+		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID)
 
 		timeExpiry = time.Unix(duration, 0)
 		timeUntil = time.Until(timeExpiry).Round(time.Second)

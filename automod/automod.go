@@ -17,7 +17,6 @@ import (
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 )
 
 var chillax = make(map[string]map[string]int64) // chllax[guildId][userId] -> exemptions remaining
@@ -94,8 +93,7 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 			clearCushioning(m.GuildID, m.Author.ID)
 		}
 
-		infractionUUID := uuid.New().String()
-		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, s.State.User.ID, weight, reason, 0, m.ChannelID, infractionUUID) // strike
+		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, s.State.User.ID, weight, reason, 0, m.ChannelID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
 		}
@@ -343,13 +341,16 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		// mentions
-
-		ok, count = spam.ProcessMaxMentions(m, spamChannel.MaxMentions)
+		var mentions []*discordgo.User
+		ok, count, mentions = spam.ProcessMaxMentions(m, spamChannel.MaxMentions)
 		if !ok {
+			alertMentionedUsers(s, m.GuildID, mentions)
 			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxMentions), 1, filterProcessingStart
 		}
-		ok, count = spam.ProcessMaxRoleMentions(m, spamChannel.MaxMentions)
+		//var roleMentions []string
+		ok, count, _ = spam.ProcessMaxRoleMentions(m, spamChannel.MaxMentions)
 		if !ok {
+			//alertMentionedRoles(s, m.GuildID, roleMentions) : TODO - find a way to
 			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxMentions), 1, filterProcessingStart
 		}
 
@@ -410,13 +411,16 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		// mentions
-
-		ok, count = spam.ProcessMaxMentions(m, spamLevel.MaxMentions)
+		var mentions []*discordgo.User
+		ok, count, mentions = spam.ProcessMaxMentions(m, spamLevel.MaxMentions)
 		if !ok {
+			alertMentionedUsers(s, m.GuildID, mentions)
 			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxMentions), 1, filterProcessingStart
 		}
-		ok, count = spam.ProcessMaxRoleMentions(m, spamLevel.MaxMentions)
+		//var roleMentions []string
+		ok, count, _ = spam.ProcessMaxRoleMentions(m, spamLevel.MaxMentions)
 		if !ok {
+			//alertMentionedRoles(s, m.GuildID, roleMentions)
 			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxMentions), 1, filterProcessingStart
 		}
 
