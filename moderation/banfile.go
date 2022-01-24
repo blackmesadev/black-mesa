@@ -59,11 +59,6 @@ func BanFileCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 		return
 	}
 
-	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
-		return
-	}
-
 	var noGuildMembers bool
 	var guildMembersOnly bool
 	// handle flags
