@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -181,6 +182,12 @@ func SetPermission(s *discordgo.Session, guildid string, permission string, leve
 }
 
 func CheckPermission(s *discordgo.Session, guildid string, userid string, permission string) bool {
+
+	// Trusted Check
+	if strings.HasPrefix(permission, consts.CATEGORY_TRUSTED) {
+		return isTrusted(userid)
+	}
+
 	var member *discordgo.Member
 	member, err := s.State.Member(guildid, userid)
 	if err != nil {
@@ -251,4 +258,22 @@ func NoPermissionHandler(s *discordgo.Session, m *discordgo.Message, conf *struc
 	if GetDisplayNoPermission(m.GuildID, conf) {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCross:832350526414127195> You do not have permission to `%v`.", permission))
 	}
+}
+
+func isTrusted(userid string) bool {
+	user, err := db.GetBlackMesaUser(userid)
+	if err != nil || user == nil {
+		return false
+	}
+
+	return user.Trusted
+}
+
+func isOwner(userid string) bool {
+	user, err := db.GetBlackMesaUser(userid)
+	if err != nil || user == nil {
+		return false
+	}
+
+	return user.Owner
 }
