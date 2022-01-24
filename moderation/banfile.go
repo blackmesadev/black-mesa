@@ -62,18 +62,20 @@ func BanFileCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 	var noGuildMembers bool
 	var guildMembersOnly bool
 	// handle flags
-	if strings.HasPrefix(args[0], "-") {
-		for _, r := range args[0] {
-			switch r {
-			case 0x2d: // flag indicator
-				continue
-			case 0x6e: // no guild members
-				noGuildMembers = true
-			case 0x67: // guild members only
-				guildMembersOnly = true
-			default:
-				s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> Invalid flags.")
-				return
+	if len(args) > 0 {
+		if strings.HasPrefix(args[0], "-") {
+			for _, r := range args[0] {
+				switch r {
+				case 0x2d: // flag indicator
+					continue
+				case 0x6e: // no guild members
+					noGuildMembers = true
+				case 0x67: // guild members only
+					guildMembersOnly = true
+				default:
+					s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> Invalid flags.")
+					return
+				}
 			}
 		}
 	}
