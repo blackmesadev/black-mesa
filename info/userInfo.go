@@ -41,6 +41,11 @@ func UserInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messag
 		return
 	}
 
+	if member.User == nil {
+		s.ChannelMessageSend(m.ChannelID, failureMsg)
+		return
+	}
+
 	roleList := member.Roles
 	guildRoles, err := s.GuildRoles(m.GuildID)
 	if err != nil {
