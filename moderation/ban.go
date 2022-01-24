@@ -1,9 +1,12 @@
 package moderation
 
 import (
+	"bytes"
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/config"
@@ -27,6 +30,8 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 
 	var hackban bool
 
+	var largeBan bool
+
 	//idList, duration, reason := parseCommand(m.Content)
 	idList := make([]string, 0)
 	durationOrReasonStart := 0
@@ -40,7 +45,9 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 		idList = append(idList, id)
 	}
 
-	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
+	idLength := len(idList)
+
+	if idLength == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `ban <target:user[]> [time:duration] [reason:string...]`")
 		return
 	}
@@ -62,6 +69,21 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 		reason = ""
 	}
 
+	if len(m.Attachments) > 0 {
+		for _, file := range m.Attachments {
+			if strings.HasPrefix(file.Filename, "ban") {
+				resp, err := http.Get(file.URL)
+				if err != nil {
+					break
+				}
+				buf := new(bytes.Buffer)
+				buf.ReadFrom(resp.Body)
+				fileIDList := strings.Split(buf.String(), "\n")
+				idList = append(idList, fileIDList...)
+			}
+		}
+	}
+
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
 	msg := "<:mesaCheck:832350526729224243> Successfully banned "
@@ -71,48 +93,69 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableBan := make([]string, 0)
+
+	largeBan = idLength > 10
+
+	var wg sync.WaitGroup
+
+	wg.Add(idLength)
+
 	for _, id := range idList {
-		infractionUUID := uuid.New().String()
+		go func(id string) {
+			defer wg.Done()
 
-		member, err := s.State.Member(m.GuildID, id)
-		if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
-			member, err = s.GuildMember(m.GuildID, id)
-			if err == discordgo.ErrUnknownMember || member == nil || member.User == nil {
-				hackban = true
+			infractionUUID := uuid.New().String()
+
+			member, err := s.State.Member(m.GuildID, id)
+			if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
+				member, err = s.GuildMember(m.GuildID, id)
+				if err == discordgo.ErrUnknownMember || member == nil || member.User == nil {
+					hackban = true
+				}
+				if err != nil {
+					log.Println(err)
+					unableBan = append(unableBan, id)
+				}
 			}
+			timeExpiry = time.Unix(duration, 0)
+			timeUntil = time.Until(timeExpiry).Round(time.Second)
+			guild, err := s.Guild(m.GuildID)
+			if err == nil {
+				s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permBan, "Banned"))
+			}
+
+			err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
 			if err != nil {
-				log.Println(err)
 				unableBan = append(unableBan, id)
+			} else {
+				if !largeBan {
+					msg += fmt.Sprintf("<@%v> ", id)
+				}
+				AddTimedBan(m.GuildID, m.Author.ID, id, duration, reason, infractionUUID)
 			}
-		}
-		timeExpiry = time.Unix(duration, 0)
-		timeUntil = time.Until(timeExpiry).Round(time.Second)
-		guild, err := s.Guild(m.GuildID)
-		if err == nil {
-			s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permBan, "Banned"))
-		}
-		err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
-		if err != nil {
-			unableBan = append(unableBan, id)
-		} else {
-			msg += fmt.Sprintf("<@%v> ", id)
-			AddTimedBan(m.GuildID, m.Author.ID, id, duration, reason, infractionUUID)
-		}
 
-		if permBan {
-			if hackban {
-				logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
+			if permBan {
+				if hackban {
+					logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
+				} else {
+					logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+				}
 			} else {
-				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+				if hackban {
+					logging.LogHackTempBan(s, m.GuildID, fullName, id, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+				} else {
+					logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+				}
 			}
-		} else {
-			if hackban {
-				logging.LogHackTempBan(s, m.GuildID, fullName, id, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
-			} else {
-				logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
-			}
-		}
+		}(id)
 	}
+
+	wg.Wait()
+
+	if largeBan {
+		msg += fmt.Sprintf("`%v` users ", idLength-len(unableBan))
+	}
+
 	if permBan {
 		msg += "lasting `Forever` "
 	} else {
