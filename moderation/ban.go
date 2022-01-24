@@ -1,10 +1,8 @@
 package moderation
 
 import (
-	"bytes"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -67,21 +65,6 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 
 	if durationOrReasonStart == 0 { // fixes broken reasons
 		reason = ""
-	}
-
-	if len(m.Attachments) > 0 {
-		for _, file := range m.Attachments {
-			if strings.HasPrefix(file.Filename, "ban") {
-				resp, err := http.Get(file.URL)
-				if err != nil {
-					break
-				}
-				buf := new(bytes.Buffer)
-				buf.ReadFrom(resp.Body)
-				fileIDList := strings.Split(buf.String(), "\n")
-				idList = append(idList, fileIDList...)
-			}
-		}
 	}
 
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
