@@ -42,6 +42,9 @@ func (r *Mux) InitRouter() {
 	r.Route("purge", moderation.PurgeCmd)
 	r.Route("clean", moderation.PurgeCmd)
 
+	// trusted moderation
+	r.Route("banfile", moderation.BanFileCmd)
+
 	// moderation funny commands
 	r.Route("fuckoff", moderation.KickCmd)
 	r.Route("shutup", moderation.MuteCmd)
