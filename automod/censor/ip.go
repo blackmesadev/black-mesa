@@ -1,27 +1,40 @@
 package censor
 
 import (
+	"net"
 	"regexp"
-	"strings"
+	"strconv"
 )
 
-var ipRegex = regexp.MustCompile(`(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}`)
+// Dumb regex - this is for cases like (2234.0.0.1) which would be errornously caught before.
+// Rest of the checking is done in IPCheck(m string).
+var ipRegex = regexp.MustCompile(`(\d+)\.(\d+)\.(\d+)\.(\d+)`)
 
 // Return true if all is okay, return false if not.
 func IPCheck(m string) bool {
-	match := ipRegex.FindAllString(m, -1)
+	res := ipRegex.FindAllStringSubmatch(m, -1)
 
-	// Check if ips exist
-	if len(match) == 0 {
-		return true
-	}
+Outer:
+	for i := range res {
+		vals := make([]byte, 4)
 
-	for _, m := range match {
-		// Exclude a few known known public ips - there are more, will come back to this
-		if strings.HasPrefix(m, "192.") || strings.HasPrefix(m, "127.") || strings.HasPrefix(m, "0.") {
-			continue
+		for j := range res[i] {
+			val, err := strconv.ParseUint(res[i][j], 10, 64)
+
+			if err != nil || val > 255 {
+				// Fake IP
+				continue Outer
+			}
+
+			vals[j] = byte(val)
 		}
-		return false
+
+		ip := net.IPv4(vals[0], vals[1], vals[2], vals[3])
+
+		if !ip.IsPrivate() && !ip.IsLoopback() && !ip.IsMulticast() && !ip.IsLinkLocalMulticast() && !ip.IsLinkLocalUnicast() {
+			// This is a valid and public IP, so it should get filtered.
+			return false
+		}
 	}
 
 	return true
