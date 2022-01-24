@@ -5,6 +5,7 @@ const (
 	CATEGORY_ADMIN      = "admin"
 	CATEGORY_GUILD      = "guild"
 	CATEGORY_ROLES      = "roles"
+	CATEGORY_TRUSTED    = "trusted"
 
 	PERMISSION_BAN          = CATEGORY_MODERATION + ".ban"
 	PERMISSION_KICK         = CATEGORY_MODERATION + ".kick"
@@ -29,4 +30,6 @@ const (
 	PERMISSION_ROLEADD    = CATEGORY_ROLES + ".add"
 	PERMISSION_ROLEREMOVE = CATEGORY_ROLES + ".remove"
 	PERMISSION_ROLECREATE = CATEGORY_ROLES + ".create"
+
+	PERMISSION_BANFILE = CATEGORY_TRUSTED + ".banfile"
 )
