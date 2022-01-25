@@ -19,14 +19,21 @@ Outer:
 		vals := make([]byte, 4)
 
 		for j := range res[i] {
+			if j == 0 {
+				continue // We don't care about the whole match.
+			}
+
 			val, err := strconv.ParseUint(res[i][j], 10, 64)
 
-			if err != nil || val > 255 {
-				// Fake IP
+			if err != nil {
 				continue Outer
 			}
 
-			vals[j] = byte(val)
+			if val > 255 {
+				continue Outer
+			}
+
+			vals[j-1] = byte(val)
 		}
 
 		ip := net.IPv4(vals[0], vals[1], vals[2], vals[3])
