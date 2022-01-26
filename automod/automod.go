@@ -116,7 +116,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		return true, "", 0, filterProcessingStart
 	}
 
-	userLevel := config.GetLevel(s, m.GuildID, m.Author.ID)
+	userLevel := config.GetLevel(s, conf, m.GuildID, m.Author.ID)
+
+	// staff bypass
+	if userLevel >= conf.Modules.Guild.StaffLevel && conf.Modules.Automod.StaffBypass {
+		return true, "", 0, filterProcessingStart
+	}
 
 	censorChannel := automod.CensorChannels[m.ChannelID]
 	spamChannel := automod.SpamChannels[m.ChannelID]
@@ -236,7 +241,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 	}
 
 	// Level censors
-	if censorLevel != nil && censorChannel == nil {
+	if censorLevel != nil {
 		// Zalgo
 		//if censorLevel.FilterZalgo {
 		//	ok := censor.ZalgoCheck(content)
@@ -400,7 +405,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 	}
 
 	// Level Spam
-	if spamLevel != nil && spamChannel == nil {
+	if spamLevel != nil {
 
 		// Messages
 		interval := time.Duration(spamLevel.Interval) * time.Second
