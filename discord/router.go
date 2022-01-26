@@ -26,8 +26,6 @@ func (r *Mux) InitRouter() {
 
 	// config
 	r.Route("setup", config.SetupCmd)
-	r.Route("get", config.GetConfigCmd)
-	r.Route("set", config.SetConfigCmd)
 	r.Route("makemute", config.MakeMuteCmd)
 
 	// moderation

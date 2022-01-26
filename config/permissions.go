@@ -2,7 +2,6 @@ package config
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -22,8 +21,7 @@ import (
 // If moderation is not defined, if modules.guild.unsafePermissions is false then access will be
 // denied, otherwise access will be granted.
 
-func GetPermission(s *discordgo.Session, guildid string, permission string) (int64, error) {
-
+func GetPermission(s *discordgo.Session, conf *structs.Config, guildid string, permission string) (int64, error) {
 	permissionTree := make([]string, 0)
 
 	tempTree := strings.Split(permission, ".")
@@ -34,27 +32,6 @@ func GetPermission(s *discordgo.Session, guildid string, permission string) (int
 			node += fmt.Sprintf(".%v", tempTree[i])
 		}
 		permissionTree = append(permissionTree, node)
-	}
-
-	data, err := db.GetConfigProjection(guildid, "permissions")
-	if err != nil {
-		log.Println(err)
-		return 0, err
-	}
-
-	delete(data, "_id")
-
-	conf := &structs.Config{}
-	confBytes, err := json.Marshal(data["config"])
-	if err != nil {
-		log.Println(err)
-		return 0, err
-	}
-
-	err = json.Unmarshal(confBytes, &conf)
-	if err != nil {
-		log.Println(err)
-		return 0, err
 	}
 
 	var permissionValue int64
@@ -69,36 +46,13 @@ func GetPermission(s *discordgo.Session, guildid string, permission string) (int
 		}
 	}
 	if permissionValue == -1 {
-		err = errors.New("no data found")
+		err := errors.New("no data found")
 		return 0, err
 	}
 	return permissionValue, nil
 }
 
-func GetLevel(s *discordgo.Session, guildid string, userid string) int64 {
-
-	data, err := db.GetConfigProjection(guildid, "levels")
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-
-	delete(data, "_id")
-
-	conf := &structs.Config{}
-	confBytes, err := json.Marshal(data["config"])
-
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-	err = json.Unmarshal(confBytes, &conf)
-
-	if err != nil {
-		log.Println(err)
-		return 0
-	}
-
+func GetLevel(s *discordgo.Session, conf *structs.Config, guildid string, userid string) int64 {
 	// first try userids only
 	for k, v := range conf.Levels {
 		if k == userid {
@@ -181,7 +135,7 @@ func SetPermission(s *discordgo.Session, guildid string, permission string, leve
 	return nil
 }
 
-func CheckPermission(s *discordgo.Session, guildid string, userid string, permission string) bool {
+func CheckPermission(s *discordgo.Session, conf *structs.Config, guildid string, userid string, permission string) bool {
 
 	// Trusted Check
 	if strings.HasPrefix(permission, consts.CATEGORY_TRUSTED) {
@@ -216,37 +170,21 @@ func CheckPermission(s *discordgo.Session, guildid string, userid string, permis
 		}
 	}
 
-	permissionValue, err := GetPermission(s, guildid, permission)
+	permissionValue, err := GetPermission(s, conf, guildid, permission)
 	if err != nil {
-		data, err := db.GetConfigProjection(guildid, "modules.guild.safePermissions")
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		dataBytes, err := json.Marshal(data)
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		guildStruct := &structs.Guild{}
-		err = json.Unmarshal(dataBytes, &guildStruct)
-		if err != nil {
-			log.Println(err)
-			return false
-		}
-		return guildStruct.UnsafePermissions
+		return conf.Modules.Guild.UnsafePermissions
 	}
-	userLevel := GetLevel(s, guildid, userid)
+	userLevel := GetLevel(s, conf, guildid, userid)
 
 	return userLevel >= permissionValue
 
 }
 
-func CheckTargets(s *discordgo.Session, guildid string, actioner string, targets []string) bool {
-	actionPermValue := GetLevel(s, guildid, actioner)
+func CheckTargets(s *discordgo.Session, conf *structs.Config, guildid string, actioner string, targets []string) bool {
+	actionPermValue := GetLevel(s, conf, guildid, actioner)
 
 	for _, target := range targets {
-		targetPermValue := GetLevel(s, guildid, target)
+		targetPermValue := GetLevel(s, conf, guildid, target)
 		if targetPermValue >= actionPermValue {
 			return false
 		}
@@ -255,7 +193,7 @@ func CheckTargets(s *discordgo.Session, guildid string, actioner string, targets
 }
 
 func NoPermissionHandler(s *discordgo.Session, m *discordgo.Message, conf *structs.Config, permission string) {
-	if GetDisplayNoPermission(m.GuildID, conf) {
+	if conf.Modules.Moderation.DisplayNoPermission {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCross:832350526414127195> You do not have permission to `%v`.", permission))
 	}
 }

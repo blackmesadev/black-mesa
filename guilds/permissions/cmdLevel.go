@@ -10,13 +10,13 @@ import (
 )
 
 func GetCommandLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWCMDLEVEL) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWCMDLEVEL) {
 		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWCMDLEVEL)
 		return
 	}
 	msg := "```\nCommand Permission Levels:\n"
 	for _, cmd := range args {
-		lvl := config.GetLevel(s, m.GuildID, cmd)
+		lvl := config.GetLevel(s, conf, m.GuildID, cmd)
 		msg = fmt.Sprintf("%v%v:`%d`\n", msg, cmd, lvl)
 	}
 	msg += "```"

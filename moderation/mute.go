@@ -16,7 +16,7 @@ import (
 )
 
 func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_MUTE) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_MUTE) {
 		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_MUTE)
 		return
 	}
@@ -43,7 +43,7 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		return
 	}
 
-	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
+	if !config.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
 		return
 	}
@@ -68,13 +68,11 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
-	roleid := config.GetMutedRole(m.GuildID, conf)
+	roleid := conf.Modules.Moderation.MuteRole
 	if roleid == "" {
 		s.ChannelMessageSend(m.ChannelID, "Invalid Muted role ID, Aborting.")
 		return
 	}
-
-	removeRolesOnMute := config.GetRemoveRolesOnMute(m.GuildID, conf)
 
 	msg := "<:mesaCheck:832350526729224243> Successfully muted "
 
@@ -98,7 +96,7 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 			}
 		}
 
-		if removeRolesOnMute {
+		if conf.Modules.Moderation.RemoveRolesOnMute {
 			roles = &member.Roles
 			go s.GuildMemberRoleBulkRemove(m.GuildID, id, *roles)
 		} else {

@@ -9,7 +9,7 @@ import (
 )
 
 func MakeMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_MAKEMUTE) {
+	if !CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_MAKEMUTE) {
 		NoPermissionHandler(s, m, conf, consts.PERMISSION_MAKEMUTE)
 		return
 	}
@@ -87,8 +87,12 @@ func MakeMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messag
 
 	}
 
-	updates, _ := db.SetConfigOne(m.GuildID, "modules.moderation.muteRole", role.ID)
+	updates, err := db.SetMutedRole(m.GuildID, role.ID)
 
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v Failed to create muted role: `%v`", consts.EMOJI_CROSS, err))
+		return
+	}
 	msg := fmt.Sprintf("<:mesaCheck:832350526729224243> Created role 'Muted' `(%v)`. Updated `%v` Text Channels and `%v` Voice Channels. Updated `%v` database entry.",
 		role.ID, textCompleted, voiceCompleted, updates.ModifiedCount)
 

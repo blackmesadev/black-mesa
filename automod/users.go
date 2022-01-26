@@ -59,36 +59,34 @@ func createMentionedEmbed(guild *discordgo.Guild, pingedBy *discordgo.User) *dis
 }
 
 // Doesn't need to return anything because this should handle everything silently
-func ProcessGuildMemberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd, conf *structs.Config) {
+func ProcessGuildMemberAdd(s *discordgo.Session, ma *discordgo.GuildMemberAdd, conf *structs.Config) {
 	if conf.Modules.Automod.GuildOptions == nil {
 		return
 	}
 
 	minAccAge := util.ParseTime(conf.Modules.Automod.GuildOptions.MinimumAccountAge)
 
-	processMuted(s, m)
+	processMuted(s, ma, conf)
 
-	if ok := processDates(s, m, minAccAge); !ok {
+	if ok := processDates(s, ma.Member, minAccAge); !ok {
 		// TODO: do something useful here
 		return
 	}
 }
 
-func processDates(s *discordgo.Session, ma *discordgo.GuildMemberAdd, maxDifference int64) bool {
-	m := ma.Member
-
+func processDates(s *discordgo.Session, m *discordgo.Member, maxDifference int64) bool {
 	difference := int64(m.JoinedAt.Sub(util.SnowflakeToTimestamp(m.User.ID)))
 
 	return difference <= maxDifference
 
 }
 
-func processMuted(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
+func processMuted(s *discordgo.Session, ma *discordgo.GuildMemberAdd, conf *structs.Config) {
 	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
 	cur, err := db.Find(context.TODO(), bson.M{
-		"guildID": m.GuildID,
-		"userID":  m.User.ID,
+		"guildID": ma.GuildID,
+		"userID":  ma.User.ID,
 		"type":    "mute",
 	})
 
@@ -109,9 +107,7 @@ func processMuted(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 		return
 	}
 
-	roleid := config.GetMutedRole(m.GuildID, nil)
-
-	err = s.GuildMemberRoleAdd(m.GuildID, m.User.ID, roleid)
+	err = s.GuildMemberRoleAdd(ma.GuildID, ma.User.ID, conf.Modules.Moderation.MuteRole)
 	if err != nil {
 		log.Println(err)
 	}

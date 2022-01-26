@@ -17,7 +17,7 @@ func IsStaff(s *discordgo.Session, conf *structs.Config, guildid string, userid 
 		}
 	}
 
-	lvl := GetLevel(s, guildid, userid)
+	lvl := GetLevel(s, conf, guildid, userid)
 
 	if lvl >= conf.Modules.Guild.StaffLevel {
 		return true

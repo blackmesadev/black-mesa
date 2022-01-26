@@ -14,7 +14,7 @@ import (
 )
 
 func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_STRIKE) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_STRIKE) {
 		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_STRIKE)
 		return
 	}
@@ -42,7 +42,7 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		return
 	}
 
-	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
+	if !config.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
 		return
 	}

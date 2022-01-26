@@ -13,29 +13,34 @@ import (
 
 var r *redis.Client
 
-func (bot *Bot) OnMessageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
+func (bot *Bot) OnMessageDelete(s *discordgo.Session, md *discordgo.MessageDelete) {
 	if r == nil {
 		r = bmRedis.GetRedis()
 	}
 
-	key := fmt.Sprintf("exemptmessages:%v", m.GuildID)
-	request := r.HExists(r.Context(), key, m.ID)
+	key := fmt.Sprintf("exemptmessages:%v", md.GuildID)
+	request := r.HExists(r.Context(), key, md.ID)
 	result, err := request.Result()
 	if err != nil {
 		log.Println(err)
 		result = false // assume its not there if error
 	} else {
-		request := r.HDel(r.Context(), key, m.ID)
+		request := r.HDel(r.Context(), key, md.ID)
 		_, err := request.Result()
 		if err != nil {
 			log.Println(err)
 		}
 	}
 
-	if m.BeforeDelete != nil && !result {
-		if m.ChannelID == config.GetLoggingChannel(m.GuildID, nil) {
+	conf, err := config.GetConfig(md.GuildID)
+	if err != nil || conf == nil {
+		return
+	}
+
+	if md.BeforeDelete != nil && !result {
+		if md.ChannelID == conf.Modules.Logging.ChannelID {
 			return
 		}
-		logging.LogMessageDelete(s, m.BeforeDelete)
+		logging.LogMessageDelete(s, md.BeforeDelete)
 	} // not cached otherwise
 }

@@ -15,7 +15,7 @@ import (
 )
 
 func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, m.GuildID, m.Author.ID, consts.PERMISSION_UNMUTE) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_UNMUTE) {
 		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_UNMUTE)
 		return
 	}
@@ -39,7 +39,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		return
 	}
 
-	if !config.CheckTargets(s, m.GuildID, m.Author.ID, idList) {
+	if !config.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
 		s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" You can not target one or more of these users.")
 		return
 	}
@@ -52,7 +52,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
-	roleid := config.GetMutedRole(m.GuildID, nil)
+	roleid := conf.Modules.Moderation.MuteRole
 	if roleid == "" {
 		s.ChannelMessageSend(m.ChannelID, "Invalid Muted role ID, Aborting.")
 		return
