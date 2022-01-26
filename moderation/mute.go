@@ -98,7 +98,7 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 
 		if conf.Modules.Moderation.RemoveRolesOnMute {
 			roles = &member.Roles
-			go s.GuildMemberRoleBulkRemove(m.GuildID, id, *roles)
+			s.GuildMemberRoleBulkRemove(m.GuildID, id, *roles)
 		} else {
 			roles = nil
 		}
