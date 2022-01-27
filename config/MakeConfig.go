@@ -10,7 +10,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	admins = append(admins, g.OwnerID)
 
 	wa := &structs.WebAccess{
-		Admin: &admins,
+		Admin: admins,
 	}
 	lvls := make(map[string]int64)
 	lvls[g.OwnerID] = 100
@@ -31,7 +31,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	emptySlice := make([]string, 0)
 
 	persist := &structs.Persistance{Roles: false,
-		WhitelistedRoles: &emptySlice,
+		WhitelistedRoles: emptySlice,
 		Nickname:         false,
 		Voice:            false,
 	}
@@ -44,9 +44,9 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		ConfirmActions:      false,
 		RoleAliases:         emptyMap,
 		SelfAssignableRoles: emptyMap,
-		LockedRoles:         &emptySlice,
+		LockedRoles:         emptySlice,
 		Persistance:         persist,
-		AutoRole:            &emptySlice,
+		AutoRole:            emptySlice,
 		ReactRoles:          reactRoles,
 		UnsafePermissions:   false,
 	}
@@ -73,12 +73,12 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		FilterDomains:     false,
 		FilterStrings:     true,
 		FilterRegex:       false,
-		InvitesWhitelist:  &emptySlice,
-		InvitesBlacklist:  &emptySlice,
-		DomainWhitelist:   &emptySlice,
-		DomainBlacklist:   &emptySlice,
-		BlockedSubstrings: &emptySlice,
-		BlockedStrings:    &emptySlice,
+		InvitesWhitelist:  emptySlice,
+		InvitesBlacklist:  emptySlice,
+		DomainWhitelist:   emptySlice,
+		DomainBlacklist:   emptySlice,
+		BlockedSubstrings: emptySlice,
+		BlockedStrings:    emptySlice,
 		Regex:             "",
 	}
 
@@ -99,12 +99,12 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 
 	logs := &structs.Logging{
 		ChannelID:          "",
-		IncludeActions:     &emptySlice,
-		ExcludeActions:     &emptySlice,
+		IncludeActions:     emptySlice,
+		ExcludeActions:     emptySlice,
 		Timestamps:         true,
 		Timezone:           "GMT",
-		IgnoredUsers:       &emptySlice,
-		IgnoredChannels:    &emptySlice,
+		IgnoredUsers:       emptySlice,
+		IgnoredChannels:    emptySlice,
 		NewMemberThreshold: 0,
 	}
 

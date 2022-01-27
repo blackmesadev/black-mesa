@@ -1,14 +1,14 @@
 package structs
 
 type WebAccess struct {
-	Admin  *[]string
-	Editor *[]string
-	Viewer *[]string
+	Admin  []string
+	Editor []string
+	Viewer []string
 }
 
 type Persistance struct {
 	Roles            bool
-	WhitelistedRoles *[]string `json:"whitelistedRoles" bson:"whitelistedRoles"` // slice of ids
+	WhitelistedRoles []string `json:"whitelistedRoles" bson:"whitelistedRoles"` // slice of ids
 	Nickname         bool
 	Voice            bool
 }
@@ -29,30 +29,30 @@ type Guild struct {
 	ConfirmActions      bool              `json:"confirmActions" bson:"confirmActions"`
 	RoleAliases         map[string]string `json:"roleAliases" bson:"roleAliases"`                 // name: roleid
 	SelfAssignableRoles map[string]string `json:"selfAssignableRoles" bson:"selfAssignableRoles"` // name: roleid
-	LockedRoles         *[]string         `json:"lockedRoles" bson:"lockedRoles"`                 // slice of ids
+	LockedRoles         []string          `json:"lockedRoles" bson:"lockedRoles"`                 // slice of ids
 	Persistance         *Persistance      `json:"persistance" bson:"persistance"`
-	AutoRole            *[]string         `json:"autoRole" bson:"autoRole"` // slice of ids
+	AutoRole            []string          `json:"autoRole" bson:"autoRole"` // slice of ids
 	ReactRoles          *ReactRoles       `json:"reactRoles" bson:"reactRoles"`
 	UnsafePermissions   bool              `json:"unsafePermissions" bson:"unsafePermissions"`
 	StaffLevel          int64             `json:"staffLevel" bson:"staffLevel"`
 }
 
 type Censor struct {
-	FilterZalgo            bool      `json:"filterZalgo" bson:"filterZalgo"`
-	FilterInvites          bool      `json:"filterInvites" bson:"filterInvites"`
-	FilterDomains          bool      `json:"filterDomains" bson:"filterDomains"`
-	FilterStrings          bool      `json:"filterStrings" bson:"filterStrings"`
-	FilterIPs              bool      `json:"filterIPs" bson:"filterIPs"`
-	FilterRegex            bool      `json:"filterRegex" bson:"filterRegex"`
-	FilterEnglish          bool      `json:"filterEnglish" bson:"filterEnglish"`
-	FilterObnoxiousUnicode bool      `json:"filterObnoxiousUnicode" bson:"filterObnoxiousUnicode"`
-	InvitesWhitelist       *[]string `json:"invitesWhitelist" bson:"invitesWhitelist"`   // slice of invitelinks/ids
-	InvitesBlacklist       *[]string `json:"invitesBlacklist" bson:"invitesBlacklist"`   // slice of invitelinks/ids
-	DomainWhitelist        *[]string `json:"domainWhitelist" bson:"domainWhitelist"`     // slice of domains
-	DomainBlacklist        *[]string `json:"domainBlacklist" bson:"domainBlacklist"`     // slice of domains
-	BlockedSubstrings      *[]string `json:"blockedSubstrings" bson:"blockedSubstrings"` // slice of substrings
-	BlockedStrings         *[]string `json:"blockedStrings" bson:"blockedStrings"`       // slice of strings
-	Regex                  string    `json:"regex" bson:"regex"`
+	FilterZalgo            bool     `json:"filterZalgo" bson:"filterZalgo"`
+	FilterInvites          bool     `json:"filterInvites" bson:"filterInvites"`
+	FilterDomains          bool     `json:"filterDomains" bson:"filterDomains"`
+	FilterStrings          bool     `json:"filterStrings" bson:"filterStrings"`
+	FilterIPs              bool     `json:"filterIPs" bson:"filterIPs"`
+	FilterRegex            bool     `json:"filterRegex" bson:"filterRegex"`
+	FilterEnglish          bool     `json:"filterEnglish" bson:"filterEnglish"`
+	FilterObnoxiousUnicode bool     `json:"filterObnoxiousUnicode" bson:"filterObnoxiousUnicode"`
+	InvitesWhitelist       []string `json:"invitesWhitelist" bson:"invitesWhitelist"`   // slice of invitelinks/ids
+	InvitesBlacklist       []string `json:"invitesBlacklist" bson:"invitesBlacklist"`   // slice of invitelinks/ids
+	DomainWhitelist        []string `json:"domainWhitelist" bson:"domainWhitelist"`     // slice of domains
+	DomainBlacklist        []string `json:"domainBlacklist" bson:"domainBlacklist"`     // slice of domains
+	BlockedSubstrings      []string `json:"blockedSubstrings" bson:"blockedSubstrings"` // slice of substrings
+	BlockedStrings         []string `json:"blockedStrings" bson:"blockedStrings"`       // slice of strings
+	Regex                  string   `json:"regex" bson:"regex"`
 }
 
 type Spam struct {
@@ -90,14 +90,14 @@ type Automod struct {
 }
 
 type Logging struct {
-	ChannelID          string    `json:"channelID" bson:"channelID"`
-	IncludeActions     *[]string `json:"includeActions" bson:"includeActions"` // list of actions
-	ExcludeActions     *[]string `json:"excludeActions" bson:"excludeActions"` // list of actions
-	Timestamps         bool      `json:"timestamps" bson:"timestamps"`
-	Timezone           string    `json:"timezone" bson:"timezone"`
-	IgnoredUsers       *[]string `json:"ignoredUsers" bson:"ignoredUsers"`             // slice of user ids
-	IgnoredChannels    *[]string `json:"ignoredChannels" bson:"ignoredChannels"`       // slice of channel ids
-	NewMemberThreshold int64     `json:"newMemberThreshold" bson:"newMemberThreshold"` // seconds
+	ChannelID          string   `json:"channelID" bson:"channelID"`
+	IncludeActions     []string `json:"includeActions" bson:"includeActions"` // list of actions
+	ExcludeActions     []string `json:"excludeActions" bson:"excludeActions"` // list of actions
+	Timestamps         bool     `json:"timestamps" bson:"timestamps"`
+	Timezone           string   `json:"timezone" bson:"timezone"`
+	IgnoredUsers       []string `json:"ignoredUsers" bson:"ignoredUsers"`             // slice of user ids
+	IgnoredChannels    []string `json:"ignoredChannels" bson:"ignoredChannels"`       // slice of channel ids
+	NewMemberThreshold int64    `json:"newMemberThreshold" bson:"newMemberThreshold"` // seconds
 }
 
 type Moderation struct {

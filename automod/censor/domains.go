@@ -7,7 +7,7 @@ import (
 
 var domainsRegex = regexp.MustCompile(`(?:https?:\/\/)?(?:[^@\/\n]+@)?(?:www\.)?([^:\/\n]+)`)
 
-func DomainsWhitelistCheck(m string, whitelist *[]string) (bool, string) {
+func DomainsWhitelistCheck(m string, whitelist []string) (bool, string) {
 	ok := false
 
 	domains := domainsRegex.FindAllString(m, -1)
@@ -19,7 +19,7 @@ func DomainsWhitelistCheck(m string, whitelist *[]string) (bool, string) {
 	fmt.Println(domains)
 
 	for _, domain := range domains {
-		for _, whitelistedDomain := range *whitelist {
+		for _, whitelistedDomain := range whitelist {
 			if domain == whitelistedDomain {
 				ok = true
 			} else {
@@ -31,7 +31,7 @@ func DomainsWhitelistCheck(m string, whitelist *[]string) (bool, string) {
 	return ok, ""
 }
 
-func DomainsBlacklistCheck(m string, blacklist *[]string) (bool, string) {
+func DomainsBlacklistCheck(m string, blacklist []string) (bool, string) {
 	ok := true
 	domains := domainsRegex.FindAllString(m, -1)
 
@@ -40,7 +40,7 @@ func DomainsBlacklistCheck(m string, blacklist *[]string) (bool, string) {
 	}
 
 	for _, domain := range domains {
-		for _, blacklistedDomain := range *blacklist {
+		for _, blacklistedDomain := range blacklist {
 			if domain == blacklistedDomain {
 				return false, domain
 			} else {
