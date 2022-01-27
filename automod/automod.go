@@ -3,6 +3,7 @@ package automod
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
 	"time"
 
@@ -50,6 +51,68 @@ func addExemptMessage(guildId string, messageId string) bool {
 		return true
 	}
 	return false
+}
+
+func makeCompleteCensorStruct(automod *structs.Automod, channelID string, userLevel int64) (combined *structs.Censor) {
+	censorChannel := automod.CensorChannels[channelID]
+
+	i := 0
+	automodCensorLevels := make([]int64, len(automod.CensorLevels))
+	for k := range automod.CensorLevels {
+		automodCensorLevels[i] = k
+		i++
+	}
+
+	censorStruct := automod.CensorLevels[util.GetClosestLevel(automodCensorLevels, userLevel)]
+
+	if censorChannel == nil {
+		return censorStruct
+	}
+
+	combined = censorChannel
+
+	cv := reflect.ValueOf(combined).Elem()
+	lv := reflect.ValueOf(censorStruct).Elem()
+
+	for i := 0; i < cv.NumField(); i++ {
+		cvf := cv.Field(i)
+		// Do not include boolean in combination as we should be prioritising the channel settings anyway and IsZero() will return true for a false bool
+		if cvf.IsZero() && cvf.Kind() != reflect.Bool {
+			cvf.Set(lv.Field(i))
+		}
+	}
+	return combined
+}
+
+func makeCompleteSpamStruct(automod *structs.Automod, channelID string, userLevel int64) (combined *structs.Spam) {
+	spamChannel := automod.SpamChannels[channelID]
+
+	i := 0
+	automodSpamLevels := make([]int64, len(automod.SpamLevels))
+	for k := range automod.SpamLevels {
+		automodSpamLevels[i] = k
+		i++
+	}
+
+	spamLevel := automod.SpamLevels[util.GetClosestLevel(automodSpamLevels, userLevel)]
+
+	if spamChannel == nil {
+		return spamLevel
+	}
+
+	combined = spamChannel
+
+	cv := reflect.ValueOf(combined).Elem()
+	lv := reflect.ValueOf(spamLevel).Elem()
+
+	for i := 0; i < cv.NumField(); i++ {
+		cvf := cv.Field(i)
+		// Do not include boolean in combination as we should be prioritising the channel settings and IsZero() will return true for a false bool
+		if cvf.IsZero() && cvf.Kind() != reflect.Bool {
+			cvf.Set(lv.Field(i))
+		}
+	}
+	return combined
 }
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
@@ -112,7 +175,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 	lowerContent := strings.ToLower(content)
 
 	if len(automod.SpamLevels) == 0 && len(automod.SpamChannels) == 0 &&
-		len(automod.CensorLevels) == 0 && len(automod.SpamChannels) == 0 {
+		len(automod.CensorLevels) == 0 && len(automod.CensorChannels) == 0 {
 		return true, "", 0, filterProcessingStart
 	}
 
@@ -123,127 +186,14 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		return true, "", 0, filterProcessingStart
 	}
 
-	censorChannel := automod.CensorChannels[m.ChannelID]
-	spamChannel := automod.SpamChannels[m.ChannelID]
+	censorStruct := makeCompleteCensorStruct(automod, m.ChannelID, userLevel)
 
-	i := 0
-	automodCensorLevels := make([]int64, len(automod.CensorLevels))
-	for k := range automod.CensorLevels {
-		automodCensorLevels[i] = k
-		i++
-	}
-
-	i = 0
-	automodSpamLevels := make([]int64, len(automod.SpamLevels))
-	for k := range automod.SpamLevels {
-		automodSpamLevels[i] = k
-		i++
-	}
-
-	censorLevel := automod.CensorLevels[util.GetClosestLevel(automodCensorLevels, userLevel)]
-	spamLevel := automod.SpamLevels[util.GetClosestLevel(automodSpamLevels, userLevel)]
-
-	// !!channels take priority!!
-
-	// Channel censors
-	if censorChannel != nil {
-		// Zalgo
-		//if censorChannel.FilterZalgo {
-		//	ok := censor.ZalgoCheck(content)
-		//	if !ok {
-		//		return false, consts.CENSOR_ZALGO, 1, filterProcessingStart
-		//	}
-		//}
-
-		// Invites
-		if censorChannel.FilterInvites {
-			ok, invite := censor.InvitesWhitelistCheck(lowerContent, censorChannel.InvitesWhitelist)
-			if !ok {
-				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
-			}
-
-		} else if len(*censorChannel.InvitesBlacklist) != 0 {
-			ok, invite := censor.InvitesBlacklistCheck(lowerContent, censorChannel.InvitesBlacklist)
-			if !ok {
-				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
-			}
-		}
-
-		// Domains
-
-		if censorChannel.FilterDomains {
-			ok, domain := censor.DomainsWhitelistCheck(lowerContent, censorChannel.DomainWhitelist)
-			if !ok {
-				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
-			}
-		} else if len(*censorChannel.DomainBlacklist) != 0 {
-			ok, domain := censor.DomainsBlacklistCheck(lowerContent, censorChannel.DomainBlacklist)
-			if !ok {
-				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
-			}
-		}
-
-		// Strings / Substrings
-
-		if censorChannel.FilterStrings {
-			var contentList []string
-			if len(m.Attachments) > 0 {
-				for _, attachment := range m.Attachments {
-					contentList = append(contentList, strings.ToLower(attachment.Filename))
-				}
-			}
-			contentList = append(contentList, lowerContent)
-			for _, c := range contentList {
-				ok, str := censor.StringsCheck(c, censorChannel.BlockedStrings)
-				if !ok {
-					return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
-				}
-
-				ok, str = censor.SubStringsCheck(c, censorChannel.BlockedSubstrings)
-				if !ok {
-					return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
-				}
-			}
-		}
-
-		// IPs
-		if censorChannel.FilterIPs {
-			ok := censor.IPCheck(content)
-			if !ok {
-				return false, consts.CENSOR_IP, 1, filterProcessingStart
-			}
-
-		}
-
-		// Obnoxious Unicode
-		if censorChannel.FilterObnoxiousUnicode {
-			ok := censor.ObnoxiousUnicodeCheck(content)
-			if !ok {
-				return false, consts.CENSOR_OBNOXIOUSUNICODE, 1, filterProcessingStart
-			}
-		}
-
-		//Non english characters
-		if censorChannel.FilterEnglish {
-			ok := censor.ExtendedUnicodeCheck(content)
-			if !ok {
-				return false, consts.CENSOR_NOTENGLISH, 1, filterProcessingStart
-			}
-		}
-
-		// Regex
-		if censorChannel.FilterRegex {
-			matches, ok := censor.RegexCheck(content, censorChannel.Regex)
-			if !ok {
-				return false, fmt.Sprintf("%v (`%v`)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
-			}
-		}
-	}
+	spamStruct := makeCompleteSpamStruct(automod, m.ChannelID, userLevel)
 
 	// Level censors
-	if censorLevel != nil {
+	if censorStruct != nil {
 		// Zalgo
-		//if censorLevel.FilterZalgo {
+		//if censorStruct.FilterZalgo {
 		//	ok := censor.ZalgoCheck(content)
 		//	if !ok {
 		//		return false, "Censor->Zalgo", 1, filterProcessingStart
@@ -251,13 +201,13 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		//}
 
 		// Invites
-		if censorLevel.FilterInvites {
-			ok, invite := censor.InvitesWhitelistCheck(content, censorLevel.InvitesWhitelist)
+		if censorStruct.FilterInvites {
+			ok, invite := censor.InvitesWhitelistCheck(content, censorStruct.InvitesWhitelist)
 			if !ok {
 				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
-		} else if len(*censorLevel.InvitesBlacklist) != 0 {
-			ok, invite := censor.InvitesBlacklistCheck(content, censorLevel.InvitesBlacklist)
+		} else if len(censorStruct.InvitesBlacklist) != 0 {
+			ok, invite := censor.InvitesBlacklistCheck(content, censorStruct.InvitesBlacklist)
 			if !ok {
 				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
 			}
@@ -265,13 +215,13 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		// Domains
 
-		if censorLevel.FilterDomains {
-			ok, domain := censor.DomainsWhitelistCheck(content, censorLevel.DomainWhitelist)
+		if censorStruct.FilterDomains {
+			ok, domain := censor.DomainsWhitelistCheck(content, censorStruct.DomainWhitelist)
 			if !ok {
 				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
-		} else if len(*censorLevel.DomainBlacklist) != 0 {
-			ok, domain := censor.DomainsBlacklistCheck(content, censorLevel.DomainBlacklist)
+		} else if len(censorStruct.DomainBlacklist) != 0 {
+			ok, domain := censor.DomainsBlacklistCheck(content, censorStruct.DomainBlacklist)
 			if !ok {
 				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
 			}
@@ -279,7 +229,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 
 		// Strings / Substrings
 
-		if censorLevel.FilterStrings {
+		if censorStruct.FilterStrings {
 			var contentList []string
 			if len(m.Attachments) > 0 {
 				for _, attachment := range m.Attachments {
@@ -288,12 +238,12 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			}
 			contentList = append(contentList, lowerContent)
 			for _, c := range contentList {
-				ok, str := censor.StringsCheck(c, censorLevel.BlockedStrings)
+				ok, str := censor.StringsCheck(c, censorStruct.BlockedStrings)
 				if !ok {
 					return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 				}
 
-				ok, str = censor.SubStringsCheck(c, censorLevel.BlockedSubstrings)
+				ok, str = censor.SubStringsCheck(c, censorStruct.BlockedSubstrings)
 				if !ok {
 					return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
 				}
@@ -301,7 +251,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		// IPs
-		if censorLevel.FilterIPs {
+		if censorStruct.FilterIPs {
 			ok := censor.IPCheck(content)
 			if !ok {
 				return false, consts.CENSOR_IP, 1, filterProcessingStart
@@ -310,7 +260,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		//Non english characters
-		if censorLevel.FilterEnglish {
+		if censorStruct.FilterEnglish {
 			ok := censor.ExtendedUnicodeCheck(content)
 			if !ok {
 				return false, consts.CENSOR_NOTENGLISH, 1, filterProcessingStart
@@ -318,7 +268,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		// Obnoxious Unicode
-		if censorLevel.FilterObnoxiousUnicode {
+		if censorStruct.FilterObnoxiousUnicode {
 			ok := censor.ObnoxiousUnicodeCheck(content)
 			if !ok {
 				return false, consts.CENSOR_OBNOXIOUSUNICODE, 1, filterProcessingStart
@@ -326,150 +276,80 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		}
 
 		// Regex
-		if censorLevel.FilterRegex {
-			matches, ok := censor.RegexCheck(content, censorLevel.Regex)
+		if censorStruct.FilterRegex {
+			matches, ok := censor.RegexCheck(content, censorStruct.Regex)
 			if !ok {
 				return false, fmt.Sprintf("%v (%v)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
 			}
 		}
 	}
 
-	// Channel Spam
-	if spamChannel != nil {
-
-		// Messages
-		interval := time.Duration(spamChannel.Interval) * time.Second
-		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, spamChannel.MaxMessages, interval, false)
-		if !ok {
-			err := spam.ClearMaxMessages(m.Author.ID, m.GuildID)
-			if err != nil {
-				logging.LogError(s, m.GuildID, m.Author.ID, "spam.ClearMaxMessages", err)
-			}
-			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", spamChannel.MaxMessages, interval.String()), 1, filterProcessingStart
-		}
-
-		// newlines
-
-		ok, count := spam.ProcessMaxNewlines(m.Content, spamChannel.MaxNewlines)
-		if !ok {
-			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxNewlines), 1, filterProcessingStart
-		}
-
-		// mentions
-		var mentions []*discordgo.User
-		ok, count, mentions = spam.ProcessMaxMentions(m, spamChannel.MaxMentions)
-		if !ok {
-			alertMentionedUsers(s, m.GuildID, mentions)
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxMentions), 1, filterProcessingStart
-		}
-		//var roleMentions []string
-		ok, count, _ = spam.ProcessMaxRoleMentions(m, spamChannel.MaxMentions)
-		if !ok {
-			//alertMentionedRoles(s, m.GuildID, roleMentions) : TODO - find a way to
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxMentions), 1, filterProcessingStart
-		}
-
-		// links
-
-		ok, count = spam.ProcessMaxLinks(m.Content, spamChannel.MaxLinks)
-		if !ok {
-			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxLinks), 1, filterProcessingStart
-		}
-
-		// uppercase
-		ok, percent := spam.ProcessMaxUppercase(m.Content, spamChannel.MaxUppercasePercent, int(spamChannel.MinUppercaseLimit))
-		if !ok {
-			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, spamChannel.MaxUppercasePercent), 1, filterProcessingStart
-		}
-		// emoji
-
-		ok, count = spam.ProcessMaxEmojis(m, spamChannel.MaxEmojis)
-		if !ok {
-			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxEmojis), 1, filterProcessingStart
-		}
-
-		// attachments
-
-		ok, count = spam.ProcessMaxAttachments(m, spamChannel.MaxAttachments)
-		if !ok {
-			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxAttachments), 1, filterProcessingStart
-		}
-
-		// length
-
-		ok, count = spam.ProcessMaxLength(m, spamChannel.MaxCharacters)
-		if !ok {
-			return false, consts.SPAM_MAXLENTH + fmt.Sprintf(" (%v > %v)", count, spamChannel.MaxCharacters), 1, filterProcessingStart
-
-		}
-	}
-
 	// Level Spam
-	if spamLevel != nil {
+	if spamStruct != nil {
 
 		// Messages
-		interval := time.Duration(spamLevel.Interval) * time.Second
-		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, spamLevel.MaxMessages, interval, false)
+		interval := time.Duration(spamStruct.Interval) * time.Second
+		ok := spam.ProcessMaxMessages(m.Author.ID, m.GuildID, spamStruct.MaxMessages, interval, false)
 		if !ok {
 			err := spam.ClearMaxMessages(m.Author.ID, m.GuildID)
 			if err != nil {
 				logging.LogError(s, m.GuildID, m.Author.ID, "spam.ClearMaxMessages", err)
 			}
-			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", spamLevel.MaxMessages, interval.String()), 1, filterProcessingStart
+			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", spamStruct.MaxMessages, interval.String()), 1, filterProcessingStart
 		}
 
 		// newlines
 
-		ok, count := spam.ProcessMaxNewlines(m.Content, spamLevel.MaxNewlines)
+		ok, count := spam.ProcessMaxNewlines(m.Content, spamStruct.MaxNewlines)
 		if !ok {
-			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxNewlines), 1, filterProcessingStart
+			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxNewlines), 1, filterProcessingStart
 		}
 
 		// mentions
 		var mentions []*discordgo.User
-		ok, count, mentions = spam.ProcessMaxMentions(m, spamLevel.MaxMentions)
+		ok, count, mentions = spam.ProcessMaxMentions(m, spamStruct.MaxMentions)
 		if !ok {
 			alertMentionedUsers(s, m.GuildID, mentions)
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxMentions), 1, filterProcessingStart
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxMentions), 1, filterProcessingStart
 		}
 		//var roleMentions []string
-		ok, count, _ = spam.ProcessMaxRoleMentions(m, spamLevel.MaxMentions)
+		ok, count, _ = spam.ProcessMaxRoleMentions(m, spamStruct.MaxMentions)
 		if !ok {
 			//alertMentionedRoles(s, m.GuildID, roleMentions)
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxMentions), 1, filterProcessingStart
+			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxMentions), 1, filterProcessingStart
 		}
 
 		// links
 
-		ok, count = spam.ProcessMaxLinks(m.Content, spamLevel.MaxLinks)
+		ok, count = spam.ProcessMaxLinks(m.Content, spamStruct.MaxLinks)
 		if !ok {
-			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxLinks), 1, filterProcessingStart
+			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxLinks), 1, filterProcessingStart
 		}
 
 		// uppercase
-		ok, percent := spam.ProcessMaxUppercase(m.Content, spamLevel.MaxUppercasePercent, int(spamLevel.MinUppercaseLimit))
+		ok, percent := spam.ProcessMaxUppercase(m.Content, spamStruct.MaxUppercasePercent, int(spamStruct.MinUppercaseLimit))
 		if !ok {
-			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, spamLevel.MaxUppercasePercent), 1, filterProcessingStart
+			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, spamStruct.MaxUppercasePercent), 1, filterProcessingStart
 		}
 		// emoji
 
-		ok, count = spam.ProcessMaxEmojis(m, spamLevel.MaxEmojis)
+		ok, count = spam.ProcessMaxEmojis(m, spamStruct.MaxEmojis)
 		if !ok {
-			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxEmojis), 1, filterProcessingStart
+			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxEmojis), 1, filterProcessingStart
 		}
 
 		// attachments
 
-		ok, count = spam.ProcessMaxAttachments(m, spamLevel.MaxAttachments)
+		ok, count = spam.ProcessMaxAttachments(m, spamStruct.MaxAttachments)
 		if !ok {
-			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxAttachments), 1, filterProcessingStart
+			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxAttachments), 1, filterProcessingStart
 		}
 
 		// length
 
-		ok, count = spam.ProcessMaxLength(m, spamLevel.MaxCharacters)
+		ok, count = spam.ProcessMaxLength(m, spamStruct.MaxCharacters)
 		if !ok {
-			return false, consts.SPAM_MAXLENTH + fmt.Sprintf(" (%v > %v)", count, spamLevel.MaxCharacters), 1, filterProcessingStart
+			return false, consts.SPAM_MAXLENTH + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxCharacters), 1, filterProcessingStart
 
 		}
 	}
