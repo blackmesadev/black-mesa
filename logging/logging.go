@@ -41,7 +41,7 @@ func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason s
 	addLog(s,
 		message.GuildID,
 		consts.EMOJI_CENSORED_MESSAGE,
-		fmt.Sprintf("AutoMod censored message by %v (`%v`) in #%v (`%v`): %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, message.Content),
+		fmt.Sprintf("AutoMod censored message by %v (`%v`) in #%v (`%v`): %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, escapeBackticks(message.Content)),
 		false,
 		"",
 	)
@@ -57,7 +57,7 @@ func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reaso
 	addLog(s,
 		message.GuildID,
 		consts.EMOJI_MESSAGE_VIOLATION,
-		fmt.Sprintf("AutoMod deleted message by %v (`%v`) in #%v (`%v`) due to violation %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, message.Content),
+		fmt.Sprintf("AutoMod deleted message by %v (`%v`) in #%v (`%v`) due to violation %v\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, reason, escapeBackticks(message.Content)),
 		false,
 		"",
 	)
@@ -249,7 +249,7 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 	addLog(s,
 		message.GuildID,
 		consts.EMOJI_MESSAGE_DELETE,
-		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, message.Content+"\n\n"+attachments),
+		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, escapeBackticks(message.Content)+"\n\n"+attachments),
 		false,
 		"",
 	)
@@ -266,7 +266,7 @@ func LogMessageUpdate(s *discordgo.Session, message *discordgo.Message, before s
 	addLog(s,
 		message.GuildID,
 		consts.EMOJI_MESSAGE_EDIT,
-		fmt.Sprintf("Message by %v (`%v`) in #%v (`%v`) was updated\n**Before**\n`%v`\n**After**\n`%v`", fullName, message.Author.ID, channel.Name, channel.ID, before, message.Content),
+		fmt.Sprintf("Message by %v (`%v`) in #%v (`%v`) was updated\n**Before**\n`%v`\n**After**\n`%v`", fullName, message.Author.ID, channel.Name, channel.ID, before, escapeBackticks(message.Content)),
 		false,
 		"",
 	)
