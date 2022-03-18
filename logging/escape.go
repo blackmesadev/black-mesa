@@ -7,5 +7,5 @@ import (
 )
 
 func escapeBackticks(str string) string {
-	return strings.ReplaceAll(str, "`", "`"+util.ZeroWidth)
+	return strings.ReplaceAll(str, "`", util.ZeroWidth+"`"+util.ZeroWidth)
 }
