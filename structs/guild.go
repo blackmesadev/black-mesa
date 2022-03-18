@@ -80,6 +80,7 @@ type GuildOptions struct {
 }
 
 type Automod struct {
+	Enabled          bool               `json:"enabled" bson:"enabled"`
 	GuildOptions     *GuildOptions      `json:"guildOptions" bson:"guildOptions"`
 	CensorLevels     map[int64]*Censor  `json:"censorLevels" bson:"censorLevels"`
 	CensorChannels   map[string]*Censor `json:"censorChannels" bson:"censorChannels"`
@@ -90,6 +91,7 @@ type Automod struct {
 }
 
 type Logging struct {
+	Enabled            bool     `json:"enabled" bson:"enabled"`
 	ChannelID          string   `json:"channelID" bson:"channelID"`
 	IncludeActions     []string `json:"includeActions" bson:"includeActions"` // list of actions
 	ExcludeActions     []string `json:"excludeActions" bson:"excludeActions"` // list of actions
@@ -122,11 +124,23 @@ type StrikeEscalation struct {
 	Duration string `json:"duration" bson:"duration"`
 }
 
+type AntiNuke struct {
+	Enabled      bool                        `json:"enabled" bson:"enabled"`
+	MemberRemove map[int64]AntiNukeThreshold `json:"memberRemove" bson:"memberRemove"` // index is level, value is what to do.
+}
+
+type AntiNukeThreshold struct {
+	Max      int64  `json:"max" bson:"max"`
+	Interval int64  `json:"interval" bson:"interval"`
+	Type     string `json:"type" bson:"type"`
+}
+
 type Modules struct {
 	Guild      *Guild      `json:"guild" bson:"guild"`
 	Automod    *Automod    `json:"automod" bson:"automod"`
 	Logging    *Logging    `json:"logging" bson:"logging"`
 	Moderation *Moderation `json:"moderation" bson:"moderation"`
+	AntiNuke   *AntiNuke   `json:"antiNuke" bson:"antiNuke"`
 }
 
 type Config struct {
