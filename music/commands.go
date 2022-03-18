@@ -42,7 +42,10 @@ func StopCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		return
 	}
 
-	stopSong(s, m.ChannelID, m.GuildID)
+	err := stopSong(s, m.ChannelID, m.GuildID)
+	if err != nil {
+		s.ChannelMessageSend(m.ChannelID, strings.Title(err.Error()))
+	}
 
 }
 

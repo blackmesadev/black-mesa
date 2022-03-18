@@ -191,6 +191,7 @@ func stopSong(s *discordgo.Session, channelID, guildID string) error {
 		return ErrNoPlayer
 	}
 	err := player.Stop()
+	delete(players, guildID)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to stop track `%v`", consts.EMOJI_CROSS, err))
 		return err
