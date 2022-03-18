@@ -9,6 +9,7 @@ import (
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/mongo"
+	"gopkg.in/yaml.v3"
 )
 
 var db *mongodb.DB
@@ -78,4 +79,31 @@ func GetConfig(guildid string) (*structs.Config, error) {
 	}
 
 	return config, err
+}
+
+func ExportConfigYAML(guildid string) ([]byte, error) {
+	config, err := db.GetConfig(guildid)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
+		return nil, err
+	}
+
+	if config == nil {
+		err = errors.New("config is nil")
+	}
+
+	return yaml.Marshal(config)
+}
+
+func ImportConfigYAML(guildid string, in []byte) error {
+	config := &structs.Config{}
+	err := yaml.Unmarshal(in, config)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.SetConfig(guildid, config)
+	return err
 }
