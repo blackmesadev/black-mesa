@@ -32,11 +32,17 @@ func (db *DB) AddConfig(config *MongoGuild) (*mongo.InsertOneResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result, err := col.InsertOne(ctx, config)
-	if err != nil {
-		return nil, err
-	}
-	return result, nil
+	return col.InsertOne(ctx, config)
+}
+
+func (db *DB) SetConfig(id string, config *structs.Config) (*mongo.UpdateResult, error) {
+	col := db.client.Database("black-mesa").Collection("guilds")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	filters := &bson.M{"guildID": id}
+
+	return col.UpdateOne(ctx, filters, config)
 }
 
 func (db *DB) AddAction(punishment *Action) (*mongo.InsertOneResult, error) {
