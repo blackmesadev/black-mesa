@@ -1,9 +1,10 @@
 package discord
 
 import (
-	"time"
+	"fmt"
 
 	"github.com/blackmesadev/black-mesa/antinuke"
+	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/discordgo"
 )
 
@@ -17,5 +18,43 @@ func (bot *Bot) OnMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRem
 		return
 	}
 
-	antinuke.AntiRemoveProcess(audit.AuditLogEntries[0], m.GuildID, 10, time.Second)
+	conf, err := config.GetConfig(m.GuildID)
+	if err != nil {
+		return
+	}
+
+	entry := audit.AuditLogEntries[0]
+	userLevel := config.GetLevel(s, conf, m.GuildID, entry.UserID)
+
+	anti, ok := conf.Modules.AntiNuke.MemberRemove[userLevel]
+
+	// if theres no config for this user level, we must presume it is okay and return
+	if !ok {
+		return
+	}
+
+	if conf.Modules.AntiNuke.Enabled {
+		ok := antinuke.AntiRemoveProcess(s, anti, entry.UserID, m.GuildID)
+		if !ok {
+			reason := fmt.Sprintf("AntiNuke Detection (exceeded %v/%vs)", anti.Max, anti.Interval)
+			switch anti.Type {
+			case "ban":
+				s.GuildBanCreateWithReason(m.GuildID, entry.UserID, reason, 0)
+			case "kick":
+				s.GuildMemberDeleteWithReason(m.GuildID, entry.UserID, reason)
+			case "rmrole":
+				member, err := s.State.Member(m.GuildID, entry.UserID)
+				if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
+					member, err = s.GuildMember(m.GuildID, entry.UserID)
+					if err != nil {
+						// if we cant get the member theres nothing we can do
+						return
+					}
+				}
+
+				s.GuildMemberRoleBulkRemove(m.GuildID, member.User.ID, member.Roles)
+			default:
+			}
+		}
+	}
 }
