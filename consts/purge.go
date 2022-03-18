@@ -8,6 +8,7 @@ const (
 	PURGE_BOT          PurgeType = "bots"
 	PURGE_IMAGE        PurgeType = "images"
 	PURGE_STRING       PurgeType = "string"
-	PURGE_USER         PurgeType = "users"
+	PURGE_USER         PurgeType = "user"
+	PURGE_USERS        PurgeType = "users"
 	PURGE_VIDEO        PurgeType = "videos"
 )
