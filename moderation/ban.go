@@ -69,19 +69,20 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
-	msg := "<:mesaCheck:832350526729224243> Successfully banned "
-
 	var timeExpiry time.Time
 	var timeUntil time.Duration
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
-	unableBan := make([]string, 0)
+	unableBan := make(map[string]error, 0)
 
 	largeBan = idLength > 10
 
 	var wg sync.WaitGroup
 
 	wg.Add(idLength)
+
+	bannedUsers := make([]string, 0)
+	updatedBans := make([]string, 0)
 
 	for _, id := range idList {
 		go func(id string) {
@@ -97,7 +98,7 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 				}
 				if err != nil {
 					log.Println(err)
-					unableBan = append(unableBan, id)
+					unableBan[id] = err
 				}
 			}
 			timeExpiry = time.Unix(duration, 0)
@@ -109,12 +110,18 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 
 			err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
 			if err != nil {
-				unableBan = append(unableBan, id)
+				unableBan[id] = err
 			} else {
 				if !largeBan {
-					msg += fmt.Sprintf("<@%v> ", id)
+					bannedUsers = append(bannedUsers, "<@"+id+">")
 				}
-				AddTimedBan(m.GuildID, m.Author.ID, id, duration, reason, infractionUUID)
+				res, err := AddTimedBan(m.GuildID, m.Author.ID, id, duration, reason, infractionUUID)
+				if err != nil {
+					unableBan[id] = err
+				}
+				if res == BanAlreadyBanned {
+					updatedBans = append(updatedBans, "<@"+id+">")
+				}
 			}
 
 			if permBan {
@@ -134,6 +141,17 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 	}
 
 	wg.Wait()
+
+	var msg string
+
+	if len(bannedUsers) > 0 {
+		msg = "<:mesaCheck:832350526729224243> Successfully muted " + strings.Join(bannedUsers, ", ")
+		if len(updatedBans) > 0 {
+			msg += " and updated the mute for " + strings.Join(updatedBans, ", ")
+		}
+	} else if len(updatedBans) > 0 {
+		msg = "<:mesaCheck:832350526729224243> Successfully updated the mute for " + strings.Join(updatedBans, ", ")
+	}
 
 	if largeBan {
 		msg += fmt.Sprintf("`%v` users ", idLength-len(unableBan))

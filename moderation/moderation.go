@@ -19,12 +19,20 @@ import (
 )
 
 type MuteResult int
+type BanResult int
 
 const (
 	MuteSuccess MuteResult = iota
 	MuteFailed
 	MuteAlreadyMuted
 	MuteAlreadyUnmuted
+)
+
+const (
+	BanSuccess BanResult = iota
+	BanFailed
+	BanAlreadyBanned
+	BanAlreadyUnbanned
 )
 
 func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, actioner *discordgo.User, reason string, expires *time.Time, permenant bool, punishmentType string) *discordgo.MessageEmbed {
@@ -188,7 +196,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 			res, err := AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", uuid.New().String())
 			if res == MuteAlreadyMuted {
-				logging.LogError(s, guildId, "AutoMod", "user already muted during automod escalation", err)
+				logging.LogError(s, guildId, "AutoMod", reason, fmt.Errorf("user already muted during strike escalation"))
 			}
 
 			if err != nil {
@@ -206,7 +214,10 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
-			err = AddTimedBan(guildId, "AutoMod", userId, duration, reason, uuid.New().String())
+			res, err := AddTimedBan(guildId, "AutoMod", userId, duration, reason, uuid.New().String())
+			if res == BanAlreadyBanned {
+				logging.LogError(s, guildId, "AutoMod", reason, fmt.Errorf("user already banned during strike escalation"))
+			}
 			if err != nil {
 				return err
 			}
