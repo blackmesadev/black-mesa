@@ -139,14 +139,11 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 
 	if len(mutedUsers) > 0 {
 		msg = "<:mesaCheck:832350526729224243> Successfully muted " + strings.Join(mutedUsers, ", ")
-	}
-
-	if len(updatedMutes) > 0 {
-		if len(mutedUsers) > 0 {
+		if len(updatedMutes) > 0 {
 			msg += " and updated the mute for " + strings.Join(updatedMutes, ", ")
-		} else {
-			msg = "<:mesaCheck:832350526729224243> Successfully updated the mute for " + strings.Join(updatedMutes, ", ")
 		}
+	} else if len(updatedMutes) > 0 {
+		msg = "<:mesaCheck:832350526729224243> Successfully updated the mute for " + strings.Join(updatedMutes, ", ")
 	}
 
 	if permMute {
