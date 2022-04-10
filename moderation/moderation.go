@@ -132,9 +132,16 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 	issuerFull := issuerUser.Username + "#" + issuerUser.Discriminator
 	logging.LogStrike(s, guildId, issuerFull, user, weight, reason, location, infractionUUID)
+	var timeExpiry time.Time
+	var permenant bool
 
+	if expiry != 0 {
+		timeExpiry = time.Unix(expiry, 0)
+	} else {
+		permenant = true
+	}
 	if err == nil {
-		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerUser, reason, nil, false, "Striked"))
+		s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerUser, reason, &timeExpiry, permenant, "Striked"))
 	}
 
 	// escalate punishments
@@ -203,6 +210,8 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 				return err
 			}
 
+			s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerUser, reason, &timeExpiry, permenant, "Muted"))
+
 			if duration != 0 {
 				logging.LogTempMute(s, guildId, "AutoMod", member.User, time.Until(time.Unix(duration, 0)), reason, location)
 			} else {
@@ -221,6 +230,8 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			if err != nil {
 				return err
 			}
+
+			s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerUser, reason, &timeExpiry, permenant, "Banned"))
 
 			if duration != 0 {
 				logging.LogTempBan(s, guildId, "AutoMod", member.User, time.Until(time.Unix(duration, 0)), reason, location)
