@@ -96,6 +96,33 @@ func (db *DB) GetPunishments(guildid string, userid string) ([]*Action, error) {
 	return punishments, err
 }
 
+func (db *DB) GetBan(guildid string, userid string) (*Action, error) {
+	var ban *Action
+
+	col := db.client.Database("black-mesa").Collection("actions")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := bson.M{
+		"guildID": guildid,
+		"userID":  userid,
+		"type":    "ban",
+	}
+
+	cursor, err := col.Find(ctx, query)
+	if err != nil {
+		if err != mongo.ErrNoDocuments {
+			log.Println(err)
+		}
+		return nil, err
+	}
+
+	for cursor.Next(ctx) {
+		cursor.Decode(&ban)
+	}
+	return ban, err
+}
+
 func (db *DB) GetMute(guildid string, userid string) (*Action, error) {
 	var mute *Action
 

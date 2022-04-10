@@ -29,6 +29,10 @@ func GetMute(guildid string, userid string) (*mongodb.Action, error) {
 	return db.GetMute(guildid, userid)
 }
 
+func GetBan(guildid string, userid string) (*mongodb.Action, error) {
+	return db.GetBan(guildid, userid)
+}
+
 func DeleteMute(guildid string, userid string) (*mongo.DeleteResult, error) {
 	return db.DeleteMute(guildid, userid)
 }
