@@ -145,12 +145,12 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 	var msg string
 
 	if len(bannedUsers) > 0 {
-		msg = "<:mesaCheck:832350526729224243> Successfully muted " + strings.Join(bannedUsers, ", ")
+		msg = "<:mesaCheck:832350526729224243> Successfully banned " + strings.Join(bannedUsers, ", ")
 		if len(updatedBans) > 0 {
 			msg += " and updated the mute for " + strings.Join(updatedBans, ", ")
 		}
 	} else if len(updatedBans) > 0 {
-		msg = "<:mesaCheck:832350526729224243> Successfully updated the mute for " + strings.Join(updatedBans, ", ")
+		msg = "<:mesaCheck:832350526729224243> Successfully updated the ban for " + strings.Join(updatedBans, ", ")
 	}
 
 	if largeBan {
