@@ -69,14 +69,9 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 			if err == mongo.ErrNoDocuments || err == mongo.ErrNilDocument {
 				s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" Unable to find associated mute, user is likely not muted. Attempting to unmute anyway.")
 			} else {
-				s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" Unable to fetch previous roles. Attempting to unmute anyway.")
-			}
-		} else {
-			if muteInfo.ReturnRoles != nil {
-				go s.GuildMemberRoleBulkAdd(m.GuildID, id, *muteInfo.ReturnRoles)
+				logging.LogError(s, m.GuildID, id, "unmute", err)
 			}
 		}
-
 		err = s.GuildMemberRoleRemove(m.GuildID, id, roleid) // change this to WithReason when implemented
 		if err != nil {
 			unableUnmute = append(unableUnmute, id)
