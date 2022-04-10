@@ -147,9 +147,9 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 	}
 
 	if permMute {
-		msg += "lasting `Forever` "
+		msg += " lasting `Forever` "
 	} else {
-		msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
+		msg += fmt.Sprintf(" expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
 	}
 	if len(reason) != 0 {
 		msg += fmt.Sprintf("for reason `%v` ", reason)
