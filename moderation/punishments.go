@@ -1,6 +1,8 @@
 package moderation
 
 import (
+	"fmt"
+
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/mongodb"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,11 +23,21 @@ func AddTimedBan(guildid string, issuer string, userid string, expiry int64, rea
 	return err
 }
 
-func AddTimedMute(guildid string, issuer string, userid string, roleid string, expiry int64, reason string, uuid string, roles *[]string) error {
+func AddTimedMute(guildid string, issuer string, userid string, roleid string, expiry int64, reason string, uuid string) (MuteResult, error) {
+	res := MuteSuccess
+
 	currentMute, err := config.GetMute(guildid, userid)
 	if err != nil && err != mongo.ErrNoDocuments {
-		return err
+		return MuteFailed, err
 	}
+
+	if currentMute != nil {
+		res = MuteAlreadyMuted
+		if issuer == "AutoMod" {
+			return res, fmt.Errorf("user already muted during automod")
+		}
+	}
+
 	config.DeleteMute(guildid, userid) // delete existing mutes
 
 	punishment := &mongodb.Action{
@@ -39,16 +51,13 @@ func AddTimedMute(guildid string, issuer string, userid string, roleid string, e
 		UUID:    uuid,
 	}
 
-	if currentMute != nil {
-		roles = currentMute.ReturnRoles
-	}
-
-	if roles != nil {
-		punishment.ReturnRoles = roles
-	}
-
 	_, err = config.AddAction(punishment)
-	return err
+
+	if err != nil {
+		return MuteFailed, err
+	}
+
+	return res, err
 }
 
 func AddKick(guildid string, issuer string, userid string, reason string, uuid string) error {

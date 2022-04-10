@@ -74,14 +74,15 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		return
 	}
 
-	msg := "<:mesaCheck:832350526729224243> Successfully muted "
-
 	var timeExpiry time.Time
 	var timeUntil time.Duration
-	var roles *[]string
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
-	unableMute := make([]string, 0)
+	unableMute := make(map[string]error, 0)
+
+	mutedUsers := make([]string, 0)
+	updatedMutes := make([]string, 0)
+
 	for _, id := range idList {
 		infractionUUID := uuid.New().String()
 
@@ -90,30 +91,29 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 			member, err = s.GuildMember(m.GuildID, id)
 			if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
 				log.Println(err)
-				unableMute = append(unableMute, id)
+				unableMute[id] = err
 			} else {
 				s.State.MemberAdd(member)
 			}
 		}
 
-		if conf.Modules.Moderation.RemoveRolesOnMute {
-			roles = &member.Roles
-			s.GuildMemberRoleBulkRemove(m.GuildID, id, *roles)
-		} else {
-			roles = nil
-		}
-
-		err = AddTimedMute(m.GuildID, m.Author.ID, id, roleid, duration, reason, infractionUUID, roles)
+		res, err := AddTimedMute(m.GuildID, m.Author.ID, id, roleid, duration, reason, infractionUUID)
 
 		if err != nil {
-			unableMute = append(unableMute, id)
+			unableMute[id] = err
 			log.Println(err)
 		} else {
-			msg += fmt.Sprintf("<@%v> ", id)
+			if res == MuteAlreadyMuted {
+				updatedMutes = append(updatedMutes, "<@"+id+">")
+			}
+
+			if res == MuteSuccess {
+				mutedUsers = append(mutedUsers, "<@"+id+">")
+			}
 
 			err := s.GuildMemberRoleAdd(m.GuildID, id, roleid) // change this to WithReason when implemented
 			if err != nil {
-				unableMute = append(unableMute, id)
+				unableMute[id] = err
 			}
 
 			timeExpiry = time.Unix(duration, 0)
@@ -135,6 +135,20 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		}
 	}
 
+	var msg string
+
+	if len(mutedUsers) > 0 {
+		msg = "<:mesaCheck:832350526729224243> Successfully muted " + strings.Join(mutedUsers, ", ")
+	}
+
+	if len(updatedMutes) > 0 {
+		if len(mutedUsers) > 0 {
+			msg += " and updated the mute for " + strings.Join(updatedMutes, ", ")
+		} else {
+			msg = "<:mesaCheck:832350526729224243> Successfully updated the mute for " + strings.Join(updatedMutes, ", ")
+		}
+	}
+
 	if permMute {
 		msg += "lasting `Forever` "
 	} else {
@@ -145,7 +159,7 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 	}
 
 	if len(unableMute) != 0 {
-		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not mute %v", unableMute)
+		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not mute %v for reason `%v`", unableMute, err)
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)

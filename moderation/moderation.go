@@ -18,6 +18,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+type MuteResult int
+
+const (
+	MuteSuccess MuteResult = iota
+	MuteFailed
+	MuteAlreadyMuted
+	MuteAlreadyUnmuted
+)
+
 func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, actioner *discordgo.User, reason string, expires *time.Time, permenant bool, punishmentType string) *discordgo.MessageEmbed {
 	footer := &discordgo.MessageEmbedFooter{
 		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
@@ -172,29 +181,16 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 
 		switch escalatingTo.Type {
 		case "mute":
-			var roles *[]string
-			if guildConfig.Modules.Moderation.RemoveRolesOnMute {
-				member, err := s.State.Member(guildId, userId)
-				if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
-					member, err = s.GuildMember(guildId, userId)
-					if err == discordgo.ErrStateNotFound || member == nil || member.User == nil {
-						log.Println(err)
-					} else {
-						s.State.MemberAdd(member)
-					}
-				}
-
-				roles = &member.Roles
-				s.GuildMemberRoleBulkRemove(guildId, userId, *roles)
-			} else {
-				roles = nil
-			}
 			err := s.GuildMemberRoleAdd(guildId, userId, guildConfig.Modules.Moderation.MuteRole)
 			if err != nil {
 				return err
 			}
 
-			err = AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", uuid.New().String(), roles)
+			res, err := AddTimedMute(guildId, "AutoMod", userId, guildConfig.Modules.Moderation.MuteRole, duration, "Exceeded maximum strikes.", uuid.New().String())
+			if res == MuteAlreadyMuted {
+				logging.LogError(s, guildId, "AutoMod", "user already muted during automod escalation", err)
+			}
+
 			if err != nil {
 				return err
 			}

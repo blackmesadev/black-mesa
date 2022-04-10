@@ -111,7 +111,6 @@ type Moderation struct {
 	DisplayNoPermission         bool                       `json:"displayNoPermission" bson:"displayNoPermission"`
 	MuteRole                    string                     `json:"muteRole" bson:"muteRole"`
 	ReasonEditLevel             int64                      `json:"reasonEditLevel" bson:"reasonEditLevel"`
-	RemoveRolesOnMute           bool                       `json:"removeRolesOnMute" bson:"removeRolesOnMute"`
 	NotifyActions               bool                       `json:"notifyActions" bson:"notifyActions"`
 	ShowModeratorOnNotify       bool                       `json:"showModeratorOnNotify" bson:"showModeratorOnNotify"`
 	SilenceLevel                int64                      `json:"silenceLevel" bson:"silenceLevel"`
