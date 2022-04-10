@@ -10,22 +10,51 @@ services:
     links:
       - mongo
       - redis
+      - lavalink
     depends_on:
       - mongo
       - redis
+      - lavalink
+    environment:
+      - APIHOST=black-mesa-backend
+      - APIPORT=8080
+      - APITOKEN=
+      - TOKEN=
+      - MONGOURI=mongodb://mongo:27017
+      - MONGOUSER=
+      - MONGOPASS=
+      - REDIS=redis:6379
+      - LAVALINKURI=lavalink:2333
+      - LAVALINKPASS=
 
   mongo:
     image: mongo
     restart: unless-stopped
     volumes:
-      - mongo:/data/db
+      - ./data/mongodb:/data/db
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=
+      - MONGO_INITDB_ROOT_PASSWORD=
 
   redis:
     image: redis
     restart: unless-stopped
     volumes:
-      - redis:/data
+      - ./data/redis:/data
+    ports:
+      - 6739:6739
 
-volumes:
-  mongo:
-  redis:
+  lavalink:
+    build:
+      context: ./lavalink
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ./lavalink:/opt/Lavalink
+
+networks:
+  default:
+    external:
+      name: black-mesa-network
