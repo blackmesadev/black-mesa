@@ -2,6 +2,7 @@ package music
 
 import (
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/blackmesadev/discordgo"
@@ -100,5 +101,25 @@ func OnTrackException(player *gavalink.Player, track string, reason string) erro
 	return nil
 }
 func OnTrackStuck(player *gavalink.Player, track string, threshold int) error {
+	// on a track exception, we just want to try and play the next song in the queue
+	fmt.Println("track stuck", track, threshold)
+	if player.Track() != "" {
+		return nil
+	}
+	next, err := getNext(player.GuildID())
+	if err != nil {
+		return err
+	}
+
+	// end of queue
+	if next == nil {
+		return nil
+	}
+
+	err = player.Play(next.Data)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
