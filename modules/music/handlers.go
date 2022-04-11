@@ -81,6 +81,7 @@ func OnTrackEnd(player *gavalink.Player, track string, reason string) error {
 func OnTrackException(player *gavalink.Player, track string, reason string) error {
 	// on a track exception, we just want to try and play the next song in the queue
 	if player.Track() != "" {
+		removeQueue(player.GuildID(), track)
 		return nil
 	}
 	next, err := getNext(player.GuildID())
