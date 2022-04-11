@@ -78,6 +78,22 @@ func OnTrackEnd(player *gavalink.Player, track string, reason string) error {
 }
 
 func OnTrackException(player *gavalink.Player, track string, reason string) error {
+	// on a track exception, we just want to try and play the next song in the queue
+	next, err := getNext(player.GuildID())
+	if err != nil {
+		return err
+	}
+
+	// end of queue
+	if next == nil {
+		return nil
+	}
+
+	err = player.Play(next.Data)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 func OnTrackStuck(player *gavalink.Player, track string, threshold int) error {
