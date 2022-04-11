@@ -191,7 +191,6 @@ func stopSong(s *discordgo.Session, channelID, guildID string) error {
 		return ErrNoPlayer
 	}
 	err := player.Stop()
-	delete(players, guildID)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to stop track `%v`", consts.EMOJI_CROSS, err))
 		return err
@@ -245,6 +244,7 @@ func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
 		return ErrNoPlayer
 	}
 	err := player.Destroy()
+	delete(players, guildID)
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to destroy player `%v`", consts.EMOJI_CROSS, err))
 		return err
@@ -453,4 +453,25 @@ func setVolume(s *discordgo.Session, channelID, guildID, volume string) error {
 		return err
 	}
 	return nil
+}
+
+func isInUserVoiceChannel(s *discordgo.Session, guildID, userID string) (channelID string, ok bool) {
+	guild, err := s.Guild(guildID)
+	if err != nil {
+		return "", false
+	}
+
+	// Check if the user is in the same voice channel as the bot
+	var userChannel string
+	var botChannel string
+	for _, vs := range guild.VoiceStates {
+		if vs.UserID == userID {
+			userChannel = vs.ChannelID
+		}
+		if vs.UserID == s.State.User.ID {
+			botChannel = vs.ChannelID
+		}
+	}
+
+	return botChannel, userChannel == botChannel
 }

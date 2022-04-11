@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/structs"
@@ -14,6 +15,11 @@ import (
 )
 
 func PlayCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PLAY) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_PLAY)
+		return
+	}
+
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -27,7 +33,14 @@ func PlayCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		arg = strings.Join(args, " ")
 	}
 
-	ok := joinMemberChannel(s, m.ChannelID, m.GuildID, m.Author.ID)
+	// check if the bot is already in a voice channel
+	botChannel, ok := isInUserVoiceChannel(s, m.GuildID, m.Author.ID)
+	if !ok {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v I am already in a voice channel, join `<#%v>` to use me.", consts.EMOJI_CROSS, botChannel))
+		return
+	}
+
+	ok = joinMemberChannel(s, m.ChannelID, m.GuildID, m.Author.ID)
 	if !ok {
 		return
 	}
@@ -37,6 +50,10 @@ func PlayCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func StopCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_STOP) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_STOP)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -50,6 +67,10 @@ func StopCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func SkipCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SKIP) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SKIP)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -59,6 +80,10 @@ func SkipCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func DisconnectCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_DC) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_DC)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -73,6 +98,10 @@ func DisconnectCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Mess
 }
 
 func NowPlayingCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_QUERY) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_QUERY)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -83,6 +112,10 @@ func NowPlayingCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Mess
 }
 
 func SeekCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -97,6 +130,10 @@ func SeekCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func ForwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -126,6 +163,10 @@ func ForwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 }
 
 func BackwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -155,6 +196,10 @@ func BackwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messag
 }
 
 func VolumeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VOLUME) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_VOLUME)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
@@ -176,6 +221,10 @@ func VolumeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 }
 
 func QueueCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_QUERY) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_QUERY)
+		return
+	}
 	if m.GuildID == "" {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
 		return
