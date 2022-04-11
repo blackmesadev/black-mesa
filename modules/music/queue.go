@@ -35,7 +35,7 @@ func getQueue(guildID string) ([]*gavalink.Track, error) {
 		return nil, nil
 	}
 
-	request := r.SMembers(r.Context(), key)
+	request := r.LRange(r.Context(), key, 0, -1)
 	result, err := request.Result()
 	if err != nil {
 		log.Println(err)
@@ -83,7 +83,7 @@ func addQueue(guildID, track string) (bool, error) {
 
 	key := fmt.Sprintf("lavalink:queue:%v", guildID)
 
-	request := r.SAdd(r.Context(), key, track)
+	request := r.RPush(r.Context(), key, track)
 	result, err := request.Result()
 	if err != nil {
 		return false, err
@@ -104,7 +104,7 @@ func removeQueue(guildID, track string) (bool, error) {
 
 	key := fmt.Sprintf("lavalink:queue:%v", guildID)
 
-	request := r.SRem(r.Context(), key, track)
+	request := r.LRem(r.Context(), key, 1, track)
 	result, err := request.Result()
 	if err != nil {
 		return false, err
