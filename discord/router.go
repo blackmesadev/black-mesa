@@ -100,4 +100,6 @@ func (r *Mux) InitRouter() {
 	r.Route("queue", music.QueueCmd)
 
 	r.Route("skip", music.SkipCmd)
+
+	r.Route("remove", music.RemoveCmd)
 }

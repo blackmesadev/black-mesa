@@ -3,6 +3,7 @@ package music
 import (
 	"fmt"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -77,6 +78,32 @@ func SkipCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 	}
 
 	skipSong(s, m.ChannelID, m.GuildID)
+}
+
+func RemoveCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_REMOVE) {
+		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_REMOVE)
+		return
+	}
+	if m.GuildID == "" {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must execute this command in a guild", consts.EMOJI_CROSS))
+		return
+	}
+
+	if len(args) == 0 {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v You must specify a song index to remove", consts.EMOJI_CROSS))
+		return
+	}
+
+	for _, arg := range args {
+		argInt, err := strconv.Atoi(arg)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `%v`", consts.EMOJI_CROSS, err.Error()))
+			return
+		}
+
+		err = removeQueueByIndex(m.GuildID, argInt)
+	}
 }
 
 func DisconnectCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
