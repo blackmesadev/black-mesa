@@ -76,7 +76,7 @@ func getNext(guildID string) (*gavalink.Track, error) {
 	return track, nil
 }
 
-func addQueue(guildID, track string) (bool, error) {
+func addQueue(guildID, track string) error {
 	if r == nil {
 		r = bmRedis.GetRedis()
 	}
@@ -86,18 +86,18 @@ func addQueue(guildID, track string) (bool, error) {
 	request := r.RPush(r.Context(), key, track)
 	result, err := request.Result()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if result == 0 {
-		return false, nil
+		return fmt.Errorf("Not found")
 	}
 
-	return true, nil
+	return nil
 
 }
 
-func removeQueue(guildID, track string) (bool, error) {
+func removeQueue(guildID, track string) error {
 	if r == nil {
 		r = bmRedis.GetRedis()
 	}
@@ -107,25 +107,25 @@ func removeQueue(guildID, track string) (bool, error) {
 	request := r.LRem(r.Context(), key, 1, track)
 	result, err := request.Result()
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if result == 0 {
-		return false, nil
+		return fmt.Errorf("Not found")
 	}
 
-	return true, nil
+	return nil
 
 }
 
-func removeQueueByIndex(guildID string, index int) (bool, error) {
+func removeQueueByIndex(guildID string, index int) error {
 	if r == nil {
 		r = bmRedis.GetRedis()
 	}
 
 	tracks, err := getQueue(guildID)
 	if err != nil || queue == nil {
-		return false, err
+		return err
 	}
 
 	for i, track := range tracks {
@@ -133,8 +133,8 @@ func removeQueueByIndex(guildID string, index int) (bool, error) {
 			return removeQueue(guildID, track.Data)
 		}
 	}
-	return false, errors.New("Not found")
 
+	return fmt.Errorf("Not found")
 }
 
 func clearQueue(guildID string) (bool, error) {
