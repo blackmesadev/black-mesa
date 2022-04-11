@@ -3,13 +3,14 @@ package discord
 import (
 	"github.com/blackmesadev/black-mesa/admin"
 	"github.com/blackmesadev/black-mesa/config"
-	"github.com/blackmesadev/black-mesa/guilds"
-	"github.com/blackmesadev/black-mesa/guilds/permissions"
-	"github.com/blackmesadev/black-mesa/guilds/roles"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
-	"github.com/blackmesadev/black-mesa/moderation"
-	"github.com/blackmesadev/black-mesa/music"
+
+	"github.com/blackmesadev/black-mesa/modules/guilds"
+	"github.com/blackmesadev/black-mesa/modules/guilds/permissions"
+	"github.com/blackmesadev/black-mesa/modules/guilds/roles"
+	"github.com/blackmesadev/black-mesa/modules/moderation"
+	"github.com/blackmesadev/black-mesa/modules/music"
 )
 
 func (r *Mux) InitRouter() {

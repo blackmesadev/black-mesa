@@ -1,8 +1,8 @@
 package discord
 
 import (
-	"github.com/blackmesadev/black-mesa/automod"
 	"github.com/blackmesadev/black-mesa/logging"
+	"github.com/blackmesadev/black-mesa/modules/automod"
 	"github.com/blackmesadev/discordgo"
 )
 

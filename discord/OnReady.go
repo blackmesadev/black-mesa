@@ -7,7 +7,7 @@ import (
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/info"
-	"github.com/blackmesadev/black-mesa/music"
+	"github.com/blackmesadev/black-mesa/modules/music"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 )

@@ -11,8 +11,8 @@ import (
 
 	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/info"
+	"github.com/blackmesadev/black-mesa/modules/music"
 	"github.com/blackmesadev/black-mesa/mongodb"
-	"github.com/blackmesadev/black-mesa/music"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/bson"

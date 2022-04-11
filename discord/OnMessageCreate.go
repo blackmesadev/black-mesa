@@ -6,8 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/blackmesadev/black-mesa/automod"
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/modules/automod"
 	"github.com/blackmesadev/discordgo"
 )
 

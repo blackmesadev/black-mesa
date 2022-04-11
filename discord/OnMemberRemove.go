@@ -3,8 +3,8 @@ package discord
 import (
 	"fmt"
 
-	"github.com/blackmesadev/black-mesa/antinuke"
 	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/modules/antinuke"
 	"github.com/blackmesadev/discordgo"
 )
 
