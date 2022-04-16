@@ -25,4 +25,5 @@ const (
 	CENSOR_STRINGS             = "Censor->BlockedString"
 	CENSOR_SUBSTRINGS          = "Censor->BlockedSubString"
 	CENSOR_ZALGO               = "Censor->Zalgo"
+	CENSOR_UNTRUSTWORTHY       = "Censor->Untrustworthy"
 )
