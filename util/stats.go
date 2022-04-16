@@ -15,40 +15,43 @@ var r *redis.Client
 func CalcStats(s *discordgo.Session) {
 	r = bmRedis.GetRedis()
 
+	ticker := time.NewTicker(time.Second * 15)
+
 	for {
 
-		time.Sleep(15 * time.Second)
+		select {
+		case <-ticker.C:
+			// Sys Stats
+			v, _ := mem.VirtualMemory()
 
-		// Sys Stats
-		v, _ := mem.VirtualMemory()
+			usedMem := v.UsedPercent
 
-		usedMem := v.UsedPercent
+			c, _ := cpu.Percent(time.Duration(1*time.Second), true)
 
-		c, _ := cpu.Percent(time.Duration(1*time.Second), true)
+			var usedCpu float64
 
-		var usedCpu float64
+			for _, i := range c {
+				usedCpu += i
+			}
 
-		for _, i := range c {
-			usedCpu += i
+			usedCpu /= float64(len(c))
+
+			// Discord stats
+
+			var memberCount int
+
+			for _, i := range s.State.Guilds {
+				memberCount += i.MemberCount
+			}
+
+			// Send everything to Redis
+
+			r.Set(r.Context(), "usedMem", usedMem, time.Minute)
+
+			r.Set(r.Context(), "usedCpu", usedCpu, time.Minute)
+
+			r.Set(r.Context(), "memberCount", memberCount, time.Minute)
 		}
-
-		usedCpu /= float64(len(c))
-
-		// Discord stats
-
-		var memberCount int
-
-		for _, i := range s.State.Guilds {
-			memberCount += i.MemberCount
-		}
-
-		// Send everything to Redis
-
-		r.Set(r.Context(), "usedMem", usedMem, time.Minute)
-
-		r.Set(r.Context(), "usedCpu", usedCpu, time.Minute)
-
-		r.Set(r.Context(), "memberCount", memberCount, time.Minute)
 	}
 
 }

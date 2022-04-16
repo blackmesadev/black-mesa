@@ -9,10 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/modules/music"
-	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/bson"
@@ -70,7 +69,7 @@ func (bot *Bot) Start() {
 	}
 
 	go util.CalcStats(bot.Session)
-	go actionExpiryGoroutine()
+	go bot.actionExpiryGoroutine()
 
 	log.Println("Black Mesa has finished initalizing successfully.")
 	sc := make(chan os.Signal, 1)
@@ -81,52 +80,54 @@ func (bot *Bot) Start() {
 
 }
 
-func actionExpiryGoroutine() {
-	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
+func (bot *Bot) actionExpiryGoroutine() {
+	inst := db.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
 	log.Println("action expiry ready")
+	timer := time.NewTicker(time.Second)
 	for {
-		time.Sleep(time.Second)
+		select {
+		case <-timer.C:
+			timeSec := time.Now().Unix()
+			query := bson.M{
+				"expires": bson.M{
+					"$lte": timeSec,
+				},
+			}
 
-		timeSec := time.Now().Unix()
-		query := bson.M{
-			"expires": bson.M{
-				"$lte": timeSec,
-			},
+			cursor, err := inst.Find(context.TODO(), query)
+
+			if err != nil {
+				log.Println("error whilst dealing with expiring punishments", err)
+			}
+
+			for cursor.Next(context.TODO()) {
+				doc := db.Action{}
+				cursor.Decode(&doc)
+				go func(doc db.Action) {
+					fmt.Println(doc)
+					switch doc.Type {
+					case "ban":
+						db.RemoveAction(doc.UUID, doc.UUID)
+						bot.Session.GuildBanDelete(doc.GuildID, doc.UserID)
+					case "role":
+						db.RemoveAction(doc.UUID, doc.UUID)
+						bot.Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
+					case "mute":
+						db.RemoveAction(doc.UUID, doc.UUID)
+						bot.Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
+					case "strike":
+						db.RemoveAction(doc.UUID, doc.UUID)
+					default:
+						fmt.Println("unknown type", doc.Type)
+					}
+				}(doc)
+			}
+
+			cursor.Close(context.TODO())
+
+			inst.DeleteMany(context.TODO(), query)
 		}
 
-		cursor, err := db.Find(context.TODO(), query)
-
-		if err != nil {
-			log.Println("error whilst dealing with expiring punishments", err)
-			continue
-		}
-
-		for cursor.Next(context.TODO()) {
-			doc := mongodb.Action{}
-			cursor.Decode(&doc)
-			go func(doc mongodb.Action) {
-				fmt.Println(doc)
-				switch doc.Type {
-				case "ban":
-					config.RemoveAction(doc.UUID, doc.UUID)
-					GetInstance().Session.GuildBanDelete(doc.GuildID, doc.UserID)
-				case "role":
-					config.RemoveAction(doc.UUID, doc.UUID)
-					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
-				case "mute":
-					config.RemoveAction(doc.UUID, doc.UUID)
-					GetInstance().Session.GuildMemberRoleRemove(doc.GuildID, doc.UserID, doc.RoleID)
-				case "strike":
-					config.RemoveAction(doc.UUID, doc.UUID)
-				default:
-					fmt.Println("unknown type", doc.Type)
-				}
-			}(doc)
-		}
-
-		cursor.Close(context.TODO())
-
-		db.DeleteMany(context.TODO(), query)
 	}
 }
