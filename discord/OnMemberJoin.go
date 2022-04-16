@@ -1,13 +1,13 @@
 package discord
 
 import (
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/modules/automod"
 	"github.com/blackmesadev/discordgo"
 )
 
 func (bot *Bot) OnMemberJoin(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
-	conf, err := config.GetConfig(m.GuildID)
+	conf, err := db.GetConfig(m.GuildID)
 	if err != nil {
 		return
 	}

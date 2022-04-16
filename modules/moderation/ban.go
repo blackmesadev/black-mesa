@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -17,8 +17,8 @@ import (
 )
 
 func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_BAN) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_BAN)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_BAN) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_BAN)
 		return
 	}
 
@@ -50,7 +50,7 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 		return
 	}
 
-	if !config.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
+	if !db.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
 		return
 	}
@@ -172,7 +172,7 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not ban %v", unableBan)
 	}
 
-	go s.ChannelMessageSend(m.ChannelID, msg)
+	s.ChannelMessageSend(m.ChannelID, msg)
 
 	if util.IsDevInstance(s) {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Operation completed in %v",

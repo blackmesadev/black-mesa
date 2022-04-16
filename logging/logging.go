@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/discordgo"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func addLog(s *discordgo.Session, guildId string, emoji string, line string, public bool, channelId string) {
-	cfg, err := config.GetConfig(guildId)
+	cfg, err := db.GetConfig(guildId)
 	if err != nil {
 		if err != mongo.ErrNoDocuments {
 			fmt.Printf("couldn't add log for %v: %v\n", guildId, err)
@@ -23,7 +23,7 @@ func addLog(s *discordgo.Session, guildId string, emoji string, line string, pub
 		return
 	}
 
-	go s.ChannelMessageSend(cfg.Modules.Logging.ChannelID, fmt.Sprintf("%v %v", emoji, line))
+	s.ChannelMessageSend(cfg.Modules.Logging.ChannelID, fmt.Sprintf("%v %v", emoji, line))
 
 	// leave disabled for now, we can come back to public humiliation mode another time -L
 	//if public && cfg.Modules.Automod.PublicHumilation {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -48,7 +48,7 @@ func ForceLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Mess
 		return
 	}
 
-	err = config.SetLevel(s, m.GuildID, idList[0], levelInt64)
+	err = db.SetLevel(s, m.GuildID, idList[0], levelInt64)
 
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v `forcelevel <target:user[]> <level:int>`", consts.EMOJI_COMMAND))

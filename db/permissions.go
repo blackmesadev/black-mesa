@@ -1,4 +1,4 @@
-package config
+package db
 
 import (
 	"context"
@@ -93,7 +93,7 @@ func SetLevel(s *discordgo.Session, guildid string, userid string, level int64) 
 	// If level is set to zero or below, just remove it
 	if level > 0 {
 
-		update := &bson.M{"$set": bson.M{"config.levels." + userid: level}}
+		update := &bson.M{"$set": bson.M{"dblevels." + userid: level}}
 
 		_, err := col.UpdateOne(ctx, filters, update)
 		if err != nil {
@@ -104,7 +104,7 @@ func SetLevel(s *discordgo.Session, guildid string, userid string, level int64) 
 		}
 	} else {
 		filter := &bson.M{"guildID": guildid}
-		update := &bson.M{"$unset": bson.M{"config.levels." + userid: 1}}
+		update := &bson.M{"$unset": bson.M{"dblevels." + userid: 1}}
 
 		_, err := col.UpdateOne(ctx, filter, update)
 		if err != nil {
@@ -123,7 +123,7 @@ func SetPermission(s *discordgo.Session, guildid string, permission string, leve
 
 	filters := &bson.M{"guildID": guildid}
 
-	update := &bson.M{"$set": bson.M{"config.permissions." + permission: level}}
+	update := &bson.M{"$set": bson.M{"dbpermissions." + permission: level}}
 
 	_, err := col.UpdateOne(ctx, filters, update)
 	if err != nil {

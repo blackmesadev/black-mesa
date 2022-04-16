@@ -6,10 +6,9 @@ import (
 	"log"
 	"runtime"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
-	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -82,9 +81,9 @@ func processDates(s *discordgo.Session, m *discordgo.Member, maxDifference int64
 }
 
 func processMuted(s *discordgo.Session, ma *discordgo.GuildMemberAdd, conf *structs.Config) {
-	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
+	inst := db.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
-	cur, err := db.Find(context.TODO(), bson.M{
+	cur, err := inst.Find(context.TODO(), bson.M{
 		"guildID": ma.GuildID,
 		"userID":  ma.User.ID,
 		"type":    "mute",
@@ -95,10 +94,10 @@ func processMuted(s *discordgo.Session, ma *discordgo.GuildMemberAdd, conf *stru
 		return
 	}
 
-	var mute *mongodb.Action
+	var mute *db.Action
 
 	for cur.Next(context.TODO()) {
-		mute = &mongodb.Action{}
+		mute = &db.Action{}
 		cur.Decode(mute)
 	}
 

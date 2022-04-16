@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/logging"
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/discordgo"
@@ -32,7 +32,7 @@ func (bot *Bot) OnMessageDelete(s *discordgo.Session, md *discordgo.MessageDelet
 		}
 	}
 
-	conf, err := config.GetConfig(md.GuildID)
+	conf, err := db.GetConfig(md.GuildID)
 	if err != nil || conf == nil {
 		return
 	}

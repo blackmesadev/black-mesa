@@ -46,6 +46,7 @@ type Censor struct {
 	FilterRegex            bool     `json:"filterRegex" bson:"filterRegex"`
 	FilterEnglish          bool     `json:"filterEnglish" bson:"filterEnglish"`
 	FilterObnoxiousUnicode bool     `json:"filterObnoxiousUnicode" bson:"filterObnoxiousUnicode"`
+	FilterUntrustworthy    bool     `json:"filterUntrustworthy" bson:"filterUntrustworthy"`
 	InvitesWhitelist       []string `json:"invitesWhitelist" bson:"invitesWhitelist"`   // slice of invitelinks/ids
 	InvitesBlacklist       []string `json:"invitesBlacklist" bson:"invitesBlacklist"`   // slice of invitelinks/ids
 	DomainWhitelist        []string `json:"domainWhitelist" bson:"domainWhitelist"`     // slice of domains

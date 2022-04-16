@@ -1,4 +1,4 @@
-package config
+package db
 
 import (
 	"fmt"
@@ -87,7 +87,7 @@ func MakeMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messag
 
 	}
 
-	updates, err := db.SetMutedRole(m.GuildID, role.ID)
+	updates, err := SetMutedRole(m.GuildID, role.ID)
 
 	if err != nil {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v Failed to create muted role: `%v`", consts.EMOJI_CROSS, err))

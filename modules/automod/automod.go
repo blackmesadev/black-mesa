@@ -7,12 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/modules/automod/censor"
 	"github.com/blackmesadev/black-mesa/modules/automod/spam"
 	"github.com/blackmesadev/black-mesa/modules/moderation"
+	"github.com/blackmesadev/black-mesa/modules/untrustworthy"
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -116,7 +117,7 @@ func makeCompleteSpamStruct(automod *structs.Automod, channelID string, userLeve
 }
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
-	conf, err := config.GetConfig(m.GuildID)
+	conf, err := db.GetConfig(m.GuildID)
 
 	if conf == nil || err != nil {
 		return
@@ -179,7 +180,7 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		return true, "", 0, filterProcessingStart
 	}
 
-	userLevel := config.GetLevel(s, conf, m.GuildID, m.Author.ID)
+	userLevel := db.GetLevel(s, conf, m.GuildID, m.Author.ID)
 
 	// staff bypass
 	if userLevel >= conf.Modules.Guild.StaffLevel && conf.Modules.Automod.StaffBypass {
@@ -280,6 +281,14 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			matches, ok := censor.RegexCheck(content, censorStruct.Regex)
 			if !ok {
 				return false, fmt.Sprintf("%v (%v)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
+			}
+		}
+
+		// untrustworthy
+		if censorStruct.FilterUntrustworthy {
+			matches, ok := untrustworthy.CheckUntrustworthy(content)
+			if !ok {
+				return false, fmt.Sprintf("%v (%v)", consts.CENSOR_UNTRUSTWORTHY, matches.Type), 1, filterProcessingStart
 			}
 		}
 	}

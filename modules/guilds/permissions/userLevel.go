@@ -3,8 +3,8 @@ package permissions
 import (
 	"fmt"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -17,8 +17,8 @@ func GetUserLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Me
 		idList = append(idList, m.Author.ID)
 	}
 
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWUSERLEVEL) && idList[0] != m.Author.ID {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWUSERLEVEL)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWUSERLEVEL) && idList[0] != m.Author.ID {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWUSERLEVEL)
 		return
 	}
 
@@ -32,7 +32,7 @@ func GetUserLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Me
 	for _, id := range idList {
 		var memberName string
 
-		lvl := config.GetLevel(s, conf, m.GuildID, id)
+		lvl := db.GetLevel(s, conf, m.GuildID, id)
 
 		member, err := s.State.Member(m.GuildID, id)
 		if err != nil {

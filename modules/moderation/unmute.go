@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -15,8 +15,8 @@ import (
 )
 
 func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_UNMUTE) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_UNMUTE)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_UNMUTE) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_UNMUTE)
 		return
 	}
 
@@ -39,7 +39,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		return
 	}
 
-	if !config.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
+	if !db.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
 		s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" You can not target one or more of these users.")
 		return
 	}
@@ -64,7 +64,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	unableUnmute := make([]string, 0)
 	for _, id := range idList {
 
-		muteInfo, err := config.GetMute(m.GuildID, id)
+		muteInfo, err := db.GetMute(m.GuildID, id)
 		if err != nil || muteInfo == nil {
 			if err == mongo.ErrNoDocuments || err == mongo.ErrNilDocument {
 				s.ChannelMessageSend(m.ChannelID, consts.EMOJI_CROSS+" Unable to find associated mute, user is likely not muted. Attempting to unmute anyway.")
@@ -84,7 +84,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 			}
 			logging.LogUnmute(s, m.GuildID, fullName, possibleUser.User, reason)
 
-			config.DeleteMute(m.GuildID, id)
+			db.DeleteMute(m.GuildID, id)
 		}
 	}
 

@@ -1,4 +1,4 @@
-package mongodb
+package db
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func (db *DB) GetConfig(id string) (*structs.Config, error) {
+func GetConfig(id string) (*structs.Config, error) {
 	var config *MongoGuild
 	col := db.client.Database("black-mesa").Collection("guilds")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -27,7 +27,7 @@ func (db *DB) GetConfig(id string) (*structs.Config, error) {
 	return config.Config, nil
 }
 
-func (db *DB) AddConfig(config *MongoGuild) (*mongo.InsertOneResult, error) {
+func AddConfig(config *MongoGuild) (*mongo.InsertOneResult, error) {
 	col := db.client.Database("black-mesa").Collection("guilds")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -35,7 +35,7 @@ func (db *DB) AddConfig(config *MongoGuild) (*mongo.InsertOneResult, error) {
 	return col.InsertOne(ctx, config)
 }
 
-func (db *DB) SetConfig(id string, config *structs.Config) (*mongo.UpdateResult, error) {
+func SetConfig(id string, config *structs.Config) (*mongo.UpdateResult, error) {
 	col := db.client.Database("black-mesa").Collection("guilds")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -45,7 +45,7 @@ func (db *DB) SetConfig(id string, config *structs.Config) (*mongo.UpdateResult,
 	return col.UpdateOne(ctx, filters, config)
 }
 
-func (db *DB) AddAction(punishment *Action) (*mongo.InsertOneResult, error) {
+func AddAction(punishment *Action) (*mongo.InsertOneResult, error) {
 	col := db.client.Database("black-mesa").Collection("actions")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -65,7 +65,7 @@ func (db *DB) AddAction(punishment *Action) (*mongo.InsertOneResult, error) {
 	return results, nil
 }
 
-func (db *DB) GetPunishments(guildid string, userid string) ([]*Action, error) {
+func GetPunishments(guildid string, userid string) ([]*Action, error) {
 	var punishments []*Action
 
 	col := db.client.Database("black-mesa").Collection("actions")
@@ -96,7 +96,7 @@ func (db *DB) GetPunishments(guildid string, userid string) ([]*Action, error) {
 	return punishments, err
 }
 
-func (db *DB) GetBan(guildid string, userid string) (*Action, error) {
+func GetBan(guildid string, userid string) (*Action, error) {
 	var ban *Action
 
 	col := db.client.Database("black-mesa").Collection("actions")
@@ -123,7 +123,7 @@ func (db *DB) GetBan(guildid string, userid string) (*Action, error) {
 	return ban, err
 }
 
-func (db *DB) GetMute(guildid string, userid string) (*Action, error) {
+func GetMute(guildid string, userid string) (*Action, error) {
 	var mute *Action
 
 	col := db.client.Database("black-mesa").Collection("actions")
@@ -150,7 +150,7 @@ func (db *DB) GetMute(guildid string, userid string) (*Action, error) {
 	return mute, err
 }
 
-func (db *DB) GetPunishmentByUUID(guildid string, uuid string) (*Action, error) {
+func GetPunishmentByUUID(guildid string, uuid string) (*Action, error) {
 	var action *Action
 
 	col := db.client.Database("black-mesa").Collection("actions")
@@ -176,7 +176,7 @@ func (db *DB) GetPunishmentByUUID(guildid string, uuid string) (*Action, error) 
 	return action, err
 }
 
-func (db *DB) DeleteMute(guildid string, userid string) (*mongo.DeleteResult, error) {
+func DeleteMute(guildid string, userid string) (*mongo.DeleteResult, error) {
 
 	col := db.client.Database("black-mesa").Collection("actions")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -193,7 +193,7 @@ func (db *DB) DeleteMute(guildid string, userid string) (*mongo.DeleteResult, er
 	return result, err
 }
 
-func (db *DB) RemoveAction(guildid string, uuid string) (*mongo.DeleteResult, error) {
+func RemoveAction(guildid string, uuid string) (*mongo.DeleteResult, error) {
 	col := db.client.Database("black-mesa").Collection("actions")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -209,7 +209,7 @@ func (db *DB) RemoveAction(guildid string, uuid string) (*mongo.DeleteResult, er
 	return deleteResult, nil
 }
 
-func (db *DB) GetActions(guildid string, userid string) ([]*Action, error) {
+func GetActions(guildid string, userid string) ([]*Action, error) {
 	var actions []*Action
 
 	col := db.client.Database("black-mesa").Collection("actions")
@@ -237,7 +237,7 @@ func (db *DB) GetActions(guildid string, userid string) ([]*Action, error) {
 	return actions, err
 }
 
-func (db *DB) GetNonPunishments(guildid string, userid string) ([]*Action, error) {
+func GetNonPunishments(guildid string, userid string) ([]*Action, error) {
 	var actions []*Action
 
 	col := db.client.Database("black-mesa").Collection("actions")
@@ -267,7 +267,7 @@ func (db *DB) GetNonPunishments(guildid string, userid string) ([]*Action, error
 }
 
 // Set funcs
-func (db *DB) SetMutedRole(guildid string, roleid string) (*mongo.UpdateResult, error) {
+func SetMutedRole(guildid string, roleid string) (*mongo.UpdateResult, error) {
 	col := db.client.Database("black-mesa").Collection("guilds")
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -278,7 +278,7 @@ func (db *DB) SetMutedRole(guildid string, roleid string) (*mongo.UpdateResult, 
 		},
 		bson.M{
 			"$set": bson.M{
-				"config.modules.moderation.muteRole": roleid,
+				"dbmodules.moderation.muteRole": roleid,
 			},
 		},
 	)

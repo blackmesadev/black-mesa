@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/structs"
@@ -28,8 +28,8 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	selfSearch := true
 	for _, id := range idList {
 		if id == m.Author.ID {
-			if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCHSELF) {
-				config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCHSELF)
+			if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCHSELF) {
+				db.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCHSELF)
 				return
 			}
 		} else {
@@ -38,8 +38,8 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	}
 
 	if !selfSearch {
-		if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) {
-			config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
+		if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEARCH) {
+			db.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEARCH)
 			return
 		}
 	}
@@ -72,7 +72,7 @@ func SearchCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 
 func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Config, idList []string, censored bool) (*discordgo.Message, error) {
 
-	punishmentList, err := config.GetPunishments(m.GuildID, idList[0])
+	punishmentList, err := db.GetPunishments(m.GuildID, idList[0])
 	if err != nil {
 		log.Println(err)
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> Could not search %v.")
@@ -137,7 +137,7 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 
 func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Config, uuidList []string, censored bool) (*discordgo.Message, error) {
 
-	punishment, err := config.GetPunishmentByUUID(m.GuildID, uuidList[0])
+	punishment, err := db.GetPunishmentByUUID(m.GuildID, uuidList[0])
 	if err != nil {
 		logging.LogError(s, m.GuildID, "", "SearchByUUID", err)
 	}
@@ -192,13 +192,13 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 func ShouldCensor(s *discordgo.Session, conf *structs.Config, guildid string, userid string) bool {
 	if conf == nil {
 		var err error
-		conf, err = config.GetConfig(guildid)
+		conf, err = db.GetConfig(guildid)
 		if err != nil {
 			log.Printf("Failed to get config for %v (%v)\n", guildid, err)
 			return false
 		}
 	}
-	if config.IsStaff(s, conf, guildid, userid) {
+	if db.IsStaff(s, conf, guildid, userid) {
 		return conf.Modules.Moderation.CensorStaffSearches
 	}
 

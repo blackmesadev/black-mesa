@@ -1,12 +1,11 @@
 package roles
 
 import (
-	"github.com/blackmesadev/black-mesa/config"
-	"github.com/blackmesadev/black-mesa/mongodb"
+	"github.com/blackmesadev/black-mesa/db"
 )
 
 func AddTimedRole(guildid string, issuer string, userid string, roleid string, expiry int64) error {
-	punishment := &mongodb.Action{
+	punishment := &db.Action{
 		GuildID: guildid,
 		UserID:  userid,
 		Issuer:  issuer,
@@ -15,12 +14,12 @@ func AddTimedRole(guildid string, issuer string, userid string, roleid string, e
 		Expires: expiry,
 	}
 
-	_, err := config.AddAction(punishment)
+	_, err := db.AddAction(punishment)
 	return err
 }
 
 func AddRole(guildid string, issuer string, userid string, roleid string) error {
-	punishment := &mongodb.Action{
+	punishment := &db.Action{
 		GuildID: guildid,
 		UserID:  userid,
 		Issuer:  issuer,
@@ -28,6 +27,6 @@ func AddRole(guildid string, issuer string, userid string, roleid string) error 
 		Type:    "role",
 	}
 
-	_, err := config.AddAction(punishment)
+	_, err := db.AddAction(punishment)
 	return err
 }

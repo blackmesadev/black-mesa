@@ -1,4 +1,4 @@
-package mongodb
+package db
 
 import (
 	"github.com/blackmesadev/black-mesa/structs"

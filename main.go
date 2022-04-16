@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/blackmesadev/black-mesa/apiwrapper"
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/discord"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/redis"
@@ -21,9 +21,9 @@ func main() {
 
 	fmt.Printf("%v\nBlack Mesa Version %v starting\n", string(startupMsg), info.VERSION)
 
-	configFlat := config.LoadFlatConfig()
+	configFlat := db.LoadFlatConfig()
 
-	config.StartDB(configFlat.Mongo)
+	db.StartDB(configFlat.Mongo)
 	redis.ConnectRedis(configFlat.Redis)
 	apiwrapper.InitAPI(configFlat.API)
 

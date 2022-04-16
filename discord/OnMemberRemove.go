@@ -3,7 +3,7 @@ package discord
 import (
 	"fmt"
 
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/modules/antinuke"
 	"github.com/blackmesadev/discordgo"
 )
@@ -18,13 +18,13 @@ func (bot *Bot) OnMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRem
 		return
 	}
 
-	conf, err := config.GetConfig(m.GuildID)
+	conf, err := db.GetConfig(m.GuildID)
 	if err != nil {
 		return
 	}
 
 	entry := audit.AuditLogEntries[0]
-	userLevel := config.GetLevel(s, conf, m.GuildID, entry.UserID)
+	userLevel := db.GetLevel(s, conf, m.GuildID, entry.UserID)
 
 	anti, ok := conf.Modules.AntiNuke.MemberRemove[userLevel]
 

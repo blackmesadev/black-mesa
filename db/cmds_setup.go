@@ -1,4 +1,4 @@
-package config
+package db
 
 import (
 	"encoding/json"
@@ -27,5 +27,5 @@ func SetupCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, 
 		log.Println(err)
 	}
 
-	s.ChannelFileSend(m.ChannelID, "config.json", strings.NewReader(string(bytes)))
+	s.ChannelFileSend(m.ChannelID, "dbjson", strings.NewReader(string(bytes)))
 }

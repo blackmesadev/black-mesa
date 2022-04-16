@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -16,8 +16,8 @@ import (
 )
 
 func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_KICK) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_KICK)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_KICK) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_KICK)
 		return
 	}
 
@@ -32,7 +32,7 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		return
 	}
 
-	if !config.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
+	if !db.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
 		return
 	}

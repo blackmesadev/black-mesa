@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -14,8 +14,8 @@ import (
 )
 
 func RemoveActionCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_REMOVEACTION) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_REMOVEACTION)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_REMOVEACTION) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_REMOVEACTION)
 		return
 	}
 
@@ -30,7 +30,7 @@ func RemoveActionCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Me
 	unableRemove := make([]string, 0)
 	msg := "<:mesaCheck:832350526729224243> Successfully removed "
 	for _, uuid := range uuidList {
-		deleteResult, err := config.RemoveAction(m.GuildID, uuid)
+		deleteResult, err := db.RemoveAction(m.GuildID, uuid)
 		if err != nil || deleteResult.DeletedCount < 1 {
 			log.Println(err)
 			unableRemove = append(unableRemove, uuid)

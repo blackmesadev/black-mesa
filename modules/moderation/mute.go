@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/logging"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -16,8 +16,8 @@ import (
 )
 
 func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_MUTE) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_MUTE)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_MUTE) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_MUTE)
 		return
 	}
 
@@ -43,7 +43,7 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		return
 	}
 
-	if !config.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
+	if !db.CheckTargets(s, conf, m.GuildID, m.Author.ID, idList) {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> You can not target one or more of these users.")
 		return
 	}
@@ -60,9 +60,9 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		reason = ""
 	}
 
-	conf, err := config.GetConfig(m.GuildID)
+	conf, err := db.GetConfig(m.GuildID)
 	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> Unable to fetch Guild config.")
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> Unable to fetch Guild db")
 		return
 	}
 

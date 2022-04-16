@@ -2,7 +2,7 @@ package discord
 
 import (
 	"github.com/blackmesadev/black-mesa/admin"
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/misc"
 
@@ -26,8 +26,8 @@ func (r *Mux) InitRouter() {
 	r.Route("ping", misc.PingCmd)
 
 	// config
-	r.Route("setup", config.SetupCmd)
-	r.Route("makemute", config.MakeMuteCmd)
+	r.Route("setup", db.SetupCmd)
+	r.Route("makemute", db.MakeMuteCmd)
 
 	// moderation
 	r.Route("kick", moderation.KickCmd)

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
@@ -16,8 +16,8 @@ import (
 )
 
 func PlayCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PLAY) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_PLAY)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PLAY) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_PLAY)
 		return
 	}
 
@@ -51,8 +51,8 @@ func PlayCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func StopCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_STOP) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_STOP)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_STOP) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_STOP)
 		return
 	}
 	if m.GuildID == "" {
@@ -68,8 +68,8 @@ func StopCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func SkipCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SKIP) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SKIP)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SKIP) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_SKIP)
 		return
 	}
 	if m.GuildID == "" {
@@ -81,8 +81,8 @@ func SkipCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func RemoveCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_REMOVE) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_REMOVE)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_REMOVE) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_REMOVE)
 		return
 	}
 	if m.GuildID == "" {
@@ -107,8 +107,8 @@ func RemoveCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 }
 
 func DisconnectCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_DC) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_DC)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_DC) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_DC)
 		return
 	}
 	if m.GuildID == "" {
@@ -125,8 +125,8 @@ func DisconnectCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Mess
 }
 
 func NowPlayingCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_QUERY) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_QUERY)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_QUERY) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_QUERY)
 		return
 	}
 	if m.GuildID == "" {
@@ -139,8 +139,8 @@ func NowPlayingCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Mess
 }
 
 func SeekCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
 		return
 	}
 	if m.GuildID == "" {
@@ -157,8 +157,8 @@ func SeekCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 }
 
 func ForwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
 		return
 	}
 	if m.GuildID == "" {
@@ -190,8 +190,8 @@ func ForwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 }
 
 func BackwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_SEEK) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_SEEK)
 		return
 	}
 	if m.GuildID == "" {
@@ -223,8 +223,8 @@ func BackwardCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messag
 }
 
 func VolumeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VOLUME) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_VOLUME)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VOLUME) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_VOLUME)
 		return
 	}
 	if m.GuildID == "" {
@@ -248,8 +248,8 @@ func VolumeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 }
 
 func QueueCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !config.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_QUERY) {
-		config.NoPermissionHandler(s, m, conf, consts.PERMISSION_QUERY)
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_QUERY) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_QUERY)
 		return
 	}
 	if m.GuildID == "" {

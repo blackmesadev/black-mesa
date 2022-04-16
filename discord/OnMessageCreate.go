@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/blackmesadev/black-mesa/config"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/modules/automod"
 	"github.com/blackmesadev/discordgo"
 )
@@ -82,7 +82,7 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 		}
 	}
 
-	conf, err := config.GetConfig(mc.GuildID)
+	conf, err := db.GetConfig(mc.GuildID)
 	if err != nil || conf == nil {
 		return
 	}

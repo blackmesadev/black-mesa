@@ -7,11 +7,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/logging"
-	"github.com/blackmesadev/black-mesa/mongodb"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
 	"github.com/google/uuid"
@@ -82,7 +81,7 @@ func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, act
 
 func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string) error {
 	infractionUUID := uuid.New().String()
-	strike := &mongodb.Action{
+	strike := &db.Action{
 		GuildID: guildId,
 		UserID:  userId,
 		Issuer:  issuer,
@@ -93,7 +92,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 		UUID:    infractionUUID,
 	}
 
-	_, err := config.AddAction(strike)
+	_, err := db.AddAction(strike)
 
 	if err != nil {
 		return err
@@ -145,14 +144,14 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	}
 
 	// escalate punishments
-	guildConfig, err := config.GetConfig(guildId)
+	guildConfig, err := db.GetConfig(guildId)
 	if err != nil {
 		return err
 	}
 
-	db := config.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
+	inst := db.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
-	strikeDocs, err := db.Find(context.TODO(), bson.M{
+	strikeDocs, err := inst.Find(context.TODO(), bson.M{
 		"guildID": guildId,
 		"userID":  userId,
 		"type":    "strike",
@@ -165,7 +164,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 	strikeTotalWeight := int64(0)
 
 	for strikeDocs.Next(context.TODO()) {
-		doc := mongodb.Action{}
+		doc := db.Action{}
 		strikeDocs.Decode(&doc)
 		strikeTotalWeight += doc.Weight
 	}

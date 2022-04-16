@@ -3,15 +3,14 @@ package moderation
 import (
 	"fmt"
 
-	"github.com/blackmesadev/black-mesa/config"
-	"github.com/blackmesadev/black-mesa/mongodb"
+	"github.com/blackmesadev/black-mesa/db"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func AddTimedBan(guildid string, issuer string, userid string, expiry int64, reason string, uuid string) (BanResult, error) {
 	res := BanSuccess
 
-	currentBan, err := config.GetBan(guildid, userid)
+	currentBan, err := db.GetBan(guildid, userid)
 	if err != nil && err != mongo.ErrNoDocuments {
 		return BanFailed, err
 	}
@@ -23,7 +22,7 @@ func AddTimedBan(guildid string, issuer string, userid string, expiry int64, rea
 		}
 	}
 
-	punishment := &mongodb.Action{
+	punishment := &db.Action{
 		GuildID: guildid,
 		UserID:  userid,
 		Issuer:  issuer,
@@ -33,7 +32,7 @@ func AddTimedBan(guildid string, issuer string, userid string, expiry int64, rea
 		UUID:    uuid,
 	}
 
-	_, err = config.AddAction(punishment)
+	_, err = db.AddAction(punishment)
 	if err != nil {
 		return BanFailed, err
 	}
@@ -44,7 +43,7 @@ func AddTimedBan(guildid string, issuer string, userid string, expiry int64, rea
 func AddTimedMute(guildid string, issuer string, userid string, roleid string, expiry int64, reason string, uuid string) (MuteResult, error) {
 	res := MuteSuccess
 
-	currentMute, err := config.GetMute(guildid, userid)
+	currentMute, err := db.GetMute(guildid, userid)
 	if err != nil && err != mongo.ErrNoDocuments {
 		return MuteFailed, err
 	}
@@ -56,9 +55,9 @@ func AddTimedMute(guildid string, issuer string, userid string, roleid string, e
 		}
 	}
 
-	config.DeleteMute(guildid, userid) // delete existing mutes
+	db.DeleteMute(guildid, userid) // delete existing mutes
 
-	punishment := &mongodb.Action{
+	punishment := &db.Action{
 		GuildID: guildid,
 		UserID:  userid,
 		Issuer:  issuer,
@@ -69,7 +68,7 @@ func AddTimedMute(guildid string, issuer string, userid string, roleid string, e
 		UUID:    uuid,
 	}
 
-	_, err = config.AddAction(punishment)
+	_, err = db.AddAction(punishment)
 
 	if err != nil {
 		return MuteFailed, err
@@ -79,7 +78,7 @@ func AddTimedMute(guildid string, issuer string, userid string, roleid string, e
 }
 
 func AddKick(guildid string, issuer string, userid string, reason string, uuid string) error {
-	punishment := &mongodb.Action{
+	punishment := &db.Action{
 		GuildID: guildid,
 		UserID:  userid,
 		Issuer:  issuer,
@@ -88,6 +87,6 @@ func AddKick(guildid string, issuer string, userid string, reason string, uuid s
 		UUID:    uuid,
 	}
 
-	_, err := config.AddAction(punishment)
+	_, err := db.AddAction(punishment)
 	return err
 }

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/blackmesadev/black-mesa/config"
 	"github.com/blackmesadev/black-mesa/consts"
+	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/modules/music"
 	"github.com/blackmesadev/black-mesa/util"
@@ -32,7 +32,7 @@ func (bot *Bot) OnReady(s *discordgo.Session, r *discordgo.Ready) {
 		Status: fmt.Sprintf("Black Mesa %v", info.VERSION),
 	})
 
-	music.LavalinkInit(r, config.LoadLavalinkConfig())
+	music.LavalinkInit(r, db.LoadLavalinkConfig())
 
 	fmt.Printf("Black Mesa ready at %v\nGuilds: %v\nRunning on account ID %v (%v).",
 		time.Now().UTC(), len(r.Guilds), r.User.ID, r.User.String())
