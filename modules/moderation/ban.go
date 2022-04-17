@@ -112,15 +112,17 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 			if err != nil {
 				unableBan[id] = err
 			} else {
-				if !largeBan {
-					bannedUsers = append(bannedUsers, "<@"+id+">")
-				}
+
 				res, err := AddTimedBan(m.GuildID, m.Author.ID, id, duration, reason, infractionUUID)
 				if err != nil {
 					unableBan[id] = err
 				}
-				if res == BanAlreadyBanned {
-					updatedBans = append(updatedBans, "<@"+id+">")
+				if !largeBan {
+					if res == BanAlreadyBanned {
+						updatedBans = append(updatedBans, "<@"+id+">")
+					} else {
+						bannedUsers = append(bannedUsers, "<@"+id+">")
+					}
 				}
 			}
 
@@ -147,7 +149,7 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 	if len(bannedUsers) > 0 {
 		msg = "<:mesaCheck:832350526729224243> Successfully banned " + strings.Join(bannedUsers, ", ")
 		if len(updatedBans) > 0 {
-			msg += " and updated the mute for " + strings.Join(updatedBans, ", ")
+			msg += " and updated the ban for " + strings.Join(updatedBans, ", ")
 		}
 	} else if len(updatedBans) > 0 {
 		msg = "<:mesaCheck:832350526729224243> Successfully updated the ban for " + strings.Join(updatedBans, ", ")
