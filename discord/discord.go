@@ -24,6 +24,7 @@ type Bot struct {
 	Token   string `json:"token"`
 	Version string
 	Router  *Mux
+	Regex   *Regex
 }
 
 func CreateBot(token string) *Bot {

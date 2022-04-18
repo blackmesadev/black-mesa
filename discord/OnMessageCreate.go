@@ -1,9 +1,7 @@
 package discord
 
 import (
-	"fmt"
 	"log"
-	"regexp"
 	"strings"
 
 	"github.com/blackmesadev/black-mesa/db"
@@ -64,10 +62,8 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 
 				ctx.IsDirected, ctx.HasMention = true, true
 
-				reg := regexp.MustCompile(fmt.Sprintf("<@!?(%s)>", s.State.User.ID))
-
 				// Was the @mention the first part of the string?
-				mentionSearch := reg.FindStringIndex(ctx.Content)
+				mentionSearch := bot.Regex.SelfMention.FindStringIndex(ctx.Content)
 				if len(mentionSearch) > 0 {
 					if mentionSearch[0] == 0 {
 						ctx.HasMentionFirst = true
@@ -75,7 +71,7 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 				}
 
 				// strip bot mention tags from content string
-				ctx.Content = reg.ReplaceAllString(ctx.Content, "")
+				ctx.Content = bot.Regex.SelfMention.ReplaceAllString(ctx.Content, "")
 
 				break
 			}

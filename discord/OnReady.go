@@ -7,6 +7,7 @@ import (
 	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/db"
 	"github.com/blackmesadev/black-mesa/info"
+	"github.com/blackmesadev/black-mesa/modules/automod/censor"
 	"github.com/blackmesadev/black-mesa/modules/music"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
@@ -33,6 +34,9 @@ func (bot *Bot) OnReady(s *discordgo.Session, r *discordgo.Ready) {
 	})
 
 	music.LavalinkInit(r, db.LoadLavalinkConfig())
+
+	bot.InitRegex()
+	censor.StartFlushRegexCache()
 
 	fmt.Printf("Black Mesa ready at %v\nGuilds: %v\nRunning on account ID %v (%v).",
 		time.Now().UTC(), len(r.Guilds), r.User.ID, r.User.String())
