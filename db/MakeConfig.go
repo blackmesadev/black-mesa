@@ -1,6 +1,7 @@
 package db
 
 import (
+	"github.com/blackmesadev/black-mesa/consts"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
 )
@@ -21,16 +22,17 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	}
 
 	perms := make(map[string]int64)
-	perms["guild"] = 0
-	perms["admin"] = 100
-	perms["moderation"] = 50
-	perms["roles"] = 100
-	perms["logging"] = 100
+	perms[consts.CATEGORY_MODERATION] = 50
+	perms[consts.CATEGORY_ADMIN] = 100
+	perms[consts.CATEGORY_GUILD] = 100
+	perms[consts.CATEGORY_ROLES] = 100
+	perms[consts.CATEGORY_MUSIC] = 10
 
 	emptyMap := make(map[string]string)
 	emptySlice := make([]string, 0)
 
-	persist := &structs.Persistance{Roles: false,
+	persist := &structs.Persistance{
+		Roles:            false,
 		WhitelistedRoles: emptySlice,
 		Nickname:         false,
 		Voice:            false,
@@ -40,6 +42,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		Channel: make(map[string]*structs.ReactRoleChannel),
 	}
 
+	// fill structs.guild
 	guild := &structs.Guild{
 		ConfirmActions:      false,
 		RoleAliases:         emptyMap,
@@ -49,37 +52,45 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		AutoRole:            emptySlice,
 		ReactRoles:          reactRoles,
 		UnsafePermissions:   false,
+		StaffLevel:          50,
 	}
 	defaultSpam := &structs.Spam{
-		Punishment:         "N0NE",
-		PunishmentDuration: 0,
-		Count:              0,
-		Interval:           0,
-		MaxMessages:        0,
-		MaxMentions:        0,
-		MaxLinks:           0,
-		MaxAttachments:     0,
-		MaxEmojis:          0,
-		MaxNewlines:        0,
-		MaxDuplicates:      0,
-		Clean:              false,
-		CleanCount:         0,
-		CleanDuration:      0,
+		Punishment:          "N0NE",
+		PunishmentDuration:  0,
+		Count:               0,
+		Interval:            0,
+		MaxMessages:         0,
+		MaxMentions:         0,
+		MaxLinks:            0,
+		MaxAttachments:      0,
+		MaxEmojis:           0,
+		MaxNewlines:         0,
+		MaxDuplicates:       0,
+		MaxCharacters:       0,
+		MaxUppercasePercent: 0,
+		MinUppercaseLimit:   0,
+		Clean:               false,
+		CleanCount:          0,
+		CleanDuration:       0,
 	}
 
 	defaultCensor := &structs.Censor{
-		FilterZalgo:       true,
-		FilterInvites:     true,
-		FilterDomains:     false,
-		FilterStrings:     true,
-		FilterRegex:       false,
-		InvitesWhitelist:  emptySlice,
-		InvitesBlacklist:  emptySlice,
-		DomainWhitelist:   emptySlice,
-		DomainBlacklist:   emptySlice,
-		BlockedSubstrings: emptySlice,
-		BlockedStrings:    emptySlice,
-		Regex:             "",
+		FilterZalgo:            true,
+		FilterInvites:          true,
+		FilterDomains:          false,
+		FilterStrings:          true,
+		FilterIPs:              false,
+		FilterRegex:            false,
+		FilterEnglish:          false,
+		FilterObnoxiousUnicode: false,
+		FilterUntrustworthy:    true,
+		InvitesWhitelist:       emptySlice,
+		InvitesBlacklist:       emptySlice,
+		DomainWhitelist:        emptySlice,
+		DomainBlacklist:        emptySlice,
+		BlockedSubstrings:      emptySlice,
+		BlockedStrings:         emptySlice,
+		Regex:                  "",
 	}
 
 	censorlvls := make(map[int64]*structs.Censor)
@@ -89,15 +100,21 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	spamlvls[0] = defaultSpam
 
 	automod := &structs.Automod{
+		Enabled: false,
+		GuildOptions: &structs.GuildOptions{
+			MinimumAccountAge: "1w",
+		},
 		CensorLevels:   censorlvls,
 		CensorChannels: make(map[string]*structs.Censor),
 		SpamLevels:     spamlvls,
 		SpamChannels:   make(map[string]*structs.Spam),
 
 		PublicHumilation: false,
+		StaffBypass:      true,
 	}
 
 	logs := &structs.Logging{
+		Enabled:            false,
 		ChannelID:          "",
 		IncludeActions:     emptySlice,
 		ExcludeActions:     emptySlice,
@@ -111,6 +128,8 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 	strikeEscalation := make(map[int64]structs.StrikeEscalation)
 
 	moderation := &structs.Moderation{
+		CensorSearches:              true,
+		CensorStaffSearches:         true,
 		ConfirmActionsMessage:       true,
 		ConfirmActionsMessageExpiry: 0,
 		ConfirmActionsReaction:      false,
@@ -124,11 +143,23 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		StrikeCushioning:            3,
 	}
 
+	memberRemove := make(map[int64]structs.AntiNukeThreshold, 0)
+	memberRemove[0] = structs.AntiNukeThreshold{
+		Max:      5,
+		Interval: 10,
+		Type:     "ban",
+	}
+	an := &structs.AntiNuke{
+		Enabled:      false,
+		MemberRemove: memberRemove,
+	}
+
 	mods := &structs.Modules{
 		Guild:      guild,
 		Automod:    automod,
 		Logging:    logs,
 		Moderation: moderation,
+		AntiNuke:   an,
 	}
 
 	config := &structs.Config{
@@ -138,8 +169,7 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		Prefix:      "!",
 		Permissions: perms,
 		Levels:      lvls,
-
-		Modules: mods,
+		Modules:     mods,
 	}
 
 	return config
