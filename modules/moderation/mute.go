@@ -60,12 +60,6 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		reason = ""
 	}
 
-	conf, err := db.GetConfig(m.GuildID)
-	if err != nil {
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> Unable to fetch Guild db")
-		return
-	}
-
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
 	roleid := conf.Modules.Moderation.MuteRole
@@ -156,7 +150,7 @@ func MuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 	}
 
 	if len(unableMute) != 0 {
-		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not mute %v for reason `%v`", unableMute, err)
+		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not mute %v users.", len(unableMute))
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)
