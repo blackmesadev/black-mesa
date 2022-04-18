@@ -10,5 +10,7 @@ type Regex struct {
 }
 
 func (b *Bot) InitRegex() {
-	b.Regex.SelfMention = regexp.MustCompile(fmt.Sprintf("<@!?(%s)>", b.Session.State.User.ID))
+	b.Regex = &Regex{
+		SelfMention: regexp.MustCompile(fmt.Sprintf("<@!?(%s)>", b.Session.State.User.ID)),
+	}
 }
