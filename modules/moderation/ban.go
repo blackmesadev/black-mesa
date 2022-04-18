@@ -171,7 +171,7 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 	}
 
 	if len(unableBan) != 0 {
-		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not ban %v", unableBan)
+		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not ban %v users.", len(unableBan))
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)
