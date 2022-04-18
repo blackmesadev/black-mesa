@@ -6,8 +6,8 @@ import (
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/discordgo"
 	"github.com/go-redis/redis/v8"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 var r *redis.Client
