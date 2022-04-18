@@ -2,7 +2,6 @@ package moderation
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -54,7 +53,7 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 	msg := "<:mesaCheck:832350526729224243> Successfully kicked "
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
-	unableKick := make([]string, 0)
+	unableKick := make(map[string]error, 0)
 	for _, id := range idList {
 		infractionUUID := uuid.New().String()
 
@@ -62,8 +61,7 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		if err == discordgo.ErrStateNotFound {
 			member, err = s.GuildMember(m.GuildID, id)
 			if err != nil {
-				log.Println(err)
-				unableKick = append(unableKick, id)
+				unableKick[id] = err
 			}
 		}
 		guild, err := s.Guild(m.GuildID)
@@ -73,7 +71,7 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		err = s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
 
 		if err != nil {
-			unableKick = append(unableKick, id)
+			unableKick[id] = err
 		} else {
 			msg += fmt.Sprintf("<@%v> ", id)
 			AddKick(m.GuildID, m.Author.ID, id, reason, infractionUUID)
@@ -86,7 +84,7 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 	}
 
 	if len(unableKick) != 0 {
-		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not kick %v", unableKick)
+		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not kick %v users.", len(unableKick))
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)
