@@ -31,14 +31,14 @@ func CalcStats(s *discordgo.Session) {
 				usedMem = 0
 			}
 
-			// convert to float
-			usedMem, err = strconv.ParseFloat(string(m), 64)
+			// convert to int
+			memInt, err := strconv.Atoi(string(m))
 			if err != nil {
 				usedMem = 0
 			}
 			// convert bytes to MB
 			if usedMem > 0 {
-				usedMem = usedMem / 1024 / 1024
+				usedMem = float64(memInt) / 1024 / 1024
 			}
 
 			// Discord stats
