@@ -1,13 +1,13 @@
 package util
 
 import (
+	"io/ioutil"
+	"strconv"
 	"time"
 
 	bmRedis "github.com/blackmesadev/black-mesa/redis"
 	"github.com/blackmesadev/discordgo"
 	"github.com/go-redis/redis/v8"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 )
 
 var r *redis.Client
@@ -22,19 +22,24 @@ func CalcStats(s *discordgo.Session) {
 		select {
 		case <-ticker.C:
 			// Sys Stats
-			v, _ := mem.VirtualMemory()
+			// read from /sys/fs/cgroup/memory/memory.usage_in_bytes
 
-			usedMem := v.UsedPercent
-
-			c, _ := cpu.Percent(time.Duration(1*time.Second), true)
-
-			var usedCpu float64
-
-			for _, i := range c {
-				usedCpu += i
+			var usedMem float64
+			// open file
+			m, err := ioutil.ReadFile("/sys/fs/cgroup/memory/memory.usage_in_bytes")
+			if err != nil {
+				usedMem = 0
 			}
 
-			usedCpu /= float64(len(c))
+			// convert to float
+			usedMem, err = strconv.ParseFloat(string(m), 64)
+			if err != nil {
+				usedMem = 0
+			}
+			// convert bytes to MB
+			if usedMem > 0 {
+				usedMem = usedMem / 1024 / 1024
+			}
 
 			// Discord stats
 
@@ -47,8 +52,6 @@ func CalcStats(s *discordgo.Session) {
 			// Send everything to Redis
 
 			r.Set(r.Context(), "usedMem", usedMem, time.Minute)
-
-			r.Set(r.Context(), "usedCpu", usedCpu, time.Minute)
 
 			r.Set(r.Context(), "memberCount", memberCount, time.Minute)
 		}

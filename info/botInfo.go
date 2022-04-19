@@ -34,13 +34,6 @@ func BotInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 		usedMem = 0
 	}
 
-	cpuResult := r.Get(r.Context(), "usedCpu")
-	usedCpu, err := cpuResult.Float64()
-
-	if err != nil {
-		usedCpu = 0
-	}
-
 	membersResult := r.Get(r.Context(), "memberCount")
 	membersNum, err := membersResult.Int()
 
@@ -75,12 +68,7 @@ func BotInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 		},
 		{
 			Name:   "Memory Usage",
-			Value:  fmt.Sprintf("%.3f", usedMem) + "% Used",
-			Inline: true,
-		},
-		{
-			Name:   "CPU Usage",
-			Value:  fmt.Sprintf("%.3f", usedCpu) + "% Used",
+			Value:  fmt.Sprintf("%.3f", usedMem) + "MB Used",
 			Inline: true,
 		},
 	}
