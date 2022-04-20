@@ -278,7 +278,7 @@ func SetMutedRole(guildid string, roleid string) (*mongo.UpdateResult, error) {
 		},
 		bson.M{
 			"$set": bson.M{
-				"dbmodules.moderation.muteRole": roleid,
+				"config.modules.moderation.muteRole": roleid,
 			},
 		},
 	)
