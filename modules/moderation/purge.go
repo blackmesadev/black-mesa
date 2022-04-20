@@ -19,7 +19,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var OngoingPurges map[string]map[string]chan struct{}
+var OngoingPurges = make(map[string]map[string]chan struct{})
 
 func PurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE) {
