@@ -546,6 +546,7 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 	// first get the remainder of 100 because thats the max we can do at one time then do 100 each time.
 	requestAmount := msgLimit % 100
 	for count < msgLimit {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
 		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
