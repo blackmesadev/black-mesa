@@ -62,6 +62,7 @@ func (bot *Bot) Start() {
 	bot.Session.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsAll)
 
 	bot.Session.State.TrackPresences = false
+	bot.Session.State.MaxMessageCount = 25000
 
 	err = bot.Session.Open()
 	if err != nil {
