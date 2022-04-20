@@ -19,6 +19,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var OngoingPurges map[string]map[string]chan struct{}
+
 func PurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE) {
 		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE)
@@ -145,33 +147,39 @@ func PurgeAttachments(s *discordgo.Session, m *discordgo.Message, msgLimit int) 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
 
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		msgIDList := make([]string, 0)
-		for _, msg := range msgList {
-			lastID = msg.ID
-			if len(msg.Attachments) > 0 {
-				msgIDList = append(msgIDList, msg.ID)
-				count++
-				if count == msgLimit {
-					break
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			msgIDList := make([]string, 0)
+			for _, msg := range msgList {
+				lastID = msg.ID
+				if len(msg.Attachments) > 0 {
+					msgIDList = append(msgIDList, msg.ID)
+					count++
+					if count == msgLimit {
+						break
+					}
 				}
 			}
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				log.Println(err, msgIDList)
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
+			// Update at the end with newest count before waiting and deleting
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			log.Println(err, msgIDList)
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
-		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -195,33 +203,39 @@ func PurgeBot(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
 
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		msgIDList := make([]string, 0)
-		for _, msg := range msgList {
-			lastID = msg.ID
-			if msg.Author.Bot || msg.Author.System {
-				msgIDList = append(msgIDList, msg.ID)
-				count++
-				if count == msgLimit {
-					break
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			msgIDList := make([]string, 0)
+			for _, msg := range msgList {
+				lastID = msg.ID
+				if msg.Author.Bot || msg.Author.System {
+					msgIDList = append(msgIDList, msg.ID)
+					count++
+					if count == msgLimit {
+						break
+					}
 				}
 			}
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				log.Println(err, msgIDList)
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
+			// Update at the end with newest count before waiting and deleting
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			log.Println(err, msgIDList)
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
-		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -245,34 +259,40 @@ func PurgeImage(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
 
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		msgIDList := make([]string, 0)
-		for _, msg := range msgList {
-			lastID = msg.ID
-			if util.CheckForImage(msg) {
-				msgIDList = append(msgIDList, msg.ID)
-				count++
-				if count == msgLimit {
-					break
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			msgIDList := make([]string, 0)
+			for _, msg := range msgList {
+				lastID = msg.ID
+				if util.CheckForImage(msg) {
+					msgIDList = append(msgIDList, msg.ID)
+					count++
+					if count == msgLimit {
+						break
+					}
 				}
 			}
-		}
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			log.Println(err, msgIDList)
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				log.Println(err, msgIDList)
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
 
-		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+			// Update at the end with newest count before waiting and deleting
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+		}
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -296,33 +316,39 @@ func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filte
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
 
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		msgIDList := make([]string, 0)
-		for _, msg := range msgList {
-			lastID = msg.ID
-			if strings.Contains(strings.ToLower(msg.Content), filter) {
-				msgIDList = append(msgIDList, msg.ID)
-				count++
-				if count == msgLimit {
-					break
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			msgIDList := make([]string, 0)
+			for _, msg := range msgList {
+				lastID = msg.ID
+				if strings.Contains(strings.ToLower(msg.Content), filter) {
+					msgIDList = append(msgIDList, msg.ID)
+					count++
+					if count == msgLimit {
+						break
+					}
 				}
 			}
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				log.Println(err, msgIDList)
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
+			// Update at the end with newest count before waiting and deleting
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages by `%v`... [%v/%v]", filter, count, msgLimit))
 		}
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			log.Println(err, msgIDList)
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
-		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages by `%v`... [%v/%v]", filter, count, msgLimit))
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -346,36 +372,42 @@ func PurgeUser(s *discordgo.Session, m *discordgo.Message, msgLimit int, ids []s
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
 
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		msgIDList := make([]string, 0)
-		for _, msg := range msgList {
-			lastID = msg.ID
-			for _, id := range ids {
-				if msg.Author.ID == id {
-					msgIDList = append(msgIDList, msg.ID)
-					count++
-					if count == msgLimit {
-						break
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			msgIDList := make([]string, 0)
+			for _, msg := range msgList {
+				lastID = msg.ID
+				for _, id := range ids {
+					if msg.Author.ID == id {
+						msgIDList = append(msgIDList, msg.ID)
+						count++
+						if count == msgLimit {
+							break
+						}
 					}
 				}
 			}
-		}
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			log.Println(err, msgIDList)
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				log.Println(err, msgIDList)
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
 
-		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+			// Update at the end with newest count before waiting and deleting
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+		}
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -399,34 +431,40 @@ func PurgeUsers(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
 
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		msgIDList := make([]string, 0)
-		for _, msg := range msgList {
-			lastID = msg.ID
-			if !msg.Author.Bot {
-				msgIDList = append(msgIDList, msg.ID)
-				count++
-				if count == msgLimit {
-					break
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			msgIDList := make([]string, 0)
+			for _, msg := range msgList {
+				lastID = msg.ID
+				if !msg.Author.Bot {
+					msgIDList = append(msgIDList, msg.ID)
+					count++
+					if count == msgLimit {
+						break
+					}
 				}
 			}
-		}
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			log.Println(err, msgIDList)
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				log.Println(err, msgIDList)
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
 
-		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+			// Update at the end with newest count before waiting and deleting
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+		}
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -450,33 +488,39 @@ func PurgeVideo(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
 
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		msgIDList := make([]string, 0)
-		for _, msg := range msgList {
-			lastID = msg.ID
-			if util.CheckForVideo(msg) {
-				msgIDList = append(msgIDList, msg.ID)
-				count++
-				if count == msgLimit {
-					break
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, 100, lastID, "", "")
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			msgIDList := make([]string, 0)
+			for _, msg := range msgList {
+				lastID = msg.ID
+				if util.CheckForVideo(msg) {
+					msgIDList = append(msgIDList, msg.ID)
+					count++
+					if count == msgLimit {
+						break
+					}
 				}
 			}
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				log.Println(err, msgIDList)
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
+			// Update at the end with newest count before waiting and deleting
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			log.Println(err, msgIDList)
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
-		// Update at the end with newest count before waiting and deleting
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 	}
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -502,34 +546,40 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 	// first get the remainder of 100 because thats the max we can do at one time then do 100 each time.
 	requestAmount := msgLimit % 100
 	for count < msgLimit {
-		msgList, err := s.ChannelMessages(m.ChannelID, requestAmount, lastID, "", "")
-		msgIDList := make([]string, len(msgList))
-		for i, msg := range msgList {
-			msgIDList[i] = msg.ID
-		}
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		}
-		if len(msgList) == 0 {
+		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
+		select {
+		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
-		}
-		lastID = msgList[len(msgList)-1].ID
-		err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
-		if err != nil {
-			misc.ErrorHandler(s, m.ChannelID, err)
-			return allMessages
-		} else {
-			allMessages = append(allMessages, msgList...)
-		}
-		count += len(msgList)
-		if count == msgLimit {
-			break
-		}
-		s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
+		default:
+			msgList, err := s.ChannelMessages(m.ChannelID, requestAmount, lastID, "", "")
+			msgIDList := make([]string, len(msgList))
+			for i, msg := range msgList {
+				msgIDList[i] = msg.ID
+			}
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			}
+			if len(msgList) == 0 {
+				break
+			}
+			lastID = msgList[len(msgList)-1].ID
+			err = s.ChannelMessagesBulkDelete(m.ChannelID, msgIDList)
+			if err != nil {
+				misc.ErrorHandler(s, m.ChannelID, err)
+				return allMessages
+			} else {
+				allMessages = append(allMessages, msgList...)
+			}
+			count += len(msgList)
+			if count == msgLimit {
+				break
+			}
+			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 
-		// now we've done remainder, we can do 100 each time
-		requestAmount = 100
+			// now we've done remainder, we can do 100 each time
+			requestAmount = 100
+		}
 	}
 	// Update at the end with newest count before waiting and deleting
 	s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
@@ -539,4 +589,36 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
 
 	return allMessages
+}
+
+func CancelPurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	//check permission
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE)
+		return
+	}
+
+	if _, ok := OngoingPurges[m.ChannelID][m.Author.ID]; ok {
+		close(OngoingPurges[m.ChannelID][m.Author.ID])
+		delete(OngoingPurges[m.ChannelID], m.Author.ID)
+		s.ChannelMessageSend(m.ChannelID, "Purge cancelled.")
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "No purge in progress.")
+	}
+}
+
+func CancelAllPurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
+	//check permission
+	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE_ALL) {
+		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE_ALL)
+		return
+	}
+
+	if _, ok := OngoingPurges[m.ChannelID][m.Author.ID]; ok {
+		close(OngoingPurges[m.ChannelID][m.Author.ID])
+		delete(OngoingPurges[m.ChannelID], m.Author.ID)
+		s.ChannelMessageSend(m.ChannelID, "Purge cancelled.")
+	} else {
+		s.ChannelMessageSend(m.ChannelID, "No purge in progress.")
+	}
 }

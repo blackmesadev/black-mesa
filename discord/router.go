@@ -39,6 +39,8 @@ func (r *Mux) InitRouter() {
 	r.Route("strike", moderation.StrikeCmd)
 	r.Route("search", moderation.SearchCmd)
 	r.Route("purge", moderation.PurgeCmd)
+	r.Route("cancelpurge", moderation.CancelPurgeCmd)
+	r.Route("purgecancel", moderation.CancelPurgeCmd)
 	r.Route("clean", moderation.PurgeCmd)
 
 	// trusted moderation
@@ -102,4 +104,5 @@ func (r *Mux) InitRouter() {
 	r.Route("skip", music.SkipCmd)
 
 	r.Route("remove", music.RemoveCmd)
+
 }
