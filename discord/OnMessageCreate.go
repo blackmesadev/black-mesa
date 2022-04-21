@@ -80,7 +80,7 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 
 	conf, err := db.GetConfig(mc.GuildID)
 	if err != nil || conf == nil {
-		return
+		conf = nil
 	}
 
 	if !ctx.IsDirected && len(conf.Prefix) > 0 {
@@ -96,6 +96,13 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 
 	r, params, args := bot.Router.Match(ctx.Content)
 	if r != nil {
+		if conf == nil {
+			if (r.Pattern == "setup" || r.Pattern == "ping") && !ctx.IsPrivate {
+				ctx.Fields = params
+				r.Run(s, conf, mc.Message, ctx, args)
+			}
+			return
+		}
 		ctx.Fields = params
 		r.Run(s, conf, mc.Message, ctx, args)
 		return
