@@ -170,14 +170,17 @@ func CheckPermission(s *discordgo.Session, conf *structs.Config, guildid string,
 		}
 	}
 
-	permissionValue, err := GetPermission(s, conf, guildid, permission)
-	if err != nil {
-		return conf.Modules.Guild.UnsafePermissions
+	if conf != nil {
+		permissionValue, err := GetPermission(s, conf, guildid, permission)
+		if err != nil {
+			return conf.Modules.Guild.UnsafePermissions
+		}
+		userLevel := GetLevel(s, conf, guildid, userid)
+
+		return userLevel >= permissionValue
 	}
-	userLevel := GetLevel(s, conf, guildid, userid)
 
-	return userLevel >= permissionValue
-
+	return false
 }
 
 func CheckTargets(s *discordgo.Session, conf *structs.Config, guildid string, actioner string, targets []string) bool {
