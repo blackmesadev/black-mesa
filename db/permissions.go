@@ -196,8 +196,12 @@ func CheckTargets(s *discordgo.Session, conf *structs.Config, guildid string, ac
 }
 
 func NoPermissionHandler(s *discordgo.Session, m *discordgo.Message, conf *structs.Config, permission string) {
-	if conf.Modules.Moderation.DisplayNoPermission {
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCross:832350526414127195> You do not have permission to `%v`.", permission))
+	if conf != nil {
+		if conf.Modules.Moderation.DisplayNoPermission {
+			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCross:832350526414127195> You do not have permission to `%v`.", permission))
+		}
+	} else {
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCross:832350526414127195> You do not have permission to `%v`. (WARNING - NO CONFIG)", permission))
 	}
 }
 
