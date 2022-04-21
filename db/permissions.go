@@ -180,6 +180,24 @@ func CheckPermission(s *discordgo.Session, conf *structs.Config, guildid string,
 		return userLevel >= permissionValue
 	}
 
+	// final resort - check if they're the owner of the server
+	var guild *discordgo.Guild
+	guild, err = s.State.Guild(guildid)
+	if err != nil {
+		if err == discordgo.ErrStateNotFound {
+			guild, err = s.Guild(guildid)
+			if err != nil {
+				log.Println(err)
+				return false
+			}
+			s.State.GuildAdd(guild)
+		}
+	}
+
+	if guild.OwnerID == userid {
+		return true
+	}
+
 	return false
 }
 
