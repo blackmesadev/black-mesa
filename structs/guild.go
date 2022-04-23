@@ -143,8 +143,9 @@ type VoteMute struct {
 }
 
 type Voting struct {
-	UpvoteEmoji string    `json:"upvoteEmoji" bson:"upvoteEmoji"`
-	VoteMute    *VoteMute `json:"voteMute" bson:"voteMute"`
+	UpvoteEmoji   string    `json:"upvoteEmoji" bson:"upvoteEmoji"`
+	UpvoteEmojiID string    `json:"upvoteEmojiId" bson:"upvoteEmojiId"`
+	VoteMute      *VoteMute `json:"voteMute" bson:"voteMute"`
 }
 
 type Modules struct {
