@@ -22,8 +22,9 @@ import (
 var OngoingPurges = make(map[string]map[string]chan struct{})
 
 func PurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE) {
-		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE)
+	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE)
+	if !allowed {
+		db.NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 
@@ -594,8 +595,9 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 
 func CancelPurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	//check permission
-	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE) {
-		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE)
+	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE)
+	if !allowed {
+		db.NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 
@@ -610,8 +612,9 @@ func CancelPurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Mes
 
 func CancelAllPurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	//check permission
-	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE_ALL) {
-		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_PURGE_ALL)
+	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE)
+	if !allowed {
+		db.NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 

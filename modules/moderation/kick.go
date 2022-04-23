@@ -15,8 +15,9 @@ import (
 )
 
 func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_KICK) {
-		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_KICK)
+	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_KICK)
+	if !allowed {
+		db.NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 

@@ -9,8 +9,9 @@ import (
 )
 
 func MakeMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_MAKEMUTE) {
-		NoPermissionHandler(s, m, conf, consts.PERMISSION_MAKEMUTE)
+	perm, allowed := CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_MAKEMUTE)
+	if !allowed {
+		NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 

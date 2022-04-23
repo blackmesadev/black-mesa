@@ -19,8 +19,9 @@ import (
 )
 
 func BanFileCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_BANFILE) && !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_BAN) {
-		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_BANFILE)
+	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, []string{consts.PERMISSION_BAN, consts.PERMISSION_BANFILE})
+	if !allowed {
+		db.NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 

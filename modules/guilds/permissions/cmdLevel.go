@@ -10,8 +10,9 @@ import (
 )
 
 func GetCommandLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
-	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWCMDLEVEL) {
-		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWCMDLEVEL)
+	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWCMDLEVEL)
+	if !allowed {
+		db.NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 	msg := "```\nCommand Permission Levels:\n"

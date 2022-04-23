@@ -17,8 +17,9 @@ func GetUserLevelCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Me
 		idList = append(idList, m.Author.ID)
 	}
 
-	if !db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWUSERLEVEL) && idList[0] != m.Author.ID {
-		db.NoPermissionHandler(s, m, conf, consts.PERMISSION_VIEWUSERLEVEL)
+	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_VIEWUSERLEVEL)
+	if !allowed {
+		db.NoPermissionHandler(s, m, conf, perm)
 		return
 	}
 
