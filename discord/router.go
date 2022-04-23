@@ -11,6 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/modules/guilds/roles"
 	"github.com/blackmesadev/black-mesa/modules/moderation"
 	"github.com/blackmesadev/black-mesa/modules/music"
+	"github.com/blackmesadev/black-mesa/modules/voting"
 )
 
 func (r *Mux) InitRouter() {
@@ -106,5 +107,8 @@ func (r *Mux) InitRouter() {
 	r.Route("skip", music.SkipCmd)
 
 	r.Route("remove", music.RemoveCmd)
+
+	// voting
+	r.Route("votemute", voting.StartVoteMuteCmd)
 
 }

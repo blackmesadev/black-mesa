@@ -40,7 +40,7 @@ func StartVoteMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.M
 	}
 
 	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
-		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `mute <target:user[]> [time:duration] [reason:string...]`")
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `votemute <target:user[]> [time:duration] [reason:string...]`")
 		return
 	}
 
