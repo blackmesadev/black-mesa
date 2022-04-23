@@ -81,7 +81,7 @@ func StartVoteMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.M
 
 	for _, id := range idList {
 		// send a message in the channel to let users know of the new vote
-		msg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCheck:832350526404968961> <@%v> has started a vote to mute <@%v> for %v with reason %v",
+		msg, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCheck:832350526729224243> <@%v> has started a vote to mute <@%v> for %v with reason %v",
 			m.Author.ID, id, duration, reason))
 
 		if err != nil {
