@@ -1,6 +1,7 @@
 package discord
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"strconv"
@@ -60,6 +61,10 @@ func (bot *Bot) OnReactionAdd(s *discordgo.Session, ra *discordgo.MessageReactio
 		// mute
 		s.ChannelMessageSend(ra.ChannelID, fmt.Sprintf("<:mesaCheck:832350526790989898> VOTE PASSED: Muted <@%v> for %v for `%v`", id, duration, reason))
 		voting.CompleteMute(s, conf, issuer, ra.GuildID, ra.ChannelID, id, reason, int64(duration))
+		return
 	}
+
+	encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v|%v|%v|%v", id, reason, duration, count)))
+	r.Set(context.Background(), fmt.Sprintf("vote:mute:%v:%v", ra.GuildID, ra.MessageID), encoded, 0)
 
 }
