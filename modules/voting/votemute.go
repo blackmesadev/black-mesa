@@ -60,7 +60,7 @@ func StartVoteMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.M
 	timeExpiry := time.Unix(duration, 0)
 	timeUntil := time.Until(timeExpiry).Round(time.Second)
 
-	if (int64(timeUntil) > voting.MaxDuration) || (voting.MaxDuration > 0 && permMute) {
+	if (int64(timeUntil.Seconds()) > voting.MaxDuration) || (voting.MaxDuration > 0 && permMute) {
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<:mesaCross:832350526414127195> The Max Duration is %vs", voting.MaxDuration))
 		return
 	}
