@@ -135,70 +135,87 @@ func SetPermission(s *discordgo.Session, guildid string, permission string, leve
 	return nil
 }
 
-func CheckPermission(s *discordgo.Session, conf *structs.Config, guildid string, userid string, permission string) bool {
+// will return a string of the failed permission if appropriate
+func CheckPermission(s *discordgo.Session, conf *structs.Config, guildid string, userid string, permission interface{}) (string, bool) {
+	var permissions []string
 
-	// Trusted Check
-	if strings.HasPrefix(permission, consts.CATEGORY_TRUSTED) {
-		return isTrusted(userid)
+	switch i := permission.(type) {
+	case string:
+		permissions = []string{i}
+	case []string:
+		permissions = i
 	}
 
-	var member *discordgo.Member
-	member, err := s.State.Member(guildid, userid)
-	if err != nil {
-		if err == discordgo.ErrStateNotFound {
-			member, err = s.GuildMember(guildid, userid)
-			if err != nil {
-				log.Println(err)
-				return false
+	for _, permission := range permissions {
+		// Trusted Check
+		if strings.HasPrefix(permission, consts.CATEGORY_TRUSTED) {
+			if !isTrusted(userid) {
+				return permission, false
 			}
-			s.State.MemberAdd(member)
 		}
-	}
-	if err != nil || member == nil {
-		log.Println("failed to check permissions in", guildid, "for user", userid, "because", err)
-		fmt.Println(member)
-		return false // safety
-	}
 
-	for _, roleid := range member.Roles {
-		role, err := s.State.Role(guildid, roleid)
+		var member *discordgo.Member
+		member, err := s.State.Member(guildid, userid)
 		if err != nil {
-			continue // skip
-		}
-		if role.Permissions&8 == 8 {
-			return true // user is admin
-		}
-	}
-
-	if conf != nil {
-		permissionValue, err := GetPermission(s, conf, guildid, permission)
-		if err != nil {
-			return conf.Modules.Guild.UnsafePermissions
-		}
-		userLevel := GetLevel(s, conf, guildid, userid)
-
-		return userLevel >= permissionValue
-	}
-
-	// final resort - check if they're the owner of the server
-	var guild *discordgo.Guild
-	guild, err = s.State.Guild(guildid)
-	if err != nil {
-		if err == discordgo.ErrStateNotFound {
-			guild, err = s.Guild(guildid)
-			if err != nil {
-				log.Println(err)
-				return false
+			if err == discordgo.ErrStateNotFound {
+				member, err = s.GuildMember(guildid, userid)
+				if err != nil {
+					log.Println(err)
+					return permission, false
+				}
+				s.State.MemberAdd(member)
 			}
-			s.State.GuildAdd(guild)
+		}
+		if err != nil || member == nil {
+			log.Println("failed to check permissions in", guildid, "for user", userid, "because", err)
+			fmt.Println(member)
+			return permission, false // safety
+		}
+
+		for _, roleid := range member.Roles {
+			role, err := s.State.Role(guildid, roleid)
+			if err != nil {
+				continue // skip
+			}
+			if role.Permissions&8 == 8 {
+				return "", true // user is admin
+			}
+		}
+
+		if conf != nil {
+			permissionValue, err := GetPermission(s, conf, guildid, permission)
+			if err != nil {
+				if !conf.Modules.Guild.UnsafePermissions {
+					return permission, false
+				}
+			}
+			userLevel := GetLevel(s, conf, guildid, userid)
+
+			if userLevel < permissionValue {
+				return permission, false
+			}
+		}
+
+		// final resort - check if they're the owner of the server
+		var guild *discordgo.Guild
+		guild, err = s.State.Guild(guildid)
+		if err != nil {
+			if err == discordgo.ErrStateNotFound {
+				guild, err = s.Guild(guildid)
+				if err != nil {
+					log.Println(err)
+					return permission, false
+				}
+				s.State.GuildAdd(guild)
+			}
+		}
+
+		if guild.OwnerID == userid {
+			return "", true
 		}
 	}
 
-	if guild.OwnerID == userid {
-		return true
-	}
-
-	return false
+	return "", true
 }
 
 func CheckTargets(s *discordgo.Session, conf *structs.Config, guildid string, actioner string, targets []string) bool {
