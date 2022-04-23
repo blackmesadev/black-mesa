@@ -145,6 +145,32 @@ func LogUnmute(s *discordgo.Session, guildId string, actor string, target *disco
 	)
 }
 
+func LogMws(s *discordgo.Session, guildId string, actor string, target *discordgo.User, muteDuration time.Duration, strikeDuration time.Duration, reason string, location string) {
+	fullName := target.Username + "#" + target.Discriminator
+
+	msg := fmt.Sprintf("%v muted %v (`%v`)", actor, fullName, target.ID)
+
+	if muteDuration != 0 {
+		msg = msg + fmt.Sprintf("until %v", time.Now().Add(muteDuration).UTC().Format("02/01/2006 15:04:05PM"))
+	}
+
+	msg += " with strike "
+
+	if strikeDuration != 0 {
+		msg = msg + fmt.Sprintf("until %v", time.Now().Add(strikeDuration).UTC().Format("02/01/2006 15:04:05PM"))
+	}
+
+	msg += ": " + reason
+
+	addLog(s,
+		guildId,
+		consts.EMOJI_MUTE,
+		msg,
+		actor == "AutoMod",
+		location,
+	)
+}
+
 func LogBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
 	fullName := target.Username + "#" + target.Discriminator
 

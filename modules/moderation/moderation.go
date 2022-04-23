@@ -79,6 +79,64 @@ func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, act
 	return embed
 }
 
+func CreateMWSEmbed(member *discordgo.Member, guild *discordgo.Guild, actioner *discordgo.User, reason string, muteExpires *time.Time, strikeExpires *time.Time, mutePermenant bool, strikePermenant bool) *discordgo.MessageEmbed {
+	footer := &discordgo.MessageEmbedFooter{
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+	}
+
+	fields := []*discordgo.MessageEmbedField{
+		{
+			Name:   "Server Name",
+			Value:  guild.Name,
+			Inline: true,
+		},
+		{
+			Name:  "Actioned by",
+			Value: actioner.String(),
+		},
+		{
+			Name:  "Reason",
+			Value: reason,
+		},
+	}
+
+	var expiresString string
+
+	if mutePermenant {
+		expiresString = "Forever"
+	} else if muteExpires != nil {
+		expiresString = muteExpires.Format(time.RFC822)
+	}
+
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:  "Mute Expires",
+		Value: expiresString,
+	},
+	)
+
+	if strikePermenant {
+		expiresString = "Forever"
+	} else if strikeExpires != nil {
+		expiresString = strikeExpires.Format(time.RFC822)
+	}
+
+	fields = append(fields, &discordgo.MessageEmbedField{
+		Name:  "Expires",
+		Value: expiresString,
+	},
+	)
+
+	embed := &discordgo.MessageEmbed{
+		URL:    consts.WEBSITE,
+		Type:   discordgo.EmbedTypeRich,
+		Title:  fmt.Sprintf("You have been Muted and Striked."),
+		Color:  0,
+		Footer: footer,
+		Fields: fields,
+	}
+	return embed
+}
+
 func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer string, weight int64, reason string, expiry int64, location string) error {
 	infractionUUID := uuid.New().String()
 	strike := &db.Action{
