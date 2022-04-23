@@ -53,6 +53,7 @@ func (bot *Bot) Start() {
 	bot.Session.AddHandler(bot.OnMessageDelete)
 	bot.Session.AddHandler(bot.OnMemberJoin)
 	bot.Session.AddHandler(bot.OnReady)
+	bot.Session.AddHandler(bot.OnReactionAdd)
 
 	bot.Session.AddHandler(music.VoiceUpdate)
 
