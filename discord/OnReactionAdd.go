@@ -38,7 +38,7 @@ func (bot *Bot) OnReactionAdd(s *discordgo.Session, ra *discordgo.MessageReactio
 	vote := string(bytes)
 
 	data := strings.Split(vote, "|")
-	if len(data) != 4 { // something has gone very wrong
+	if len(data) != 5 { // something has gone very wrong
 		return
 	}
 
