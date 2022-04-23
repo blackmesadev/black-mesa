@@ -154,12 +154,21 @@ func MakeConfig(g *discordgo.Guild, invokedByUserID string) *structs.Config {
 		MemberRemove: memberRemove,
 	}
 
+	vote := &structs.Voting{
+		VoteMute: &structs.VoteMute{
+			Enabled:         false,
+			MaxDuration:     600,
+			UpvotesRequired: 10,
+		},
+	}
+
 	mods := &structs.Modules{
 		Guild:      guild,
 		Automod:    automod,
 		Logging:    logs,
 		Moderation: moderation,
 		AntiNuke:   an,
+		Voting:     vote,
 	}
 
 	config := &structs.Config{

@@ -7,6 +7,7 @@ const (
 	CATEGORY_ROLES      = "roles"
 	CATEGORY_TRUSTED    = "trusted"
 	CATEGORY_MUSIC      = "music"
+	CATEGORY_VOTING     = "voting"
 
 	PERMISSION_BAN          = CATEGORY_MODERATION + ".ban"
 	PERMISSION_KICK         = CATEGORY_MODERATION + ".kick"
@@ -43,4 +44,6 @@ const (
 	PERMISSION_SEEK   = CATEGORY_MUSIC + ".seek"
 	PERMISSION_VOLUME = CATEGORY_MUSIC + ".volume"
 	PERMISSION_QUERY  = CATEGORY_MUSIC + ".query"
+
+	PERMISSION_VOTEMUTE = CATEGORY_VOTING + ".mute"
 )

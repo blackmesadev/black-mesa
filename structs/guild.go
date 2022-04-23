@@ -135,12 +135,25 @@ type AntiNukeThreshold struct {
 	Type     string `json:"type" bson:"type"`
 }
 
+type VoteMute struct {
+	Enabled         bool  `json:"enabled" bson:"enabled"`
+	MaxDuration     int64 `json:"maxDuration" bson:"maxDuration"`
+	UpvotesRequired int64 `json:"upvotesRequired" bson:"upvotesRequired"`
+	ExpiresAfter    int64 `json:"expiresAfter" bson:"expiresAfter"`
+}
+
+type Voting struct {
+	UpvoteEmoji string    `json:"upvoteEmoji" bson:"upvoteEmoji"`
+	VoteMute    *VoteMute `json:"voteMute" bson:"voteMute"`
+}
+
 type Modules struct {
 	Guild      *Guild      `json:"guild" bson:"guild"`
 	Automod    *Automod    `json:"automod" bson:"automod"`
 	Logging    *Logging    `json:"logging" bson:"logging"`
 	Moderation *Moderation `json:"moderation" bson:"moderation"`
 	AntiNuke   *AntiNuke   `json:"antiNuke" bson:"antiNuke"`
+	Voting     *Voting     `json:"voting" bson:"voting"`
 }
 
 type Config struct {
