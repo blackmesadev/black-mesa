@@ -50,7 +50,7 @@ func MuteWithStrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.
 		return
 	}
 
-	reason := strings.Join(args[(durationOrReasonStart+1):], " ")
+	reason := strings.Join(args[(durationOrReasonStart+2):], " ")
 	muteDuration := util.ParseTime(args[durationOrReasonStart])
 
 	if muteDuration == 0 { // must be part of the reason
