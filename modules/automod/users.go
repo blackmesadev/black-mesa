@@ -1,7 +1,6 @@
 package automod
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"runtime"
@@ -12,7 +11,7 @@ import (
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/black-mesa/util"
 	"github.com/blackmesadev/discordgo"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func alertMentionedUsers(s *discordgo.Session, guildID string, mentions []*discordgo.User) error {
@@ -81,33 +80,19 @@ func processDates(s *discordgo.Session, m *discordgo.Member, maxDifference int64
 }
 
 func processMuted(s *discordgo.Session, ma *discordgo.GuildMemberAdd, conf *structs.Config) {
-	inst := db.GetDB().GetMongoClient().Database("black-mesa").Collection("actions")
 
-	cur, err := inst.Find(context.TODO(), bson.M{
-		"guildID": ma.GuildID,
-		"userID":  ma.User.ID,
-		"type":    "mute",
-	})
-
+	mute, err := db.GetMute(ma.GuildID, ma.User.ID)
 	if err != nil {
-		log.Println(err)
-		return
+		if err != mongo.ErrNoDocuments {
+			return
+		}
+		mute = nil
 	}
 
-	var mute *db.Action
-
-	for cur.Next(context.TODO()) {
-		mute = &db.Action{}
-		cur.Decode(mute)
-	}
-
-	// double check that this is a valid mute after decoding
-	if mute == nil || mute.Type != "mute" {
-		return
-	}
-
-	err = s.GuildMemberRoleAdd(ma.GuildID, ma.User.ID, conf.Modules.Moderation.MuteRole)
-	if err != nil {
-		log.Println(err)
+	if mute != nil {
+		err = s.GuildMemberRoleAdd(ma.GuildID, ma.User.ID, conf.Modules.Moderation.MuteRole)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 }
