@@ -103,7 +103,7 @@ func LogTempRoleAdd(s *discordgo.Session, guildId string, actor string, role str
 	addLog(s,
 		guildId,
 		consts.EMOJI_MUTE,
-		fmt.Sprintf("%v added role %v to %v (`%v`) until %v", actor, role, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM")),
+		fmt.Sprintf("%v added role %v to %v (`%v`) until <t:%v:f>", actor, role, fullName, target.ID, time.Now().Add(duration).Unix()),
 		true,
 		location,
 	)
@@ -127,7 +127,7 @@ func LogTempMute(s *discordgo.Session, guildId string, actor string, target *dis
 	addLog(s,
 		guildId,
 		consts.EMOJI_MUTE,
-		fmt.Sprintf("%v muted %v (`%v`) until %v: %v", actor, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
+		fmt.Sprintf("%v muted %v (`%v`) until <t:%v:f>: %v", actor, fullName, target.ID, time.Now().Add(duration).Unix(), reason),
 		actor == "AutoMod",
 		location,
 	)
@@ -151,13 +151,13 @@ func LogMws(s *discordgo.Session, guildId string, actor string, target *discordg
 	msg := fmt.Sprintf("%v muted %v (`%v`)", actor, fullName, target.ID)
 
 	if muteDuration != 0 {
-		msg = msg + fmt.Sprintf("until %v", time.Now().Add(muteDuration).UTC().Format("02/01/2006 15:04:05PM"))
+		msg = msg + fmt.Sprintf("until <t:%v:f>", time.Now().Add(muteDuration).Unix())
 	}
 
 	msg += " with strike "
 
 	if strikeDuration != 0 {
-		msg = msg + fmt.Sprintf("until %v", time.Now().Add(strikeDuration).UTC().Format("02/01/2006 15:04:05PM"))
+		msg = msg + fmt.Sprintf("until <t:%v:f>", time.Now().Add(strikeDuration).Unix())
 	}
 
 	msg += ": " + reason
@@ -189,7 +189,7 @@ func LogTempBan(s *discordgo.Session, guildId string, actor string, target *disc
 	addLog(s,
 		guildId,
 		consts.EMOJI_BAN,
-		fmt.Sprintf("%v banned %v (`%v`) until %v: %v", actor, fullName, target.ID, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
+		fmt.Sprintf("%v banned %v (`%v`) until <t:%v:f>: %v", actor, fullName, target.ID, time.Now().Add(duration).Unix(), reason),
 		actor == "AutoMod",
 		location,
 	)
@@ -209,7 +209,7 @@ func LogHackTempBan(s *discordgo.Session, guildId string, actor string, id strin
 	addLog(s,
 		guildId,
 		consts.EMOJI_BAN,
-		fmt.Sprintf("%v banned `%v` until %v: %v", actor, id, time.Now().Add(duration).UTC().Format("02/01/2006 15:04:05PM"), reason),
+		fmt.Sprintf("%v banned `%v` until <t:%v:f>: %v", actor, id, time.Now().Add(duration).Unix(), reason),
 		actor == "AutoMod",
 		location,
 	)
