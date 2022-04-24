@@ -77,12 +77,12 @@ func UserInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messag
 		},
 		{
 			Name:   "Created",
-			Value:  timestamp.Format(time.RFC3339),
+			Value:  fmt.Sprintf("<t:%v:f>", timestamp.Unix()),
 			Inline: true,
 		},
 		{
 			Name:   "Joined",
-			Value:  member.JoinedAt.Format(time.RFC3339),
+			Value:  fmt.Sprintf("<t:%v:f>", member.JoinedAt.Unix()),
 			Inline: true,
 		},
 		{

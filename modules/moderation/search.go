@@ -98,7 +98,7 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 		if punishment.Expires == 0 {
 			expiring = "Never"
 		} else {
-			expiring = time.Unix(punishment.Expires, 0).Format(time.RFC3339)
+			expiring = fmt.Sprintf("<t:%v:f>", time.Unix(punishment.Expires, 0))
 		}
 
 		if ShouldCensor(s, conf, m.GuildID, m.Author.ID) {
@@ -107,8 +107,8 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 
 		field := &discordgo.MessageEmbedField{
 			Name: strings.Title(punishment.Type),
-			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v\n**Expiring:** %v\n**Created:** %v",
-				punishment.Reason, issuer, punishment.UUID, expiring, punishment.ID.Timestamp().Format(time.RFC3339)),
+			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v\n**Expiring:** %v\n**Created:** <t:%v:f>",
+				punishment.Reason, issuer, punishment.UUID, expiring, punishment.ID.Timestamp().Unix()),
 			Inline: true,
 		}
 		embedFields = append(embedFields, field)
@@ -164,7 +164,7 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 	if punishment.Expires == 0 {
 		expiring = "Never"
 	} else {
-		expiring = time.Unix(punishment.Expires, 0).Format(time.RFC3339)
+		expiring = fmt.Sprintf("<t:%v:f>", time.Unix(punishment.Expires, 0))
 	}
 
 	if ShouldCensor(s, conf, m.GuildID, m.Author.ID) {
@@ -174,8 +174,8 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 	embedFields := []*discordgo.MessageEmbedField{
 		{
 			Name: strings.Title(punishment.Type),
-			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:**%v\n**Expiring:** %v\n**Created:** %v",
-				punishment.Reason, issuer, expiring, punishment.ID.Timestamp().Format(time.RFC3339)),
+			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:**%v\n**Expiring:** %v\n**Created:** <t:%v:f>",
+				punishment.Reason, issuer, expiring, punishment.ID.Timestamp().Unix()),
 			Inline: true,
 		},
 	}
