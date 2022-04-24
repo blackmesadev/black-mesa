@@ -152,7 +152,7 @@ func MuteWithStrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.
 	if permMute {
 		msg += " lasting `Forever` "
 	} else {
-		msg += fmt.Sprintf(" expiring `%v` (`%v`) ", muteExpiry, timeUntilMuteExpiry.String())
+		msg += fmt.Sprintf(" expiring `<t:%v:f>` (`<t:%v:R>`) ", muteExpiry.Unix(), muteExpiry.Unix())
 	}
 	if len(reason) != 0 {
 		msg += fmt.Sprintf("for reason `%v` ", reason)

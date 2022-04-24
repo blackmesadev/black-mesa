@@ -71,7 +71,6 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 	reason = strings.TrimSpace(reason) // trim reason to remove random spaces
 
 	var timeExpiry time.Time
-	var timeUntil time.Duration
 
 	fullName := m.Author.Username + "#" + m.Author.Discriminator
 	unableBan := make(map[string]error, 0)
@@ -103,7 +102,6 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 				}
 			}
 			timeExpiry = time.Unix(duration, 0)
-			timeUntil = time.Until(timeExpiry).Round(time.Second)
 			guild, err := s.Guild(m.GuildID)
 			if err == nil {
 				s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permBan, "Banned"))
@@ -163,7 +161,7 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 	if permBan {
 		msg += " lasting `Forever` "
 	} else {
-		msg += fmt.Sprintf(" expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
+		msg += fmt.Sprintf(" expiring `<t:%v:f>` (`<t:%v:R>`) ", timeExpiry.Unix(), timeExpiry.Unix())
 
 	}
 
