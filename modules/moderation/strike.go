@@ -91,7 +91,7 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 
 	} else {
 
-		msg += fmt.Sprintf("expiring `<t:%v:f>` (`<t:%v:R>`) ", timeExpiry.Unix(), timeExpiry.Unix())
+		msg += fmt.Sprintf("expiring <t:%v:f> (<t:%v:R>) ", timeExpiry.Unix(), timeExpiry.Unix())
 	}
 
 	if len(reason) != 0 {

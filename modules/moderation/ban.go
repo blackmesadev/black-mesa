@@ -161,7 +161,7 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 	if permBan {
 		msg += " lasting `Forever` "
 	} else {
-		msg += fmt.Sprintf(" expiring `<t:%v:f>` (`<t:%v:R>`) ", timeExpiry.Unix(), timeExpiry.Unix())
+		msg += fmt.Sprintf(" expiring <t:%v:f> (<t:%v:R>) ", timeExpiry.Unix(), timeExpiry.Unix())
 
 	}
 
