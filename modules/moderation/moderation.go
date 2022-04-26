@@ -36,7 +36,7 @@ const (
 
 func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, actioner *discordgo.User, reason string, expires *time.Time, permenant bool, punishmentType string) *discordgo.MessageEmbed {
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	fields := []*discordgo.MessageEmbedField{
@@ -81,7 +81,7 @@ func CreatePunishmentEmbed(member *discordgo.Member, guild *discordgo.Guild, act
 
 func CreateMWSEmbed(member *discordgo.Member, guild *discordgo.Guild, actioner *discordgo.User, reason string, muteExpires *time.Time, strikeExpires *time.Time, mutePermenant bool, strikePermenant bool) *discordgo.MessageEmbed {
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	fields := []*discordgo.MessageEmbedField{

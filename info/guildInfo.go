@@ -18,7 +18,7 @@ func GuildInfoCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Messa
 	start := time.Now()
 
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", VERSION, runtime.Version()),
 	}
 
 	guild, err := s.State.Guild(m.GuildID)

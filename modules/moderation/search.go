@@ -114,7 +114,7 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 		embedFields = append(embedFields, field)
 	}
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	user, err := s.User(idList[0])
@@ -145,7 +145,7 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 	}
 
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	var issuer string

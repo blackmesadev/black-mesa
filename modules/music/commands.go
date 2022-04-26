@@ -279,7 +279,7 @@ func QueueCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, 
 	}
 
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	var guildName string

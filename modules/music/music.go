@@ -318,7 +318,7 @@ func nowPlaying(s *discordgo.Session, channelID, guildID string) {
 	}
 
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	embed := &discordgo.MessageEmbed{
@@ -407,7 +407,7 @@ func playerInfo(s *discordgo.Session, channelID, guildID string) {
 	}
 
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	embed := &discordgo.MessageEmbed{

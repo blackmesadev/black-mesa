@@ -29,7 +29,7 @@ func alertMentionedUsers(s *discordgo.Session, guildID string, mentions []*disco
 
 func createMentionedEmbed(guild *discordgo.Guild, pingedBy *discordgo.User) *discordgo.MessageEmbed {
 	footer := &discordgo.MessageEmbedFooter{
-		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 & LewisTehMinerz#1337 running on %v", info.VERSION, runtime.Version()),
+		Text: fmt.Sprintf("Black Mesa %v by Tyler#0911 running on %v", info.VERSION, runtime.Version()),
 	}
 
 	fields := []*discordgo.MessageEmbedField{
