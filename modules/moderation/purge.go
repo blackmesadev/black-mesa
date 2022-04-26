@@ -146,9 +146,12 @@ func PurgeAttachments(s *discordgo.Session, m *discordgo.Message, msgLimit int) 
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
+	OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 	for count < msgLimit {
-		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
@@ -182,6 +185,8 @@ func PurgeAttachments(s *discordgo.Session, m *discordgo.Message, msgLimit int) 
 			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
 	}
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
@@ -202,9 +207,12 @@ func PurgeBot(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
+	OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 	for count < msgLimit {
-		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
@@ -238,6 +246,8 @@ func PurgeBot(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
 	}
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
@@ -258,9 +268,12 @@ func PurgeImage(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
+	OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 	for count < msgLimit {
-		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
@@ -295,6 +308,8 @@ func PurgeImage(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
 	}
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
@@ -315,9 +330,12 @@ func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filte
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
+	OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 	for count < msgLimit {
-		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
@@ -351,6 +369,8 @@ func PurgeString(s *discordgo.Session, m *discordgo.Message, msgLimit int, filte
 			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages by `%v`... [%v/%v]", filter, count, msgLimit))
 		}
 	}
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
@@ -371,9 +391,12 @@ func PurgeUser(s *discordgo.Session, m *discordgo.Message, msgLimit int, ids []s
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
+	OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 	for count < msgLimit {
-		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
@@ -410,6 +433,8 @@ func PurgeUser(s *discordgo.Session, m *discordgo.Message, msgLimit int, ids []s
 			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
 	}
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
@@ -430,9 +455,12 @@ func PurgeUsers(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
+	OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 	for count < msgLimit {
-		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
@@ -467,6 +495,8 @@ func PurgeUsers(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
 	}
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
@@ -487,9 +517,12 @@ func PurgeVideo(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
+	OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 	for count < msgLimit {
-		OngoingPurges[m.ChannelID][m.Author.ID] = make(chan struct{})
 		select {
 		case <-OngoingPurges[m.ChannelID][m.Author.ID]:
 			break
@@ -523,6 +556,8 @@ func PurgeVideo(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*dis
 			s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 		}
 	}
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)
@@ -543,6 +578,9 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 	}
 
 	lastID = m.ID // just set lastid to this so that it wont delete the purge message and invoke message
+	if _, ok := OngoingPurges[m.ChannelID]; !ok {
+		OngoingPurges[m.ChannelID] = make(map[string]chan struct{})
+	}
 
 	// first get the remainder of 100 because thats the max we can do at one time then do 100 each time.
 	requestAmount := msgLimit % 100
@@ -586,6 +624,8 @@ func PurgeAll(s *discordgo.Session, m *discordgo.Message, msgLimit int) []*disco
 	// Update at the end with newest count before waiting and deleting
 	s.ChannelMessageEdit(m.ChannelID, progressMsg.ID, fmt.Sprintf("Purging messages... [%v/%v]", count, msgLimit))
 
+	close(OngoingPurges[m.ChannelID][m.Author.ID])
+	delete(OngoingPurges[m.ChannelID], m.Author.ID)
 	time.Sleep(3 * time.Second)
 	s.ChannelMessageDelete(m.ChannelID, m.ID)
 	s.ChannelMessageDelete(m.ChannelID, progressMsg.ID)

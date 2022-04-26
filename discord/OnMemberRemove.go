@@ -19,7 +19,7 @@ func (bot *Bot) OnMemberRemove(s *discordgo.Session, m *discordgo.GuildMemberRem
 	}
 
 	conf, err := db.GetConfig(m.GuildID)
-	if err != nil {
+	if err != nil || conf == nil {
 		return
 	}
 

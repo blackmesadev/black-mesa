@@ -8,7 +8,7 @@ import (
 
 func (bot *Bot) OnMemberJoin(s *discordgo.Session, m *discordgo.GuildMemberAdd) {
 	conf, err := db.GetConfig(m.GuildID)
-	if err != nil {
+	if err != nil || conf == nil {
 		return
 	}
 

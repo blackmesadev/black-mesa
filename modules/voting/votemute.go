@@ -92,7 +92,7 @@ func StartVoteMuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.M
 
 		// encode the reason, duration and how many current votes in base64
 		reason = strings.Trim(reason, "|")
-		encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v|%v|%v|%v", id, reason, duration, 0)))
+		encoded := base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%v|%v|%v|%v|%v", id, reason, duration, m.Author.ID, 0)))
 		r.Set(context.Background(), fmt.Sprintf("vote:mute:%v:%v", m.GuildID, msg.ID), encoded, time.Until(time.Now().Add(time.Duration(voting.ExpiresAfter))))
 	}
 }

@@ -20,6 +20,10 @@ func (bot *Bot) OnReactionAdd(s *discordgo.Session, ra *discordgo.MessageReactio
 		conf = nil
 	}
 
+	if conf == nil {
+		return // no config
+	}
+
 	if ra.Emoji.ID != conf.Modules.Voting.UpvoteEmojiID {
 		return // we dont care
 	}
@@ -38,7 +42,7 @@ func (bot *Bot) OnReactionAdd(s *discordgo.Session, ra *discordgo.MessageReactio
 	vote := string(bytes)
 
 	data := strings.Split(vote, "|")
-	if len(data) != 4 { // something has gone very wrong
+	if len(data) != 5 { // something has gone very wrong
 		return
 	}
 

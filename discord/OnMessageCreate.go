@@ -83,10 +83,12 @@ func (bot *Bot) OnMessageCreate(s *discordgo.Session, mc *discordgo.MessageCreat
 		conf = nil
 	}
 
-	if !ctx.IsDirected && len(conf.Prefix) > 0 {
-		if strings.HasPrefix(ctx.Content, conf.Prefix) {
-			ctx.IsDirected, ctx.HasPrefix, ctx.HasMentionFirst = true, true, true
-			ctx.Content = strings.TrimPrefix(ctx.Content, conf.Prefix)
+	if conf != nil {
+		if !ctx.IsDirected && len(conf.Prefix) > 0 {
+			if strings.HasPrefix(ctx.Content, conf.Prefix) {
+				ctx.IsDirected, ctx.HasPrefix, ctx.HasMentionFirst = true, true, true
+				ctx.Content = strings.TrimPrefix(ctx.Content, conf.Prefix)
+			}
 		}
 	}
 

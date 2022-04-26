@@ -65,7 +65,6 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 	msg := "<:mesaCheck:832350526729224243> Successfully striked "
 
 	var timeExpiry time.Time
-	var timeUntil time.Duration
 
 	unableStrike := make([]string, 0)
 	for _, id := range idList {
@@ -74,7 +73,6 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		err := IssueStrike(s, m.GuildID, id, m.Author.ID, 1, reason, duration, m.ChannelID)
 
 		timeExpiry = time.Unix(duration, 0)
-		timeUntil = time.Until(timeExpiry).Round(time.Second)
 
 		if err != nil {
 			log.Println(err)
@@ -88,7 +86,7 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 
 	} else {
 
-		msg += fmt.Sprintf("expiring `%v` (`%v`) ", timeExpiry, timeUntil.String())
+		msg += fmt.Sprintf("expiring <t:%v:f> (<t:%v:R>) ", timeExpiry.Unix(), timeExpiry.Unix())
 	}
 
 	if len(reason) != 0 {
