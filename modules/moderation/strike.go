@@ -76,11 +76,6 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		timeExpiry = time.Unix(duration, 0)
 		timeUntil = time.Until(timeExpiry).Round(time.Second)
 
-		guild, err := s.Guild(m.GuildID)
-		member, err := s.GuildMember(m.GuildID, id)
-		if err == nil {
-			s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permStrike, "Striked"))
-		}
 		if err != nil {
 			log.Println(err)
 			unableStrike = append(unableStrike, id)
