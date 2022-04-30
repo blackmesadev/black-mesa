@@ -98,7 +98,7 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 		if punishment.Expires == 0 {
 			expiring = "Never"
 		} else {
-			expiring = fmt.Sprintf("<t:%v:f>", time.Unix(punishment.Expires, 0))
+			expiring = fmt.Sprintf("<t:%v:f>", punishment.Expires)
 		}
 
 		if ShouldCensor(s, conf, m.GuildID, m.Author.ID) {
