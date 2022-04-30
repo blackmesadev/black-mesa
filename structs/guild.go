@@ -109,6 +109,7 @@ type Moderation struct {
 	ConfirmActionsMessage       bool                       `json:"confirmActionsMessage" bson:"confirmActionsMessage"`
 	ConfirmActionsMessageExpiry int64                      `json:"confirmActionsMessageExpiry" bson:"confirmActionsMessageExpiry"`
 	ConfirmActionsReaction      bool                       `json:"confirmActionsReaction" bson:"confirmActionsReaction"`
+	DefaultStrikeDuration       string                     `json:"defaultStrikeDuration" bson:"defaultStrikeDuration"`
 	DisplayNoPermission         bool                       `json:"displayNoPermission" bson:"displayNoPermission"`
 	MuteRole                    string                     `json:"muteRole" bson:"muteRole"`
 	ReasonEditLevel             int64                      `json:"reasonEditLevel" bson:"reasonEditLevel"`
