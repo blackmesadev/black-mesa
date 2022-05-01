@@ -53,6 +53,7 @@ func StrikeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 
 	if duration == 0 {
 		duration = util.ParseTime(conf.Modules.Moderation.DefaultStrikeDuration)
+		reason = strings.Join(args[(durationOrReasonStart):], " ")
 		if duration == 0 {
 			permStrike = true
 			reason = fmt.Sprintf("%v %v", args[durationOrReasonStart], reason)
