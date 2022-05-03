@@ -34,7 +34,7 @@ func UnbanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, 
 		idList = append(idList, id)
 	}
 
-	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
+	if len(idList) == 0 {
 		s.ChannelMessageSend(m.ChannelID, "<:mesaCommand:832350527131746344> `unban <target:user[]> [reason:string...]`")
 		return
 	}
