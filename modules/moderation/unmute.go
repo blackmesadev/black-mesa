@@ -45,7 +45,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		return
 	}
 
-	reason := strings.Join(args[(durationOrReasonStart):], " ") //first entry was reserved for a duration that's neither mentioned or used(?)
+	reason := strings.Join(args[(durationOrReasonStart):], " ")
 
 	if durationOrReasonStart == 0 { // fixes broken reasons
 		reason = ""
