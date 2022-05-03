@@ -44,7 +44,7 @@ func UnbanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, 
 		return
 	}
 
-	reason := strings.Join(args[(durationOrReasonStart):], " ") //unban isn't time-based(?), not sure why there was a +1 here
+	reason := strings.Join(args[(durationOrReasonStart):], " ")
 
 	if durationOrReasonStart == 0 { // fixes broken reasons
 		reason = ""
