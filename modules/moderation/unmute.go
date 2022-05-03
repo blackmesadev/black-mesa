@@ -35,8 +35,8 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		idList = append(idList, id)
 	}
 
-	if len(idList) == 0 { // if there's no ids or the duration/reason start point is 0 for some reason
-		s.ChannelMessageSend(m.ChannelID, consts.EMOJI_COMMAND+" `unmute <target:user[]> [time:duration] [reason:string...]`")
+	if len(idList) == 0 {
+		s.ChannelMessageSend(m.ChannelID, consts.EMOJI_COMMAND+" `unmute <target:user[]> [reason:string...]`")
 		return
 	}
 
@@ -45,7 +45,7 @@ func UnmuteCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message,
 		return
 	}
 
-	reason := strings.Join(args[(durationOrReasonStart+1):], " ")
+	reason := strings.Join(args[(durationOrReasonStart):], " ")
 
 	if durationOrReasonStart == 0 { // fixes broken reasons
 		reason = ""
