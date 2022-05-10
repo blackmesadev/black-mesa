@@ -12,7 +12,7 @@ import (
 
 func sendPlayEmbed(s *discordgo.Session, channelID string, track *gopherlink.SongInfo) {
 
-	timeDuration := time.Millisecond * time.Duration(track.Duration)
+	timeDuration := time.Second * time.Duration(track.Duration)
 
 	embedFields := []*discordgo.MessageEmbedField{
 		{
