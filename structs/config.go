@@ -1,11 +1,11 @@
 package structs
 
 type FlatConfig struct {
-	Token    string
-	Mongo    MongoConfig
-	Redis    RedisConfig
-	Lavalink LavalinkConfig
-	API      APIConfig
+	Token      string
+	Mongo      MongoConfig
+	Redis      RedisConfig
+	Gopherlink GopherlinkConfig
+	API        APIConfig
 }
 
 type MongoConfig struct {
@@ -18,7 +18,7 @@ type RedisConfig struct {
 	Host string
 }
 
-type LavalinkConfig struct {
+type GopherlinkConfig struct {
 	Host     string
 	Password string
 }

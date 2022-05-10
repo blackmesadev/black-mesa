@@ -33,7 +33,7 @@ func (bot *Bot) OnReady(s *discordgo.Session, r *discordgo.Ready) {
 		Status: fmt.Sprintf("Black Mesa %v", info.VERSION),
 	})
 
-	music.LavalinkInit(r, db.LoadLavalinkConfig())
+	music.GopherlinkInit(r, db.LoadGopherlinkConfig())
 
 	bot.InitRegex()
 	censor.StartFlushRegexCache()

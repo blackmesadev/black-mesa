@@ -36,10 +36,10 @@ func LoadFlatConfig() structs.FlatConfig {
 	}
 }
 
-func LoadLavalinkConfig() structs.LavalinkConfig {
-	return structs.LavalinkConfig{
-		Host:     os.Getenv("LAVALINKURI"),
-		Password: os.Getenv("LAVALINKPASS"),
+func LoadGopherlinkConfig() structs.GopherlinkConfig {
+	return structs.GopherlinkConfig{
+		Host:     os.Getenv("GOPHERLINKURI"),
+		Password: os.Getenv("GOPHERLINKPASS"),
 	}
 }
 

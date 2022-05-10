@@ -270,10 +270,6 @@ func QueueCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, 
 
 	queue, err := getQueue(m.GuildID)
 	if err != nil {
-		if err == ErrEmptyQueue {
-			s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v There is no queue!", consts.EMOJI_CROSS))
-			return
-		}
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%v Unable to fetch queue `%v`", consts.EMOJI_CROSS, err))
 		return
 	}
@@ -293,10 +289,10 @@ func QueueCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, 
 	embedFields := make([]*discordgo.MessageEmbedField, 0)
 
 	for i, track := range queue {
-		_, duration := getTimeString(&track.Info)
+		_, duration := getTimeString(track)
 		embedFields = append(embedFields, &discordgo.MessageEmbedField{
 			Name:   util.ZeroWidth,
-			Value:  fmt.Sprintf("`%v:` %v `(%v)`", i, track.Info.Title, duration),
+			Value:  fmt.Sprintf("`%v:` %v `(%v)`", i, track.Title, duration),
 			Inline: false,
 		})
 	}
