@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -282,4 +283,50 @@ func SetMutedRole(guildid string, roleid string) (*mongo.UpdateResult, error) {
 			},
 		},
 	)
+}
+
+// Update automod funcs
+func UpdateAutomod(guildid string, automod *structs.Automod) (*mongo.UpdateResult, error) {
+	col := db.client.Database("black-mesa").Collection("guilds")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return col.UpdateOne(ctx,
+		bson.M{
+			"guildID": guildid,
+		},
+		bson.M{
+			"$set": bson.M{
+				"config.modules.automod": automod,
+			},
+		},
+	)
+}
+
+func AddBlockedSubstring(guildid string, level int, substring string) (*mongo.UpdateResult, error) {
+	col := db.client.Database("black-mesa").Collection("guilds")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return col.UpdateOne(ctx, bson.M{
+		"guildID": guildid,
+	}, bson.M{
+		"$addToSet": bson.M{
+			fmt.Sprintf("config.modules.automod.censorLevels.%v.blockedSubstrings", level): substring,
+		},
+	})
+}
+
+func AddBlockedString(guildid string, level int, str string) (*mongo.UpdateResult, error) {
+	col := db.client.Database("black-mesa").Collection("guilds")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return col.UpdateOne(ctx, bson.M{
+		"guildID": guildid,
+	}, bson.M{
+		"$addToSet": bson.M{
+			fmt.Sprintf("config.modules.automod.censorLevels.%v.blockedStrings", level): str,
+		},
+	})
 }
