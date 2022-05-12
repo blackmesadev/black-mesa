@@ -9,6 +9,10 @@ import (
 
 // returns a int64 unix timestamp representative of a time string
 func ParseTime(strTime string) int64 {
+	if strTime == "" {
+		return 0
+	}
+
 	var unixTime int64
 
 	unixTime = time.Now().Unix()

@@ -157,7 +157,8 @@ func Process(s *discordgo.Session, m *discordgo.Message) {
 			clearCushioning(m.GuildID, m.Author.ID)
 		}
 
-		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, s.State.User.ID, weight, reason, 0, m.ChannelID) // strike
+		duration := util.ParseTime(conf.Modules.Moderation.DefaultStrikeDuration)
+		err := moderation.IssueStrike(s, m.GuildID, m.Author.ID, s.State.User.ID, weight, reason, duration, m.ChannelID) // strike
 		if err != nil {
 			log.Println("strikes failed", err)
 		}
