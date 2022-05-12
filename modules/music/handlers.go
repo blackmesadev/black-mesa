@@ -8,6 +8,8 @@ import (
 	gopherlink "github.com/damaredayo/gopherlink/proto"
 )
 
+var readyState map[string]bool
+
 func VoiceUpdate(s *discordgo.Session, v *discordgo.VoiceServerUpdate) {
 	vc := &gopherlink.DiscordVoiceServer{
 		Token:     v.Token,
@@ -17,9 +19,11 @@ func VoiceUpdate(s *discordgo.Session, v *discordgo.VoiceServerUpdate) {
 		SessionId: s.State.SessionID,
 	}
 
-	_, err := g.CreatePlayer(context.Background(), vc)
+	p, err := g.CreatePlayer(context.Background(), vc)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+
+	readyState[v.GuildID] = p.GetOk()
 }

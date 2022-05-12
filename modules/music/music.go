@@ -63,6 +63,20 @@ func findMemberChannel(s *discordgo.Session, guildID, userID string) string {
 }
 
 func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
+	if !readyState[guildID] {
+		var attempts int
+		for {
+			if readyState[guildID] {
+				break
+			}
+			if attempts > 10 {
+				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Gopherlink is not ready, please try again later.", consts.EMOJI_CROSS))
+				return
+			}
+			attempts++
+			time.Sleep(time.Second)
+		}
+	}
 	sa, err := g.AddSong(context.Background(), &gopherlink.SongRequest{
 		URL:     identifier,
 		GuildId: guildID,
