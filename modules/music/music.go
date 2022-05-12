@@ -63,18 +63,26 @@ func findMemberChannel(s *discordgo.Session, guildID, userID string) string {
 }
 
 func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
-	if !readyState[guildID] {
+	r, ok := readyState[guildID]
+	if !ok {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v No player found", consts.EMOJI_CROSS))
+		return
+	}
+	if !r {
 		var attempts int
+		ticker := time.NewTicker(time.Second * 1)
 		for {
-			if readyState[guildID] {
-				break
+			select {
+			case <-ticker.C:
+				if readyState[guildID] {
+					break
+				}
+				if attempts >= 5 {
+					s.ChannelMessageSend(channelID, fmt.Sprintf("%v Gopherlink is not ready, please try again later.", consts.EMOJI_CROSS))
+					return
+				}
+				attempts++
 			}
-			if attempts > 10 {
-				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Gopherlink is not ready, please try again later.", consts.EMOJI_CROSS))
-				return
-			}
-			attempts++
-			time.Sleep(time.Second)
 		}
 	}
 	sa, err := g.AddSong(context.Background(), &gopherlink.SongRequest{
