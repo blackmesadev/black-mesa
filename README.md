@@ -6,6 +6,7 @@
 <div align="center">
 
 [![CodeFactor](https://www.codefactor.io/repository/github/blackmesadev/black-mesa/badge?s=14355c8033b3e76f4d0bf466d6726a52305a5d8b)](https://www.codefactor.io/repository/github/blackmesadev/black-mesa) ![Discord](https://img.shields.io/discord/832311430019022848) ![Lines of code](https://img.shields.io/tokei/lines/github.com/blackmesadev/black-mesa) ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/blackmesadev/black-mesa?sort=semver)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fblackmesadev%2Fblack-mesa.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fblackmesadev%2Fblack-mesa?ref=badge_shield)
 
 </div>
 
@@ -40,3 +41,7 @@ Black Mesa also uses [Redis](https://redis.io) for short term variable sharing s
 Black Mesa configuration is in `docker-compse.yml`, this is where you will store your **Token**, **Mongo DB URI** and **Redis URI**
 
 If you are using Docker you will need to `docker-compose build` again before the configuration updates.
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fblackmesadev%2Fblack-mesa.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fblackmesadev%2Fblack-mesa?ref=badge_large)
