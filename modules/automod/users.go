@@ -60,7 +60,7 @@ func createMentionedEmbed(guild *discordgo.Guild, pingedBy *discordgo.User) *dis
 func ProcessGuildMemberAdd(s *discordgo.Session, ma *discordgo.GuildMemberAdd, conf *structs.Config) {
 	processMuted(s, ma, conf)
 
-	if conf.Modules.Automod.GuildOptions != nil {
+	if conf.Modules.Automod.GuildOptions == nil {
 		return
 	}
 
