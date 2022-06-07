@@ -19,12 +19,18 @@ import (
 	"github.com/google/uuid"
 )
 
-var OngoingPurges = make(map[string]map[string]chan struct{})
+var OngoingPurges = make(map[string]map[string]chan struct{}) // map[channelid]map[moderator]chan struct{}
 
 func PurgeCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ctx *discordgo.Context, args []string) {
 	perm, allowed := db.CheckPermission(s, conf, m.GuildID, m.Author.ID, consts.PERMISSION_PURGE)
 	if !allowed {
 		db.NoPermissionHandler(s, m, conf, perm)
+		return
+	}
+
+	// check if there is a purge in progress
+	if _, ok := OngoingPurges[m.ChannelID][m.Author.ID]; ok {
+		s.ChannelMessageSend(m.ChannelID, "<:mesaCross:832350526414127195> A purge is already in progress.")
 		return
 	}
 
