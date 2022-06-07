@@ -3,7 +3,6 @@ package automod
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"strings"
 	"time"
 
@@ -52,68 +51,6 @@ func addExemptMessage(guildId string, messageId string) bool {
 		return true
 	}
 	return false
-}
-
-func makeCompleteCensorStruct(automod *structs.Automod, channelID string, userLevel int64) (combined *structs.Censor) {
-	censorChannel := automod.CensorChannels[channelID]
-
-	i := 0
-	automodCensorLevels := make([]int64, len(automod.CensorLevels))
-	for k := range automod.CensorLevels {
-		automodCensorLevels[i] = k
-		i++
-	}
-
-	censorStruct := automod.CensorLevels[util.GetClosestLevel(automodCensorLevels, userLevel)]
-
-	if censorChannel == nil {
-		return censorStruct
-	}
-
-	combined = censorChannel
-
-	cv := reflect.ValueOf(combined).Elem()
-	lv := reflect.ValueOf(censorStruct).Elem()
-
-	for i := 0; i < cv.NumField(); i++ {
-		cvf := cv.Field(i)
-		// Do not include boolean in combination as we should be prioritising the channel settings anyway and IsZero() will return true for a false bool
-		if cvf.IsZero() && cvf.Kind() != reflect.Bool {
-			cvf.Set(lv.Field(i))
-		}
-	}
-	return combined
-}
-
-func makeCompleteSpamStruct(automod *structs.Automod, channelID string, userLevel int64) (combined *structs.Spam) {
-	spamChannel := automod.SpamChannels[channelID]
-
-	i := 0
-	automodSpamLevels := make([]int64, len(automod.SpamLevels))
-	for k := range automod.SpamLevels {
-		automodSpamLevels[i] = k
-		i++
-	}
-
-	spamLevel := automod.SpamLevels[util.GetClosestLevel(automodSpamLevels, userLevel)]
-
-	if spamChannel == nil {
-		return spamLevel
-	}
-
-	combined = spamChannel
-
-	cv := reflect.ValueOf(combined).Elem()
-	lv := reflect.ValueOf(spamLevel).Elem()
-
-	for i := 0; i < cv.NumField(); i++ {
-		cvf := cv.Field(i)
-		// Do not include boolean in combination as we should be prioritising the channel settings and IsZero() will return true for a false bool
-		if cvf.IsZero() && cvf.Kind() != reflect.Bool {
-			cvf.Set(lv.Field(i))
-		}
-	}
-	return combined
 }
 
 func Process(s *discordgo.Session, m *discordgo.Message) {
@@ -188,9 +125,9 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		return true, "", 0, filterProcessingStart
 	}
 
-	censorStruct := makeCompleteCensorStruct(automod, m.ChannelID, userLevel)
+	censorStruct := util.MakeCompleteCensorStruct(automod, m.ChannelID, userLevel)
 
-	spamStruct := makeCompleteSpamStruct(automod, m.ChannelID, userLevel)
+	spamStruct := util.MakeCompleteSpamStruct(automod, m.ChannelID, userLevel)
 
 	// Level censors
 	if censorStruct != nil {
@@ -206,12 +143,14 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorStruct.FilterInvites {
 			ok, invite := censor.InvitesWhitelistCheck(content, censorStruct.InvitesWhitelist)
 			if !ok {
-				return false, consts.CENSOR_INVITES + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_INVITES, invite)
+				return false, reason, 1, filterProcessingStart
 			}
 		} else if len(censorStruct.InvitesBlacklist) != 0 {
 			ok, invite := censor.InvitesBlacklistCheck(content, censorStruct.InvitesBlacklist)
 			if !ok {
-				return false, consts.CENSOR_INVITES_BLACKLISTED + fmt.Sprintf(" (%v)", invite), 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_INVITES_BLACKLISTED, invite)
+				return false, reason, 1, filterProcessingStart
 			}
 		}
 
@@ -220,12 +159,14 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorStruct.FilterDomains {
 			ok, domain := censor.DomainsWhitelistCheck(content, censorStruct.DomainWhitelist)
 			if !ok {
-				return false, consts.CENSOR_DOMAINS + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_DOMAINS, domain)
+				return false, reason, 1, filterProcessingStart
 			}
 		} else if len(censorStruct.DomainBlacklist) != 0 {
 			ok, domain := censor.DomainsBlacklistCheck(content, censorStruct.DomainBlacklist)
 			if !ok {
-				return false, consts.CENSOR_DOMAINS_BLACKLISTED + fmt.Sprintf(" (%v)", domain), 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_DOMAINS_BLACKLISTED, domain)
+				return false, reason, 1, filterProcessingStart
 			}
 		}
 
@@ -242,12 +183,14 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			for _, c := range contentList {
 				ok, str := censor.StringsCheck(c, censorStruct.BlockedStrings)
 				if !ok {
-					return false, consts.CENSOR_STRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+					reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_STRINGS, str)
+					return false, reason, 1, filterProcessingStart
 				}
 
 				ok, str = censor.SubStringsCheck(c, censorStruct.BlockedSubstrings)
 				if !ok {
-					return false, consts.CENSOR_SUBSTRINGS + fmt.Sprintf(" (%v)", str), 1, filterProcessingStart
+					reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_SUBSTRINGS, str)
+					return false, reason, 1, filterProcessingStart
 				}
 			}
 		}
@@ -256,16 +199,17 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorStruct.FilterIPs {
 			ok := censor.IPCheck(content)
 			if !ok {
-				return false, consts.CENSOR_IP, 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_DOMAINS, "REDACTED")
+				return false, reason, 1, filterProcessingStart
 			}
-
 		}
 
 		//Non english characters
 		if censorStruct.FilterEnglish {
 			ok := censor.ExtendedUnicodeCheck(content)
 			if !ok {
-				return false, consts.CENSOR_NOTENGLISH, 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_NOTENGLISH, content)
+				return false, reason, 1, filterProcessingStart
 			}
 		}
 
@@ -273,7 +217,8 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorStruct.FilterObnoxiousUnicode {
 			ok := censor.ObnoxiousUnicodeCheck(content)
 			if !ok {
-				return false, consts.CENSOR_OBNOXIOUSUNICODE, 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_OBNOXIOUSUNICODE, content)
+				return false, reason, 1, filterProcessingStart
 			}
 		}
 
@@ -281,7 +226,8 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorStruct.FilterRegex {
 			matches, ok := censor.RegexCheck(content, censorStruct.Regex)
 			if !ok {
-				return false, fmt.Sprintf("%v (%v)", consts.CENSOR_REGEX, matches), 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_REGEX, matches)
+				return false, reason, 1, filterProcessingStart
 			}
 		}
 
@@ -289,7 +235,8 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		if censorStruct.FilterUntrustworthy {
 			matches, ok := untrustworthy.CheckUntrustworthy(content)
 			if !ok {
-				return false, fmt.Sprintf("%v (%v)", consts.CENSOR_UNTRUSTWORTHY, matches.Type), 1, filterProcessingStart
+				reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.CENSOR, consts.CENSOR_UNTRUSTWORTHY, string(matches.Type))
+				return false, reason, 1, filterProcessingStart
 			}
 		}
 	}
@@ -305,14 +252,18 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 			if err != nil {
 				logging.LogError(s, m.GuildID, m.Author.ID, "spam.ClearMaxMessages", err)
 			}
-			return false, consts.SPAM_MESSAGES + fmt.Sprintf(" (%v/%v)", spamStruct.MaxMessages, interval.String()), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_MESSAGES,
+				fmt.Sprintf("%v/%v", spamStruct.MaxMessages, interval.String()))
+			return false, reason, 1, filterProcessingStart
 		}
 
 		// newlines
 
 		ok, count := spam.ProcessMaxNewlines(m.Content, spamStruct.MaxNewlines)
 		if !ok {
-			return false, consts.SPAM_NEWLINES + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxNewlines), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_NEWLINES,
+				fmt.Sprintf("%v>%v", count, spamStruct.MaxNewlines))
+			return false, reason, 1, filterProcessingStart
 		}
 
 		// mentions
@@ -320,46 +271,60 @@ func Check(s *discordgo.Session, m *discordgo.Message, conf *structs.Config) (bo
 		ok, count, mentions = spam.ProcessMaxMentions(m, spamStruct.MaxMentions)
 		if !ok {
 			alertMentionedUsers(s, m.GuildID, mentions)
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxMentions), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_MENTIONS,
+				fmt.Sprintf("%v>%v", count, spamStruct.MaxMentions))
+			return false, reason, 1, filterProcessingStart
 		}
 		//var roleMentions []string
 		ok, count, _ = spam.ProcessMaxRoleMentions(m, spamStruct.MaxMentions)
 		if !ok {
 			//alertMentionedRoles(s, m.GuildID, roleMentions)
-			return false, consts.SPAM_MENTIONS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxMentions), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_MENTIONS,
+				fmt.Sprintf("%v>%v", count, spamStruct.MaxMentions))
+			return false, reason, 1, filterProcessingStart
 		}
 
 		// links
 
 		ok, count = spam.ProcessMaxLinks(m.Content, spamStruct.MaxLinks)
 		if !ok {
-			return false, consts.SPAM_LINKS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxLinks), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_LINKS,
+				fmt.Sprintf("%v>%v", count, spamStruct.MaxLinks))
+			return false, reason, 1, filterProcessingStart
 		}
 
 		// uppercase
 		ok, percent := spam.ProcessMaxUppercase(m.Content, spamStruct.MaxUppercasePercent, int(spamStruct.MinUppercaseLimit))
 		if !ok {
-			return false, consts.SPAM_UPPERCASE + fmt.Sprintf(" (%v%% > %v%%)", percent, spamStruct.MaxUppercasePercent), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_UPPERCASE,
+				fmt.Sprintf("%v>%v", percent, spamStruct.MaxUppercasePercent))
+			return false, reason, 1, filterProcessingStart
 		}
 		// emoji
 
 		ok, count = spam.ProcessMaxEmojis(m, spamStruct.MaxEmojis)
 		if !ok {
-			return false, consts.SPAM_EMOJIS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxEmojis), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_EMOJIS,
+				fmt.Sprintf("%v>%v", count, spamStruct.MaxEmojis))
+			return false, reason, 1, filterProcessingStart
 		}
 
 		// attachments
 
 		ok, count = spam.ProcessMaxAttachments(m, spamStruct.MaxAttachments)
 		if !ok {
-			return false, consts.SPAM_ATTACHMENTS + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxAttachments), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_ATTACHMENTS,
+				fmt.Sprintf("%v>%v", count, spamStruct.MaxAttachments))
+			return false, reason, 1, filterProcessingStart
 		}
 
 		// length
 
 		ok, count = spam.ProcessMaxLength(m, spamStruct.MaxCharacters)
 		if !ok {
-			return false, consts.SPAM_MAXLENTH + fmt.Sprintf(" (%v > %v)", count, spamStruct.MaxCharacters), 1, filterProcessingStart
+			reason := util.MakeReason(conf, m.GuildID, m.Author.ID, consts.SPAM, consts.SPAM_MAXLENGTH,
+				fmt.Sprintf("%v>%v", count, spamStruct.MaxCharacters))
+			return false, reason, 1, filterProcessingStart
 
 		}
 	}

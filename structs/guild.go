@@ -89,6 +89,7 @@ type Automod struct {
 	SpamChannels     map[string]*Spam   `json:"spamChannels" bson:"spamChannels"`
 	PublicHumilation bool               `json:"publicHumilation" bson:"publicHumilation"`
 	StaffBypass      bool               `json:"staffBypass" bson:"staffBypass"`
+	ReasonMessage    string             `json:"reasonMessage" bson:"reasonMessage"`
 }
 
 type Logging struct {

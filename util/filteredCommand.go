@@ -39,3 +39,13 @@ func FilteredCommand(input string) (output string) {
 
 	return
 }
+
+func FilteredTrigger(input string) (output string) {
+	repeatLength := len(input) - 2
+
+	if repeatLength > 14 {
+		repeatLength = 14
+	}
+
+	return fmt.Sprintf("%c%v%c", input[0], strings.Repeat("*", repeatLength), input[len(input)-1])
+}
