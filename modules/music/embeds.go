@@ -7,27 +7,22 @@ import (
 
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/discordgo"
-	"github.com/blackmesadev/gavalink"
+	gopherlink "github.com/damaredayo/gopherlink/proto"
 )
 
-func sendPlayEmbed(s *discordgo.Session, channelID string, track gavalink.Track) {
+func sendPlayEmbed(s *discordgo.Session, channelID string, track *gopherlink.SongInfo) {
 
-	timeDuration := time.Millisecond * time.Duration(track.Info.Length)
+	timeDuration := time.Second * time.Duration(track.Duration)
 
 	embedFields := []*discordgo.MessageEmbedField{
 		{
 			Name:   "Author",
-			Value:  track.Info.Author,
+			Value:  track.Author,
 			Inline: true,
 		},
 		{
 			Name:   "Title",
-			Value:  track.Info.Title,
-			Inline: true,
-		},
-		{
-			Name:   "ID",
-			Value:  track.Info.Identifier,
+			Value:  track.Title,
 			Inline: true,
 		},
 		{
@@ -42,7 +37,7 @@ func sendPlayEmbed(s *discordgo.Session, channelID string, track gavalink.Track)
 	}
 
 	embed := &discordgo.MessageEmbed{
-		Title:  fmt.Sprintf("Playing %v", track.Info.Title),
+		Title:  fmt.Sprintf("Playing %v", track.Title),
 		Type:   discordgo.EmbedTypeRich,
 		Footer: footer,
 		Color:  0, // Black int value

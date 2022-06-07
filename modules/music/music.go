@@ -1,6 +1,7 @@
 package music
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -13,29 +14,22 @@ import (
 	"github.com/blackmesadev/black-mesa/info"
 	"github.com/blackmesadev/black-mesa/structs"
 	"github.com/blackmesadev/discordgo"
-	"github.com/blackmesadev/gavalink"
+	gopherlink "github.com/damaredayo/gopherlink/proto"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-var (
-	lavalink *gavalink.Lavalink
-)
+var g gopherlink.GopherlinkClient
 
-func LavalinkInit(r *discordgo.Ready, config structs.LavalinkConfig) {
-	lavalink = gavalink.NewLavalink("1", r.User.ID)
-
-	err := lavalink.AddNodes(gavalink.NodeConfig{
-		REST:      fmt.Sprintf("http://%s", config.Host),
-		WebSocket: fmt.Sprintf("ws://%s", config.Host),
-		Password:  config.Password,
-	})
-
+func GopherlinkInit(r *discordgo.Ready, config structs.GopherlinkConfig) {
+	conn, err := grpc.Dial(config.Host, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Println(err)
+		log.Fatalf("Failed to connect to gopherlink: %v", err)
 		return
 	}
+	g = gopherlink.NewGopherlinkClient(conn)
 
-	log.Println("Lavalink connected.")
-
+	log.Println("Gopherlink connected.")
 }
 
 func joinMemberChannel(s *discordgo.Session, channelID, guildID, userID string) bool {
@@ -69,128 +63,44 @@ func findMemberChannel(s *discordgo.Session, guildID, userID string) string {
 }
 
 func playSong(s *discordgo.Session, channelID, guildID, identifier string) {
-	node, err := lavalink.BestNode()
-	if err != nil {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch lavalink node `%v`", consts.EMOJI_CROSS, err))
-		return
-	}
-
-	player, ok := players[guildID]
+	r, ok := readyState[guildID]
 	if !ok {
-		// if its not here, its likely just due to voice update not finishing yet, so we can implement retry logic
-		var count int
-		for count < 5 {
-			time.Sleep(500 * time.Millisecond)
-			player, ok = players[guildID]
-			if ok {
-				break
-			}
-			count++
-		}
-		// test that it worked
-		if !ok {
-			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-			return
-		}
-	}
-	if player.Track() == "" {
-		next, err := getNext(guildID)
-		if err == nil && next != nil {
-			track := *next
-			err = player.Play(track.Data)
-			sendPlayEmbed(s, channelID, track)
-		}
-	}
-
-	if identifier == "" {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v No player found", consts.EMOJI_CROSS))
 		return
 	}
-	tracks, err := node.LoadTracks(identifier)
-	if err != nil {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to load track `%v`", consts.EMOJI_CROSS, err))
-		return
-	}
-
-	if tracks.Type == gavalink.PlaylistLoaded {
-		trackCount := len(tracks.Tracks)
-		for _, track := range tracks.Tracks {
-			if player.Track() != "" {
-				err := addQueue(guildID, track.Data)
-				if err != nil {
-					log.Println("Failed to add track to queue", err, track.Info)
-					trackCount--
+	if !r {
+		var attempts int
+		ticker := time.NewTicker(time.Second * 1)
+		for {
+			select {
+			case <-ticker.C:
+				if readyState[guildID] {
+					break
 				}
-			} else {
-				err = player.Play(track.Data)
-				if err != nil {
-					s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
+				if attempts >= 5 {
+					s.ChannelMessageSend(channelID, fmt.Sprintf("%v Gopherlink is not ready, please try again later.", consts.EMOJI_CROSS))
 					return
 				}
+				attempts++
 			}
-
-		}
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Queued `%v` tracks successfully", consts.EMOJI_CHECK, trackCount))
-	}
-
-	if tracks.Type == gavalink.TrackLoaded {
-		track := tracks.Tracks[0]
-		if player.Track() != "" {
-			err := addQueue(guildID, track.Data)
-			if err != nil {
-				log.Println("Failed to add track to queue", err, track.Info)
-			} else {
-				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Queued `%v`", consts.EMOJI_CHECK, track.Info.Title))
-			}
-			return
-		}
-		err = player.Play(track.Data)
-		sendPlayEmbed(s, channelID, track)
-		if err != nil {
-			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
-			return
 		}
 	}
-
-	if tracks.Type == gavalink.LoadFailed {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `LOAD_FAILED`", consts.EMOJI_CROSS))
+	sa, err := g.AddSong(context.Background(), &gopherlink.SongRequest{
+		URL:     identifier,
+		GuildId: guildID,
+	})
+	if err != nil {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to add song `%v`", consts.EMOJI_CROSS, err))
 		return
 	}
 
-	if tracks.Type == gavalink.SearchResult {
-		if len(tracks.Tracks) == 0 {
-			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to find track", consts.EMOJI_CROSS))
-			return
-		}
-		track := tracks.Tracks[0]
-		if player.Track() != "" {
-			err := addQueue(guildID, track.Data)
-			if !ok || err != nil {
-				log.Println("Failed to add track to queue", err, track.Info)
-			} else {
-				s.ChannelMessageSend(channelID, fmt.Sprintf("%v Queued `%v`", consts.EMOJI_CHECK, track.Info.Title))
-			}
-			return
-		}
-		err = player.Play(track.Data)
-		sendPlayEmbed(s, channelID, track)
-		if err != nil {
-			s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to play track `%v`", consts.EMOJI_CROSS, err))
-			return
-		}
-	}
-
-	if tracks.Type == gavalink.NoMatches {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to find track `NO_MATCHES`", consts.EMOJI_CROSS))
-		return
-	}
+	sendPlayEmbed(s, channelID, sa.Info)
 }
 
 func stopSong(s *discordgo.Session, channelID, guildID string) error {
-	player, ok := players[guildID]
-	if !ok {
-		return ErrNoPlayer
-	}
-	err := player.Stop()
+	_, err := g.StopSong(context.Background(), &gopherlink.SongStopRequest{
+		GuildId: guildID,
+	})
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to stop track `%v`", consts.EMOJI_CROSS, err))
 		return err
@@ -201,37 +111,22 @@ func stopSong(s *discordgo.Session, channelID, guildID string) error {
 }
 
 func skipSong(s *discordgo.Session, channelID, guildID string) error {
-	player, ok := players[guildID]
-	if !ok {
-		return ErrNoPlayer
-	}
-
-	next, err := getNext(player.GuildID())
+	sr, err := g.Skip(context.Background(), &gopherlink.SkipRequest{
+		GuildId: guildID,
+	})
 	if err != nil {
-		return err
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Unable to skip track `%v`", consts.EMOJI_CROSS, err))
+	} else {
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Skipped `%v - %v`", consts.EMOJI_CHECK, sr.Song.Author, sr.Song.Title))
 	}
-
-	// if there is no song, we should just stop
-	if next == nil {
-		silentStop(s, guildID)
-		return nil
-	}
-
-	err = player.Play(next.Data)
-	if err != nil {
-		return err
-	}
-
-	sendPlayEmbed(s, channelID, *next)
+	sendPlayEmbed(s, channelID, sr.Song)
 	return nil
 }
 
 func silentStop(s *discordgo.Session, guildID string) error {
-	player, ok := players[guildID]
-	if !ok {
-		return ErrNoPlayer
-	}
-	err := player.Stop()
+	_, err := g.StopSong(context.Background(), &gopherlink.SongStopRequest{
+		GuildId: guildID,
+	})
 	if err != nil {
 		return err
 	}
@@ -239,22 +134,13 @@ func silentStop(s *discordgo.Session, guildID string) error {
 }
 
 func destroyPlayer(s *discordgo.Session, channelID, guildID string) error {
-	player, ok := players[guildID]
-	if !ok {
-		return ErrNoPlayer
-	}
-	err := player.Destroy()
-	delete(players, guildID)
-	if err != nil {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to destroy player `%v`", consts.EMOJI_CROSS, err))
-		return err
-	}
+	// TODO: implement this
 	return nil
 }
 
-func getTimeString(track *gavalink.TrackInfo) (timeElapsedString string, timeDurationString string) {
-	timeDuration := time.Unix(0, int64(track.Length*int(time.Millisecond)))
-	timeElapsed := time.Unix(0, int64(track.Position*int(time.Millisecond)))
+func getTimeString(track *gopherlink.SongInfo) (timeElapsedString string, timeDurationString string) {
+	timeDuration := time.Unix(0, track.Duration*int64(time.Second))
+	timeElapsed := time.Unix(0, track.Elapsed*int64(time.Second))
 
 	// We only need to do upto a day because thats the limit anyway.
 	if timeDuration.Day() > 0 {
@@ -280,20 +166,11 @@ func getTimeString(track *gavalink.TrackInfo) (timeElapsedString string, timeDur
 }
 
 func nowPlaying(s *discordgo.Session, channelID, guildID string) {
-	player, ok := players[guildID]
-	if !ok {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-		return
-	}
-	base64Track := player.Track()
-	if base64Track == "" {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Nothing playing", consts.EMOJI_CROSS))
-		return
-	}
-
-	track, err := gavalink.DecodeString(base64Track)
+	track, err := g.NowPlaying(context.Background(), &gopherlink.NowPlayingRequest{
+		GuildId: guildID,
+	})
 	if err != nil {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Unable to fetch track info `%v`", consts.EMOJI_CROSS, err))
+		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to get now playing `%v`", consts.EMOJI_CROSS, err))
 		return
 	}
 
@@ -322,7 +199,7 @@ func nowPlaying(s *discordgo.Session, channelID, guildID string) {
 	}
 
 	embed := &discordgo.MessageEmbed{
-		URL:    track.URI,
+		URL:    track.URL,
 		Title:  fmt.Sprintf("Playing %v", track.Title),
 		Type:   discordgo.EmbedTypeRich,
 		Footer: footer,
@@ -339,53 +216,52 @@ func seek(s *discordgo.Session, channelID, guildID, duration string) {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to parse duration, the format is: `1h30m45s`", consts.EMOJI_CROSS))
 		return
 	}
-	player, ok := players[guildID]
-	if !ok {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-		return
-	}
-	err = player.Seek(int(parsedDuration.Milliseconds()))
+	ss, err := g.Seek(context.Background(), &gopherlink.SeekRequest{
+		GuildId:  guildID,
+		Duration: int64(parsedDuration.Seconds()),
+		Type:     gopherlink.SeekType_TO_DURATION,
+	})
+
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to seek `%v`", consts.EMOJI_CROSS, err))
+		return
 	}
+	newDuration, _ := getTimeString(ss)
+	s.ChannelMessageSend(channelID, fmt.Sprintf("%v Seeked to `%v`", consts.EMOJI_CHECK, newDuration))
 }
 
 func rawSeek(s *discordgo.Session, channelID, guildID string, duration time.Duration) {
-	player, ok := players[guildID]
-	if !ok {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-		return
-	}
-	err := player.Seek(int(duration.Milliseconds()))
-	if err != nil {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to seek `%v`", consts.EMOJI_CROSS, err))
-	}
+	// TODO: implement this
 }
 
 func getPosition(guildID string) *time.Duration {
-	player, ok := players[guildID]
-	if !ok {
+	np, err := g.NowPlaying(context.Background(), &gopherlink.NowPlayingRequest{
+		GuildId: guildID,
+	})
+	if err != nil {
 		return nil
 	}
-	pos := time.Duration(player.Position()) * time.Millisecond
+	pos := time.Duration(np.Elapsed * int64(time.Second))
 	return &pos
 }
 
-func playerInfo(s *discordgo.Session, channelID, guildID string) {
-	player, ok := players[guildID]
-	if !ok {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-		return
+func playerInfo(s *discordgo.Session, channelID, guildID string) error {
+	np, err := g.NowPlaying(context.Background(), &gopherlink.NowPlayingRequest{
+		GuildId: guildID,
+	})
+	if err != nil {
+		return nil
 	}
 
 	var status string
 
-	if player.Track() == "" {
-		status = "Stopped"
-	} else if player.Paused() {
-		status = "Paused"
-	} else {
+	switch np.Playing {
+	case gopherlink.PlayStatus_PLAYING:
 		status = "Playing"
+	case gopherlink.PlayStatus_PAUSED:
+		status = "Paused"
+	case gopherlink.PlayStatus_STOPPED:
+		status = "Stopped"
 	}
 
 	embedFields := []*discordgo.MessageEmbedField{
@@ -396,12 +272,7 @@ func playerInfo(s *discordgo.Session, channelID, guildID string) {
 		},
 		{
 			Name:   "Track",
-			Value:  player.Track(),
-			Inline: true,
-		},
-		{
-			Name:   "Volume",
-			Value:  strconv.Itoa(player.GetVolume()),
+			Value:  np.Title,
 			Inline: true,
 		},
 	}
@@ -419,39 +290,34 @@ func playerInfo(s *discordgo.Session, channelID, guildID string) {
 	}
 
 	s.ChannelMessageSendEmbed(channelID, embed)
+	return nil
 
 }
 
 func getVolume(s *discordgo.Session, channelID, guildID string) string {
-	player, ok := players[guildID]
-	if !ok {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-		return ""
-	}
-	return strconv.Itoa(player.GetVolume())
+	// TODO: implement this
+	return ""
 }
 
 func setVolume(s *discordgo.Session, channelID, guildID, volume string) error {
-	player, ok := players[guildID]
-	if !ok {
-		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to fetch player, try disconnecting and rejoining the bot to the VC `%v`", consts.EMOJI_CROSS, ErrNoPlayer))
-		return ErrNoPlayer
-	}
-
 	volumeInt, err := strconv.Atoi(volume)
 	if err != nil {
 		return err.(*strconv.NumError).Err
 	}
 
-	if volumeInt < 0 || volumeInt > 1000 {
-		return errors.New("Volume is out of range, must be within [0, 1000]")
+	if volumeInt < 0 || volumeInt > 100 {
+		return errors.New("Volume is out of range, must be within [0, 100]")
 	}
 
-	err = player.Volume(volumeInt)
+	g.Volume(context.Background(), &gopherlink.VolumeRequest{
+		GuildId: guildID,
+		Volume:  float32(volumeInt) / 100,
+	})
 	if err != nil {
 		s.ChannelMessageSend(channelID, fmt.Sprintf("%v Failed to set volume. `%v`", consts.EMOJI_CROSS, err))
 		return err
 	}
+	s.ChannelMessageSend(channelID, fmt.Sprintf("%v Set volume to `%v`", consts.EMOJI_CHECK, volumeInt))
 	return nil
 }
 
