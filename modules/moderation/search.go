@@ -117,7 +117,7 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 
 		field := &discordgo.MessageEmbedField{
 			Name: strings.Title(punishment.Type),
-			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:** %v\n**UUID:** %v\n**Expiring:** %v\n**Created:** <t:%v:f>",
+			Value: fmt.Sprintf("**Reason:** `%v`\n**Issued By:** %v\n**UUID:** %v\n**Expiring:** %v\n**Created:** <t:%v:f>",
 				punishment.Reason, issuer, punishment.UUID, expiring, punishment.ID.Timestamp().Unix()),
 			Inline: true,
 		}
@@ -193,7 +193,7 @@ func SearchByUUID(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 	embedFields := []*discordgo.MessageEmbedField{
 		{
 			Name: strings.Title(punishment.Type),
-			Value: fmt.Sprintf("**Reason:** %v\n**Issued By:**%v\n**Expiring:** %v\n**Created:** <t:%v:f>",
+			Value: fmt.Sprintf("**Reason:** `%v`\n**Issued By:**%v\n**Expiring:** %v\n**Created:** <t:%v:f>",
 				punishment.Reason, issuer, expiring, punishment.ID.Timestamp().Unix()),
 			Inline: true,
 		},
