@@ -136,6 +136,12 @@ type AntiNukeThreshold struct {
 	Type     string `json:"type" bson:"type"`
 }
 
+type AntiRaidThreshold struct {
+	Max      int64  `json:"max" bson:"max"`
+	Interval int64  `json:"interval" bson:"interval"`
+	Type     string `json:"type" bson:"type"`
+}
+
 type VoteMute struct {
 	Enabled         bool  `json:"enabled" bson:"enabled"`
 	MaxDuration     int64 `json:"maxDuration" bson:"maxDuration"`
