@@ -32,7 +32,18 @@ func addLog(s *discordgo.Session, guildId string, emoji string, line string, pub
 }
 
 func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason string) {
-	fullName := message.Author.Username + "#" + message.Author.Discriminator
+	var fullName string
+	if message.Author.Username == "" || message.Author.Discriminator == "" {
+		u, err := s.User(message.Author.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = message.Author.Username + "#" + message.Author.Discriminator
+	}
+
 	channel, err := s.Channel(message.ChannelID)
 	if err != nil {
 		return
@@ -48,7 +59,18 @@ func LogMessageCensor(s *discordgo.Session, message *discordgo.Message, reason s
 }
 
 func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reason string) {
-	fullName := message.Author.Username + "#" + message.Author.Discriminator
+	var fullName string
+	if message.Author.Username == "" || message.Author.Discriminator == "" {
+		u, err := s.User(message.Author.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = message.Author.Username + "#" + message.Author.Discriminator
+	}
+
 	channel, err := s.Channel(message.ChannelID)
 	if err != nil {
 		return
@@ -64,7 +86,17 @@ func LogMessageViolation(s *discordgo.Session, message *discordgo.Message, reaso
 }
 
 func LogStrike(s *discordgo.Session, guildId string, actor string, target *discordgo.User, weight int64, reason string, location string, uuid string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -86,7 +118,17 @@ func LogRemoveAction(s *discordgo.Session, guildId string, actor string, uuid st
 }
 
 func LogRoleAdd(s *discordgo.Session, guildId string, actor string, role string, target *discordgo.User, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -98,7 +140,17 @@ func LogRoleAdd(s *discordgo.Session, guildId string, actor string, role string,
 }
 
 func LogTempRoleAdd(s *discordgo.Session, guildId string, actor string, role string, target *discordgo.User, duration time.Duration, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -110,7 +162,17 @@ func LogTempRoleAdd(s *discordgo.Session, guildId string, actor string, role str
 }
 
 func LogMute(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -122,7 +184,17 @@ func LogMute(s *discordgo.Session, guildId string, actor string, target *discord
 }
 
 func LogTempMute(s *discordgo.Session, guildId string, actor string, target *discordgo.User, duration time.Duration, reason string, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -134,7 +206,17 @@ func LogTempMute(s *discordgo.Session, guildId string, actor string, target *dis
 }
 
 func LogUnmute(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -146,7 +228,17 @@ func LogUnmute(s *discordgo.Session, guildId string, actor string, target *disco
 }
 
 func LogMws(s *discordgo.Session, guildId string, actor string, target *discordgo.User, muteDuration time.Duration, strikeDuration time.Duration, reason string, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	msg := fmt.Sprintf("%v muted %v (`%v`)", actor, fullName, target.ID)
 
@@ -172,7 +264,17 @@ func LogMws(s *discordgo.Session, guildId string, actor string, target *discordg
 }
 
 func LogBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -184,7 +286,17 @@ func LogBan(s *discordgo.Session, guildId string, actor string, target *discordg
 }
 
 func LogTempBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, duration time.Duration, reason string, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -226,7 +338,17 @@ func LogUnban(s *discordgo.Session, guildId string, actor string, target string,
 }
 
 func LogSoftBan(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -248,7 +370,17 @@ func LogHackSoftBan(s *discordgo.Session, guildId string, actor string, id strin
 }
 
 func LogKick(s *discordgo.Session, guildId string, actor string, target *discordgo.User, reason string, location string) {
-	fullName := target.Username + "#" + target.Discriminator
+	var fullName string
+	if target.Username == "" || target.Discriminator == "" {
+		u, err := s.User(target.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = target.Username + "#" + target.Discriminator
+	}
 
 	addLog(s,
 		guildId,
@@ -260,7 +392,17 @@ func LogKick(s *discordgo.Session, guildId string, actor string, target *discord
 }
 
 func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
-	fullName := message.Author.Username + "#" + message.Author.Discriminator
+	var fullName string
+	if message.Author.Username == "" || message.Author.Discriminator == "" {
+		u, err := s.User(message.Author.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = message.Author.Username + "#" + message.Author.Discriminator
+	}
 
 	channel, err := s.Channel(message.ChannelID)
 	if err != nil {
@@ -282,7 +424,17 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 }
 
 func LogMessageUpdate(s *discordgo.Session, message *discordgo.Message, before string) {
-	fullName := message.Author.Username + "#" + message.Author.Discriminator
+	var fullName string
+	if message.Author.Username == "" || message.Author.Discriminator == "" {
+		u, err := s.User(message.Author.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = message.Author.Username + "#" + message.Author.Discriminator
+	}
 
 	channel, err := s.Channel(message.ChannelID)
 	if err != nil {
@@ -309,7 +461,17 @@ func LogStrikeEscalationFail(s *discordgo.Session, guildid string, targetID stri
 }
 
 func LogPurge(s *discordgo.Session, message *discordgo.Message, uuid string) {
-	fullName := message.Author.Username + "#" + message.Author.Discriminator
+	var fullName string
+	if message.Author.Username == "" || message.Author.Discriminator == "" {
+		u, err := s.User(message.Author.ID)
+		if err != nil {
+			fullName = "Unknown"
+		} else {
+			fullName = u.Username + "#" + u.Discriminator
+		}
+	} else {
+		fullName = message.Author.Username + "#" + message.Author.Discriminator
+	}
 
 	addLog(s,
 		message.GuildID,
