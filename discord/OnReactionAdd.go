@@ -24,6 +24,10 @@ func (bot *Bot) OnReactionAdd(s *discordgo.Session, ra *discordgo.MessageReactio
 		return // no config
 	}
 
+	if conf.Modules.Voting == nil {
+		return // voting module disabled
+	}
+
 	if ra.Emoji.ID != conf.Modules.Voting.UpvoteEmojiID {
 		return // we dont care
 	}
