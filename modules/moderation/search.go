@@ -103,7 +103,16 @@ func SearchByUser(s *discordgo.Session, m *discordgo.Message, conf *structs.Conf
 		}
 
 		if ShouldCensor(s, conf, m.GuildID, m.Author.ID) {
-			punishment.Reason = util.FilteredCommand(punishment.Reason)
+			userLevel := db.GetLevel(s, conf, m.GuildID, m.Author.ID)
+			censorStruct := util.MakeCompleteCensorStruct(conf.Modules.Automod, m.ChannelID, userLevel)
+			ok, str := censor.StringsCheck(punishment.Reason, censorStruct.BlockedStrings)
+			if !ok {
+				punishment.Reason = strings.Replace(punishment.Reason, str, util.FilteredTrigger(str), -1)
+			}
+			ok, str = censor.SubStringsCheck(punishment.Reason, censorStruct.BlockedSubstrings)
+			if !ok {
+				punishment.Reason = strings.Replace(punishment.Reason, str, util.FilteredTrigger(str), -1)
+			}
 		}
 
 		field := &discordgo.MessageEmbedField{
