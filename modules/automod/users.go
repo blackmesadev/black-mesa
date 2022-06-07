@@ -58,13 +58,13 @@ func createMentionedEmbed(guild *discordgo.Guild, pingedBy *discordgo.User) *dis
 
 // Doesn't need to return anything because this should handle everything silently
 func ProcessGuildMemberAdd(s *discordgo.Session, ma *discordgo.GuildMemberAdd, conf *structs.Config) {
-	if conf.Modules.Automod.GuildOptions == nil {
+	processMuted(s, ma, conf)
+
+	if conf.Modules.Automod.GuildOptions != nil {
 		return
 	}
 
 	minAccAge := util.ParseTime(conf.Modules.Automod.GuildOptions.MinimumAccountAge)
-
-	processMuted(s, ma, conf)
 
 	if ok := processDates(s, ma.Member, minAccAge); !ok {
 		// TODO: do something useful here
