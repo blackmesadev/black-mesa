@@ -107,6 +107,20 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 				s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, &timeExpiry, permBan, "Banned"))
 			}
 
+			if permBan {
+				if hackban {
+					logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
+				} else {
+					logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+				}
+			} else {
+				if hackban {
+					logging.LogHackTempBan(s, m.GuildID, fullName, id, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+				} else {
+					logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
+				}
+			}
+
 			err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
 			if err != nil {
 				unableBan[id] = err
@@ -122,20 +136,6 @@ func BanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, ct
 					} else {
 						bannedUsers = append(bannedUsers, "<@"+id+">")
 					}
-				}
-			}
-
-			if permBan {
-				if hackban {
-					logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
-				} else {
-					logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
-				}
-			} else {
-				if hackban {
-					logging.LogHackTempBan(s, m.GuildID, fullName, id, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
-				} else {
-					logging.LogTempBan(s, m.GuildID, fullName, member.User, time.Until(time.Unix(duration, 0)), reason, m.ChannelID)
 				}
 			}
 		}(id)

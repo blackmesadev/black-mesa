@@ -69,6 +69,7 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		if err == nil {
 			s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, nil, false, "Kicked"))
 		}
+		logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 		err = s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
 
 		if err != nil {
@@ -77,7 +78,6 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 			msg += fmt.Sprintf("<@%v> ", id)
 			AddKick(m.GuildID, m.Author.ID, id, reason, infractionUUID)
 		}
-		logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 	}
 
 	if len(reason) != 0 {

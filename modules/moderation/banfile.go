@@ -128,6 +128,12 @@ func BanFileCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 				s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, nil, true, "Banned"))
 			}
 
+			if hackban {
+				logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
+			} else {
+				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+			}
+
 			err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 0)
 			if err != nil {
 				unableBan = append(unableBan, id)
@@ -138,11 +144,6 @@ func BanFileCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 				AddTimedBan(m.GuildID, m.Author.ID, id, 0, reason, infractionUUID)
 			}
 
-			if hackban {
-				logging.LogHackBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
-			} else {
-				logging.LogBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
-			}
 		}(id)
 	}
 

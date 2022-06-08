@@ -73,6 +73,11 @@ func SoftBanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 			if err == nil {
 				s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, nil, false, "Softbanned"))
 			}
+			if hackban {
+				logging.LogHackSoftBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
+			} else {
+				logging.LogSoftBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+			}
 			err = s.GuildBanCreateWithReason(m.GuildID, id, reason, 1) // todo: make the days configurable via cmd params + config (default setting)
 			if err != nil {
 				unableBan = append(unableBan, id)
@@ -83,11 +88,6 @@ func SoftBanCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message
 				} else {
 					msg += fmt.Sprintf("<@%v> ", id)
 				}
-			}
-			if hackban {
-				logging.LogHackSoftBan(s, m.GuildID, fullName, id, reason, m.ChannelID)
-			} else {
-				logging.LogSoftBan(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
 			}
 
 		}
