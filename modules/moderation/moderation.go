@@ -251,6 +251,8 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			return err
 		}
 
+		timeExpiry = time.Unix(duration, 0)
+
 		switch escalatingTo.Type {
 		case "mute":
 			err := s.GuildMemberRoleAdd(guildId, userId, guildConfig.Modules.Moderation.MuteRole)
@@ -270,7 +272,7 @@ func IssueStrike(s *discordgo.Session, guildId string, userId string, issuer str
 			s.UserMessageSendEmbed(userId, CreatePunishmentEmbed(member, guild, issuerUser, reason, &timeExpiry, permenant, "Muted"))
 
 			if duration != 0 {
-				logging.LogTempMute(s, guildId, "AutoMod", member.User, time.Until(time.Unix(duration, 0)), reason, location)
+				logging.LogTempMute(s, guildId, "AutoMod", member.User, time.Until(timeExpiry), reason, location)
 			} else {
 				logging.LogMute(s, guildId, "AutoMod", member.User, reason, location)
 			}
