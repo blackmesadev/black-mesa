@@ -6,7 +6,7 @@ var UserIdRegex = regexp.MustCompile(`^(?:<@!?)?(\d+)>?$`)
 
 var RoleIdRegex = regexp.MustCompile(`^(?:<@&!?)?(\d+)>?$`)
 
-var SnowflakeRegex = regexp.MustCompile(`([0-9]{17,18})`)
+var SnowflakeRegex = regexp.MustCompile(`([0-9]{17,19})`)
 
 var NumberRegex = regexp.MustCompile(`[0-9]*[.]?[0-9]+`)
 
