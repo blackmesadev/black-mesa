@@ -392,7 +392,9 @@ func LogKick(s *discordgo.Session, guildId string, actor string, target *discord
 }
 
 func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
+
 	var fullName string
+
 	if message.Author.Username == "" || message.Author.Discriminator == "" {
 		u, err := s.User(message.Author.ID)
 		if err != nil {
@@ -414,10 +416,34 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 		attachments += v.URL + " "
 	}
 
+	log, err := s.GuildAuditLog(message.GuildID, "", "", 72, 1)
+	if err != nil {
+		return
+	}
+
+	var msgDeleteMemberID string
+	if len(log.AuditLogEntries) > 0 && log.AuditLogEntries[0].TargetID == message.Author.ID {
+		msgDeleteMemberID = log.AuditLogEntries[0].UserID
+	} else {
+		msgDeleteMemberID = message.Author.ID
+	}
+
+	msgDeleteMember, err := s.GuildMember(message.GuildID, msgDeleteMemberID)
+	if err != nil {
+		return
+	}
+
 	addLog(s,
 		message.GuildID,
 		consts.EMOJI_MESSAGE_DELETE,
-		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`)\n```\n%v\n```", fullName, message.Author.ID, channel.Name, channel.ID, escapeBackticks(message.Content)+"\n\n"+attachments),
+		fmt.Sprintf("Message by %v (`%v`) was deleted from #%v (`%v`) by %v (`%v`)\n```\n%v\n```",
+			fullName,
+			message.Author.ID,
+			channel.Name,
+			channel.ID,
+			fmt.Sprintf("%v#%v", msgDeleteMember.User.Username, msgDeleteMember.User.Discriminator),
+			msgDeleteMemberID,
+			escapeBackticks(message.Content)+"\n\n"+attachments),
 		false,
 		"",
 	)
