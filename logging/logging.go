@@ -2,6 +2,8 @@ package logging
 
 import (
 	"fmt"
+	bmRedis "github.com/blackmesadev/black-mesa/redis"
+	"github.com/go-redis/redis/v8"
 	"time"
 
 	"github.com/blackmesadev/black-mesa/consts"
@@ -394,7 +396,6 @@ func LogKick(s *discordgo.Session, guildId string, actor string, target *discord
 func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 
 	var fullName string
-
 	if message.Author.Username == "" || message.Author.Discriminator == "" {
 		u, err := s.User(message.Author.ID)
 		if err != nil {
@@ -421,13 +422,26 @@ func LogMessageDelete(s *discordgo.Session, message *discordgo.Message) {
 		return
 	}
 
+	var r *redis.Client
+	if r == nil {
+		r = bmRedis.GetRedis()
+	}
+
+	redisAuditID, err := r.Get(r.Context(), fmt.Sprintf("auditlogmsgdel:%v", message.GuildID)).Result()
+	if err != nil {
+		redisAuditID = ""
+	}
+
 	var msgDeleteMemberID string
-	if len(log.AuditLogEntries) > 0 && log.AuditLogEntries[0].TargetID == message.Author.ID {
+	if len(log.AuditLogEntries) > 0 && log.AuditLogEntries[0].TargetID == message.Author.ID && redisAuditID != log.AuditLogEntries[0].ID {
 		msgDeleteMemberID = log.AuditLogEntries[0].UserID
+		err := r.Set(r.Context(), fmt.Sprintf("auditlogmsgdel:%v", message.GuildID), log.AuditLogEntries[0].ID, 0).Err()
+		if err != nil {
+			return
+		} //this probably shouldnt ever happen but tyler knows redis better than i do
 	} else {
 		msgDeleteMemberID = message.Author.ID
 	}
-
 	msgDeleteMember, err := s.GuildMember(message.GuildID, msgDeleteMemberID)
 	if err != nil {
 		return
