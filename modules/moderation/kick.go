@@ -69,7 +69,11 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 		if err == nil {
 			s.UserMessageSendEmbed(id, CreatePunishmentEmbed(member, guild, m.Author, reason, nil, false, "Kicked"))
 		}
-		logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+
+		if member.User != nil {
+			logging.LogKick(s, m.GuildID, fullName, member.User, reason, m.ChannelID)
+		} //bot doesnt crash anymore so goal reached i guess???
+
 		err = s.GuildMemberDeleteWithReason(m.GuildID, id, reason)
 
 		if err != nil {
@@ -85,7 +89,7 @@ func KickCmd(s *discordgo.Session, conf *structs.Config, m *discordgo.Message, c
 	}
 
 	if len(unableKick) != 0 {
-		msg += fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not kick %v users.", len(unableKick))
+		msg = fmt.Sprintf("\n<:mesaCross:832350526414127195> Could not kick %v users.", len(unableKick))
 	}
 
 	s.ChannelMessageSend(m.ChannelID, msg)
