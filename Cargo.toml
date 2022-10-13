@@ -1,0 +1,43 @@
+[package]
+name = "black-mesa"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+twilight-cache-inmemory = "0.13.0"
+twilight-command-parser = "0.9.0"
+twilight-embed-builder = "0.11.1"
+twilight-gateway = "0.13.2"
+twilight-gateway-queue = "0.13.1"
+twilight-http = "0.13.0"
+twilight-mention = "0.13.0"
+twilight-model = "0.13.3"
+twilight-util = { version = "0.13.1", features = ["builder"] }
+tokio = { version = "1.21.0", features = ["full"] }
+mongodb = { version = "2.3", features = ["tokio-runtime"] }
+serde = { version = "1.0.144" }
+serde_derive = "1.0.144"
+serde_json = "1.0.85"
+serde-aux = "4.0.0"
+serde_with = "2.0.0"
+regex = "1.6.0"
+lazy_static = "1.4.0"
+built = "0.5.1"
+bson = "2.4.0"
+strum = "0.24.1"
+strum_macros = "0.24.1"
+futures = "0.3.24"
+futures-util = "0.3.24"
+chrono = "0.4.22"
+cached = "0.39.0"
+
+[dependencies.redis]
+version = "*"
+features = ["tokio-comp"]
+
+[dependencies.uuid]
+version = "1.1.2"
+features = [
+    "v4",
+    "fast-rng",
+]
