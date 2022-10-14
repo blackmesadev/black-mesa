@@ -537,11 +537,25 @@ impl Handler {
             return Ok(());
         }
 
-        let content = &msg.content;
+        let mut content = msg.content.clone();
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
+            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
         }
-        let id_list: Vec<String> = RE.find_iter(content).map(|m| m.as_str().to_string()).collect();
+
+        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
+            let full_str = cap.get(0).unwrap().as_str();
+            let emoji_name = cap.get(1).unwrap().as_str();
+            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+        });
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
+        }
+        let mut last_id = "";
+        let id_list: Vec<String> = RE.captures_iter(&content).map(|cap| {
+            last_id = cap.get(0).unwrap().as_str();
+            cap.get(1).unwrap().as_str().to_string()
+        }).collect();
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
@@ -562,7 +576,7 @@ impl Handler {
         }
         
 
-        let mut splitby = id_list.last().unwrap();
+        let mut splitby = last_id;
 
         if !duration.full_string.is_empty() {
             splitby = &duration.full_string;
@@ -660,11 +674,25 @@ impl Handler {
             return Ok(());
         }
 
-        let content = &msg.content;
+        let mut content = msg.content.clone();
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
+            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
         }
-        let id_list: Vec<String> = RE.find_iter(content).map(|m| m.as_str().to_string()).collect();
+
+        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
+            let full_str = cap.get(0).unwrap().as_str();
+            let emoji_name = cap.get(1).unwrap().as_str();
+            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+        });
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
+        }
+        let mut last_id = "";
+        let id_list: Vec<String> = RE.captures_iter(&content).map(|cap| {
+            last_id = cap.get(0).unwrap().as_str();
+            cap.get(1).unwrap().as_str().to_string()
+        }).collect();
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
@@ -674,7 +702,7 @@ impl Handler {
             return Ok(());
         }
 
-        let splitby = id_list.last().unwrap();
+        let splitby = last_id;
 
         let reason = match content.to_string().split(splitby).collect::<Vec<&str>>() {
             mut vec if vec.len() > 1 => {
@@ -761,11 +789,25 @@ impl Handler {
             return Ok(());
         }
 
-        let content = &msg.content;
+        let mut content = msg.content.clone();
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
+            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
         }
-        let id_list: Vec<String> = RE.find_iter(content).map(|m| m.as_str().to_string()).collect();
+
+        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
+            let full_str = cap.get(0).unwrap().as_str();
+            let emoji_name = cap.get(1).unwrap().as_str();
+            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+        });
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
+        }
+        let mut last_id = "";
+        let id_list: Vec<String> = RE.captures_iter(&content).map(|cap| {
+            last_id = cap.get(0).unwrap().as_str();
+            cap.get(1).unwrap().as_str().to_string()
+        }).collect();
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
@@ -777,7 +819,7 @@ impl Handler {
 
         let duration = duration::Duration::new(content.to_string());
 
-        let mut splitby = id_list.last().unwrap();
+        let mut splitby = last_id;
 
         if !duration.full_string.is_empty() {
             splitby = &duration.full_string;
@@ -875,11 +917,25 @@ impl Handler {
             return Ok(());
         }
 
-        let content = &msg.content;
+        let mut content = msg.content.clone();
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
+            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
         }
-        let id_list: Vec<String> = RE.find_iter(content).map(|m| m.as_str().to_string()).collect();
+
+        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
+            let full_str = cap.get(0).unwrap().as_str();
+            let emoji_name = cap.get(1).unwrap().as_str();
+            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+        });
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
+        }
+        let mut last_id = "";
+        let id_list: Vec<String> = RE.captures_iter(&content).map(|cap| {
+            last_id = cap.get(0).unwrap().as_str();
+            cap.get(1).unwrap().as_str().to_string()
+        }).collect();
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
@@ -889,7 +945,7 @@ impl Handler {
             return Ok(());
         }
 
-        let splitby = id_list.last().unwrap();
+        let splitby = last_id;
 
         let reason = match content.to_string().split(splitby).collect::<Vec<&str>>() {
             mut vec if vec.len() > 1 => {
@@ -967,11 +1023,25 @@ impl Handler {
             return Ok(());
         }
 
-        let content = &msg.content;
+        let mut content = msg.content.clone();
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
+            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
         }
-        let id_list: Vec<String> = RE.find_iter(content).map(|m| m.as_str().to_string()).collect();
+
+        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
+            let full_str = cap.get(0).unwrap().as_str();
+            let emoji_name = cap.get(1).unwrap().as_str();
+            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+        });
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
+        }
+        let mut last_id = "";
+        let id_list: Vec<String> = RE.captures_iter(&content).map(|cap| {
+            last_id = cap.get(0).unwrap().as_str();
+            cap.get(1).unwrap().as_str().to_string()
+        }).collect();
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
@@ -983,7 +1053,7 @@ impl Handler {
 
         let duration = duration::Duration::new(content.to_string());
 
-        let mut splitby = id_list.last().unwrap();
+        let mut splitby = last_id;
 
         if !duration.full_string.is_empty() {
             splitby = &duration.full_string;
@@ -1083,11 +1153,25 @@ impl Handler {
             return Ok(());
         }
 
-        let content = &msg.content;
+        let mut content = msg.content.clone();
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
+            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
         }
-        let id_list: Vec<String> = RE.find_iter(content).map(|m| m.as_str().to_string()).collect();
+
+        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
+            let full_str = cap.get(0).unwrap().as_str();
+            let emoji_name = cap.get(1).unwrap().as_str();
+            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+        });
+
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
+        }
+        let mut last_id = "";
+        let id_list: Vec<String> = RE.captures_iter(&content).map(|cap| {
+            last_id = cap.get(0).unwrap().as_str();
+            cap.get(1).unwrap().as_str().to_string()
+        }).collect();
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
@@ -1097,7 +1181,7 @@ impl Handler {
             return Ok(());
         }
 
-        let splitby = id_list.last().unwrap();
+        let splitby = last_id;
 
         let reason = match content.to_string().split(splitby).collect::<Vec<&str>>() {
             mut vec if vec.len() > 1 => {

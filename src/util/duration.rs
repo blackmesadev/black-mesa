@@ -27,7 +27,7 @@ impl Duration {
         };
     
         lazy_static! {
-            static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\s*(y|mo|w|d|h|m|s)").unwrap();
+            static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\S*(y|mo|w|d|h|m|s)").unwrap();
         }
 
         for cap in DUR_REGEX.captures_iter(&str) {
@@ -63,7 +63,7 @@ impl Duration {
         };
     
         lazy_static! {
-            static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\s*(y|mo|w|d|h|m|s)").unwrap();
+            static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\S*(y|mo|w|d|h|m|s)").unwrap();
         }
 
         for cap in DUR_REGEX.captures_iter(&str) {
