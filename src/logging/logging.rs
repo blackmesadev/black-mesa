@@ -179,9 +179,22 @@ impl Logging {
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::MessageDelete) {
                 return None;
         }
+
+        let mut log = format!("<:mesaMessageDelete:869663511977025586> Message by <@{}> deleted in channel <#{}> (`{}`): ",
+        msg.author().get(), msg.channel_id().get(), msg.channel_id().get());
         
-        Some(format!("<:mesaMessageDelete:869663511977025586> Message by <@{}> deleted in channel <#{}> (`{}`): `{}`",
-            msg.author().get(), msg.channel_id().get(), msg.channel_id().get(), msg.content()))
+        if msg.content().len() > 0 {
+            log += format!("`{}`", &msg.content()).as_str();
+        }
+
+        if msg.attachments().len() > 0 {
+            log += "\n Attachments: ";
+            for attachment in msg.attachments() {
+                log += format!("`{}` ", attachment.url).as_str();
+            }
+        }
+
+        Some(log)
     }
 
     pub fn log_message_edit(&self, msg: &MessageUpdate, before: String) -> Option<String> {
