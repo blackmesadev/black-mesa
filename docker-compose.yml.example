@@ -1,0 +1,43 @@
+version: '3.7'
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: black-mesa
+    restart: unless-stopped
+    links:
+      - mongo
+      - redis
+    depends_on:
+      - mongo
+      - redis
+    environment:
+      - DISCORD_TOKEN=
+      - MONGO_URI=mongodb://username:password@mongo:27017
+      - REDIS_URI=redis:6379
+
+  mongo:
+    image: mongo
+    restart: unless-stopped
+    volumes:
+      - ./data/mongodb:/data/db
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=username
+      - MONGO_INITDB_ROOT_PASSWORD=password
+
+  redis:
+    image: redis
+    restart: unless-stopped
+    volumes:
+      - ./data/redis:/data
+    ports:
+      - 6739:6739
+
+networks:
+  default:
+    external:
+      name: black-mesa-network
