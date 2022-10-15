@@ -595,6 +595,27 @@ impl Handler {
             _ => None
         };
 
+        // Give response before actually striking becuase discord api is slow as fuck and we dont want people
+        // wondering if the bot is actually doing anything. Plus, even if it did fail, it's not like we would
+        // say anything, possibly change this in the future but for now this is sufficient.
+        // TODO: update message if fail
+
+        let duration_str = if duration.is_permenant() {
+            "`Never`".to_string()
+        } else {
+            format!("{} ({})", duration.to_discord_timestamp(), duration.to_discord_relative_timestamp())
+        };
+
+        let resp = match reason {
+            Some(ref reason) => {
+                format!("<:mesaStrike:869663336843845752> Successfully striked {} expiring {} for reason `{}`", 
+                    mentions_from_id_str_vec(&id_list), duration_str, reason)
+            },
+            None => format!("<:mesaStrike:869663336843845752> Successfully striked {} expiring {}", 
+                mentions_from_id_str_vec(&id_list), duration_str)
+        };
+        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
+
         let mut uuids: Vec<String> = Vec::new();
 
         match msg.guild_id {
@@ -612,23 +633,6 @@ impl Handler {
 
             None => {} // dont care.
         }
-
-        let duration_str = if duration.is_permenant() {
-            "`Never`".to_string()
-        } else {
-            format!("{} ({})", duration.to_discord_timestamp(), duration.to_discord_relative_timestamp())
-        };
-        
-
-        let resp = match reason {
-            Some(ref reason) => {
-                format!("<:mesaStrike:869663336843845752> Successfully striked {} expiring {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), duration_str, reason)
-            },
-            None => format!("<:mesaStrike:869663336843845752> Successfully striked {} expiring {}", 
-                mentions_from_id_str_vec(&id_list), duration_str)
-        };
-        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
         let allowed_mentions = AllowedMentions::builder().build();
 
@@ -717,6 +721,15 @@ impl Handler {
             _ => None
         };
 
+        let resp = match reason {
+            Some(ref reason) => {
+                format!("<:mesaKick:869665034312253460> Successfully kicked {} for reason `{}`", 
+                    mentions_from_id_str_vec(&id_list), reason)
+            },
+            None => format!("<:mesaKick:869665034312253460> Successfully kicked {}", 
+                mentions_from_id_str_vec(&id_list))
+        };
+        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
         let mut uuids: Vec<String> = Vec::new();
 
@@ -734,17 +747,6 @@ impl Handler {
 
             None => {} // dont care.
         }
-        
-
-        let resp = match reason {
-            Some(ref reason) => {
-                format!("<:mesaKick:869665034312253460> Successfully kicked {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), reason)
-            },
-            None => format!("<:mesaKick:869665034312253460> Successfully kicked {}", 
-                mentions_from_id_str_vec(&id_list))
-        };
-        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
         let allowed_mentions = AllowedMentions::builder().build();
 
@@ -838,6 +840,23 @@ impl Handler {
             _ => None
         };
 
+        let duration_str = if duration.is_permenant() {
+            "`Never`".to_string()
+        } else {
+            format!("{} ({})", duration.to_discord_timestamp(), duration.to_discord_relative_timestamp())
+        };
+        
+
+        let resp = match reason {
+            Some(ref reason) => {
+                format!("<:mesaBan:869663336625733634> Successfully banned {} expiring {} for reason `{}`", 
+                    mentions_from_id_str_vec(&id_list), duration_str, reason)
+            },
+            None => format!("<:mesaBan:869663336625733634> Successfully banned {} expiring {}", 
+                mentions_from_id_str_vec(&id_list), duration_str)
+        };
+        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
+
         let mut uuids: Vec<String> = Vec::new();
 
         match msg.guild_id {
@@ -855,23 +874,6 @@ impl Handler {
 
             None => {} // dont care.
         }
-
-        let duration_str = if duration.is_permenant() {
-            "`Never`".to_string()
-        } else {
-            format!("{} ({})", duration.to_discord_timestamp(), duration.to_discord_relative_timestamp())
-        };
-        
-
-        let resp = match reason {
-            Some(ref reason) => {
-                format!("<:mesaBan:869663336625733634> Successfully banned {} expiring {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), duration_str, reason)
-            },
-            None => format!("<:mesaBan:869663336625733634> Successfully banned {} expiring {}", 
-                mentions_from_id_str_vec(&id_list), duration_str)
-        };
-        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
         let allowed_mentions = AllowedMentions::builder().build();
 
@@ -959,6 +961,17 @@ impl Handler {
             }
             _ => None
         };
+
+        let resp = match reason {
+            Some(ref reason) => {
+                format!("<:mesaUnban:869663336697069619> Successfully unbanned {} for reason `{}`", 
+                    mentions_from_id_str_vec(&id_list), reason)
+            },
+            None => format!("<:mesaUnban:869663336697069619> Successfully unbanned {}", 
+                mentions_from_id_str_vec(&id_list))
+        };
+        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -973,15 +986,6 @@ impl Handler {
             None => {} // dont care.
         }
 
-        let resp = match reason {
-            Some(ref reason) => {
-                format!("<:mesaUnban:869663336697069619> Successfully unbanned {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), reason)
-            },
-            None => format!("<:mesaUnban:869663336697069619> Successfully unbanned {}", 
-                mentions_from_id_str_vec(&id_list))
-        };
-        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
         let allowed_mentions = AllowedMentions::builder().build();
 
@@ -1072,6 +1076,23 @@ impl Handler {
             _ => None
         };
 
+        let duration_str = if duration.is_permenant() {
+            "`Never`".to_string()
+        } else {
+            format!("{} ({})", duration.to_discord_timestamp(), duration.to_discord_relative_timestamp())
+        };
+        
+
+        let resp = match reason {
+            Some(ref reason) => {
+                format!("<:mesaMemberMute:869663336814497832> Successfully muted {} expiring {} for reason `{}`", 
+                    mentions_from_id_str_vec(&id_list), duration_str, reason)
+            },
+            None => format!("<:mesaMemberMute:869663336814497832> Successfully muted {} expiring {}", 
+                mentions_from_id_str_vec(&id_list), duration_str)
+        };
+        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
+
         let mut uuids: Vec<String> = Vec::new();
 
         match msg.guild_id {
@@ -1091,23 +1112,6 @@ impl Handler {
 
             None => {} // dont care.
         }
-
-        let duration_str = if duration.is_permenant() {
-            "`Never`".to_string()
-        } else {
-            format!("{} ({})", duration.to_discord_timestamp(), duration.to_discord_relative_timestamp())
-        };
-        
-
-        let resp = match reason {
-            Some(ref reason) => {
-                format!("<:mesaMemberMute:869663336814497832> Successfully muted {} expiring {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), duration_str, reason)
-            },
-            None => format!("<:mesaMemberMute:869663336814497832> Successfully muted {} expiring {}", 
-                mentions_from_id_str_vec(&id_list), duration_str)
-        };
-        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
         let allowed_mentions = AllowedMentions::builder().build();
 
@@ -1195,6 +1199,17 @@ impl Handler {
             }
             _ => None
         };
+
+        let resp = match reason {
+            Some(ref reason) => {
+                format!("<:mesaMemberUnmute:869663336583802982> Successfully unmuted {} for reason `{}`", 
+                    mentions_from_id_str_vec(&id_list), reason)
+            },
+            None => format!("<:mesaMemberUnmute:869663336583802982> Successfully unmuted {}", 
+                mentions_from_id_str_vec(&id_list))
+        };
+        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -1210,16 +1225,6 @@ impl Handler {
 
             None => {} // dont care.
         }
-
-        let resp = match reason {
-            Some(ref reason) => {
-                format!("<:mesaMemberUnmute:869663336583802982> Successfully unmuted {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), reason)
-            },
-            None => format!("<:mesaMemberUnmute:869663336583802982> Successfully unmuted {}", 
-                mentions_from_id_str_vec(&id_list))
-        };
-        self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
         let allowed_mentions = AllowedMentions::builder().build();
 
