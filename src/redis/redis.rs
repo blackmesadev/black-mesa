@@ -78,21 +78,15 @@ impl Redis {
         }
     }
 
-    pub async fn get_memory_usage(&self) -> Option<i64> {
+    pub async fn get_memory_usage(&self) -> Result<i64, redis::RedisError> {
         let key = "memory_usage";
         match self.client.get_async_connection().await {
             Ok(mut connection) => {
-                match connection.get(key).await {
-                    Ok(value) => Some(value),
-                    Err(e) => {
-                        println!("Error getting memory usage: {}", e);
-                        return None;
-                    }
-                }
+                let value: String = connection.get(key).await?;
+                Ok(value.parse::<i64>().unwrap_or(0))
             },
             Err(e) => {
-                println!("Error getting memory usage: {}", e);
-                return None;
+                Err(e)
             }
         }
     }

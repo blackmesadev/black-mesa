@@ -315,8 +315,8 @@ impl Handler {
             EmbedField{
                 name: "Memory Usage".to_string(),
                 value: format!("{} MB", match self.redis.get_memory_usage().await {
-                    Some(mem) => mem,
-                    None => 0
+                    Ok(usage) => usage as f64 / 1024.0 / 1024.0,
+                    Err(_) => 0.0
                 }),
                 inline: true
             },
