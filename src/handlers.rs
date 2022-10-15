@@ -7,7 +7,7 @@ use twilight_model::guild::audit_log::AuditLogChange;
 use twilight_model::{channel::message::AllowedMentions, guild::audit_log::AuditLogEventType};
 use twilight_model::id::Id;
 
-use crate::{mongo::mongo::*, redis::redis::*, automod::AutomodMessage, expiry::action_expiry};
+use crate::{mongo::mongo::*, redis::redis::*, automod::AutomodMessage};
 
 pub struct Handler {
     pub db: Database,
@@ -23,11 +23,7 @@ impl Handler {
         match event {
             Event::Ready(ready) => {
                 println!("{} is connected!", ready.user.name);
-                let expiry_db = self.db.clone();
-                let expiry_rest = self.rest.clone();
-                tokio::spawn(async {
-                    action_expiry(expiry_db, expiry_rest).await
-                });
+                
             }
 
             Event::MessageCreate(msg) => {

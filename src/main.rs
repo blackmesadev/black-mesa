@@ -1,4 +1,5 @@
 use std::{env, error::Error, sync::Arc};
+use expiry::action_expiry;
 use futures_util::stream::StreamExt;
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};
 use twilight_gateway::{cluster::{Cluster, ShardScheme}, Intents};
@@ -50,6 +51,13 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         .message_cache_size(10000)
         .build();
 
+    let expiry_db = db.clone();
+    let expiry_rest = rest.clone();
+
+    tokio::spawn(async {
+        action_expiry(expiry_db, expiry_rest).await
+    });
+    
     let handler = handlers::Handler {
         db,
         redis,
@@ -65,6 +73,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             Err(e) => println!("Error: {}", e),
         }
     }
+    
 
     Ok(())
 }
