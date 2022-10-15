@@ -3,7 +3,6 @@ use regex::*;
 
 use crate::automod::*;
 use crate::util::*;
-use crate::util::unicode::check_obnoxious_unicode;
 
 lazy_static! {
     static ref DOMAINS_RE: Regex = Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}").unwrap();
@@ -153,17 +152,5 @@ pub fn filter_ips(censor_user : &automod::Censor, content: &String) -> (String, 
         }
     }
 
-    return ("".to_string(), true);
-}
-
-pub fn filter_obnoxious_unicode(censor_user : &automod::Censor, content: &String) -> (String, bool) {
-    if censor_user.filter_obnoxious_unicode.unwrap_or(false) {
-        return ("".to_string(), true);
-    }
-    for c in content.chars() {
-        if !check_obnoxious_unicode(c) {
-            return (c.to_string(), false);
-        }
-    }
     return ("".to_string(), true);
 }

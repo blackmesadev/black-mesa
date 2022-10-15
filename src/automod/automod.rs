@@ -36,7 +36,6 @@ pub struct Censor {
     pub filter_ips : Option<bool>,
     pub filter_regex : Option<bool>,
     pub filter_english : Option<bool>,
-    pub filter_obnoxious_unicode : Option<bool>,
     pub invites_whitelist: Option<Vec<String>>,
     pub invites_blacklist: Option<Vec<String>>,
     pub domain_whitelist: Option<Vec<String>>,
@@ -124,8 +123,7 @@ pub enum CensorType {
     Invites,
     Domains,
     Strings,
-    IPs,
-    ObnoxiousUnicode
+    IPs
 }
 
 impl CensorType {
@@ -135,7 +133,6 @@ impl CensorType {
             CensorType::Domains => "Domains",
             CensorType::Strings => "BlockedStrings",
             CensorType::IPs => "IPs",
-            CensorType::ObnoxiousUnicode => "ObnoxiousUnicode"
         }.to_string()
     }
     
@@ -145,7 +142,6 @@ impl CensorType {
             CensorType::Domains => filter_domains,
             CensorType::Strings => filter_strings,
             CensorType::IPs => filter_ips,
-            CensorType::ObnoxiousUnicode => filter_obnoxious_unicode
 
         }
     }
