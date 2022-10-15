@@ -101,6 +101,7 @@ dependencies = [
  "mongodb",
  "redis",
  "regex",
+ "self-meter",
  "serde",
  "serde-aux",
  "serde_derive",
@@ -1359,6 +1360,19 @@ checksum = "0160a13a177a45bfb43ce71c01580998474f556ad854dcbca936dd2841a5c556"
 dependencies = [
  "core-foundation-sys",
  "libc",
+]
+
+[[package]]
+name = "self-meter"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f5db5de2ab21bed9d4cde060886b4fdbee58a9d8a95c8becc7ea549a7ba8bc8"
+dependencies = [
+ "libc",
+ "num_cpus",
+ "quick-error",
+ "serde",
+ "serde_derive",
 ]
 
 [[package]]

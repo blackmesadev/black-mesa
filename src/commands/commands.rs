@@ -58,6 +58,7 @@ impl Handler {
 
             "userinfo" => self.user_info_cmd(conf, msg).await,
             "guildinfo" => self.guild_info_cmd(conf, msg).await,
+            "botinfo" => self.bot_info(conf, msg).await,
 
             "search" => self.search_user_cmd(conf, msg, false).await,
             "deepsearch" => self.search_user_cmd(conf, msg, true).await,

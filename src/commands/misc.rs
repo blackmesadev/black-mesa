@@ -255,4 +255,96 @@ impl Handler {
 
         Ok(())
     }
+
+    pub async fn bot_info(&self, _conf: &Config, msg: &Message)
+    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let mut fields = vec![];
+
+        let thumbnail = match self.cache.current_user() {
+            Some(user) => {
+                fields.push(EmbedField{
+                    name: "Bot Name".to_string(),
+                    value: format!("{}#{:04}", user.name.to_string(), user.discriminator),
+                    inline: true
+                });
+                fields.push(EmbedField{
+                    name: "Bot ID".to_string(),
+                    value: user.id.to_string(),
+                    inline: true
+                });
+                fields.push(EmbedField{
+                    name: "Bot Created".to_string(),
+                    value: format!("<t:{}:f>", snowflake_to_unix(user.id)/1000),
+                    inline: true
+                });
+
+                let icon_url = match &user.avatar {
+                    Some(hash) => {
+                        if hash.is_animated() {
+                            format!("https://cdn.discordapp.com/avatars/{}/{}.gif", user.id.to_string(), hash)
+                        } else {
+                            format!("https://cdn.discordapp.com/avatars/{}/{}.png", user.id.to_string(), hash)
+                        }
+                    }
+                    None => {
+                        format!("https://cdn.discordapp.com/embed/avatars/{}.png", user.discriminator % 5)
+                    }
+                };
+
+                Some(twilight_model::channel::embed::EmbedThumbnail {
+                    height: None,
+                    proxy_url: None,
+                    url: icon_url,
+                    width: None
+                })
+            }
+            None => None
+        };
+
+        fields.append(&mut vec![
+            EmbedField{
+                name: "Total Guilds".to_string(),
+                value: format!("`{}`", self.cache.stats().guilds()+self.cache.stats().unavailable_guilds()),
+                inline: true
+            },
+            EmbedField{
+                name: "Version".to_string(),
+                value: format!("v{}", VERSION),
+                inline: true
+            },
+            EmbedField{
+                name: "Memory Usage".to_string(),
+                value: format!("{} MB", match self.redis.get_memory_usage().await {
+                    Some(mem) => mem,
+                    None => 0
+                }),
+                inline: true
+            },
+        ]);
+
+        let embeds = vec![Embed {
+            title: Some("Black Mesa Info".to_string()),
+            description: None,
+            color: Some(0),
+            footer: Some(twilight_model::channel::embed::EmbedFooter { 
+                icon_url: None,
+                proxy_icon_url: None,
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
+            }),
+            fields,
+            kind: "rich".to_string(),
+            author: None,
+            image: None,
+            provider: None,
+            thumbnail,
+            timestamp: None,
+            url: None,
+            video: None
+        }];
+
+        self.rest.create_message(msg.channel_id).embeds(&embeds)?.exec().await?;
+
+        Ok(())
+    }
+    
 }

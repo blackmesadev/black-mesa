@@ -57,6 +57,11 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     tokio::spawn(async {
         action_expiry(expiry_db, expiry_rest).await
     });
+
+    let meter_redis = redis.clone();
+    tokio::spawn(async {
+        run_meter(meter_redis).await
+    });
     
     let handler = handlers::Handler {
         db,
@@ -76,4 +81,24 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     
 
     Ok(())
+}
+
+async fn run_meter(redis: redis::redis::Redis) {
+    let mut meter = self_meter::Meter::new(std::time::Duration::from_secs(30)).unwrap();
+    meter.track_current_thread("main");
+    loop {
+        let res = meter.scan();
+        if let Err(err) = res {
+            println!("Meter Error: {}", err);
+        }
+
+        match meter.report() {
+            Some(report) => {
+               redis.set_memory_usage(report.memory_rss as i64).await;
+            }
+            None => {}
+        }
+
+        tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+    }
 }

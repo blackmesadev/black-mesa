@@ -1,6 +1,7 @@
 use std::env;
 use redis::AsyncCommands;
 
+#[derive(Clone, Debug)]
 pub struct Redis {
     pub client: redis::Client,
 }
@@ -53,6 +54,44 @@ impl Redis {
             },
             Err(e) => {
                 println!("Error setting max messages: {}", e);
+                return None;
+            }
+        }
+    }
+
+    pub async fn set_memory_usage(&self, value: i64) -> Option<redis::Value> {
+        let key = "memory_usage";
+        match self.client.get_async_connection().await {
+            Ok(mut connection) => {
+                match connection.set(key, value).await {
+                    Ok(value) => Some(value),
+                    Err(e) => {
+                        println!("Error setting memory usage: {}", e);
+                        return None;
+                    }
+                }
+            },
+            Err(e) => {
+                println!("Error setting memory usage: {}", e);
+                return None;
+            }
+        }
+    }
+
+    pub async fn get_memory_usage(&self) -> Option<i64> {
+        let key = "memory_usage";
+        match self.client.get_async_connection().await {
+            Ok(mut connection) => {
+                match connection.get(key).await {
+                    Ok(value) => Some(value),
+                    Err(e) => {
+                        println!("Error getting memory usage: {}", e);
+                        return None;
+                    }
+                }
+            },
+            Err(e) => {
+                println!("Error getting memory usage: {}", e);
                 return None;
             }
         }
