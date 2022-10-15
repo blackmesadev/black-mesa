@@ -6,7 +6,7 @@ use twilight_model::{channel::{Message, embed::*, message::AllowedMentions}, id:
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::{handlers::Handler, util::{duration::{self, Duration}, mentions::mentions_from_id_str_vec, permissions}, mongo::mongo::{Config, Punishment}};
+use crate::{handlers::Handler, util::{duration::{self, Duration}, mentions::mentions_from_id_str_vec, permissions}, mongo::mongo::{Config, Punishment}, VERSION};
 
 impl Handler {
 
@@ -65,7 +65,7 @@ impl Handler {
             };
         
         let embed_footer = EmbedFooter{
-            text: "Black Mesa Rust Beta by Tyler#0911 running on rustc 1.63.0".to_string(),
+            text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
             icon_url: None,
             proxy_icon_url: None
         };

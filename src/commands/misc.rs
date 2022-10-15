@@ -4,7 +4,7 @@ use regex::Regex;
 use twilight_model::{channel::{Message, embed::{Embed, EmbedField}}, id::Id};
 use lazy_static::lazy_static;
 
-use crate::{handlers::Handler, util::{permissions, snowflakes::snowflake_to_unix}, mongo::mongo::Config};
+use crate::{handlers::Handler, util::{permissions, snowflakes::snowflake_to_unix}, mongo::mongo::Config, VERSION};
 
 impl Handler {
     pub async fn user_info_cmd(&self, conf: &Config, msg: &Message)
@@ -128,7 +128,7 @@ impl Handler {
             footer: Some(twilight_model::channel::embed::EmbedFooter { 
                 icon_url: None,
                 proxy_icon_url: None,
-                text: "Black Mesa Rust Beta by Tyler#0911 running on rustc 1.63.0".to_string()
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
             }),
             fields,
             kind: "rich".to_string(),
@@ -233,7 +233,7 @@ impl Handler {
             footer: Some(twilight_model::channel::embed::EmbedFooter { 
                 icon_url: None,
                 proxy_icon_url: None,
-                text: "Black Mesa Rust Beta by Tyler#0911 running on rustc 1.63.0".to_string()
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
             }),
             fields,
             kind: "rich".to_string(),

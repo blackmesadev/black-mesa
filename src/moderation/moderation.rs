@@ -7,7 +7,7 @@ use twilight_model::{id::Id, channel::embed::{Embed, EmbedField}};
 use twilight_http::request::AuditLogReason;
 use uuid::Uuid;
 
-use crate::{mongo::mongo::{PunishmentType, Punishment, Config}, handlers::Handler, util::duration::Duration};
+use crate::{mongo::mongo::{PunishmentType, Punishment, Config}, handlers::Handler, util::duration::Duration, VERSION};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -165,7 +165,7 @@ impl Handler {
             footer: Some(twilight_model::channel::embed::EmbedFooter { 
                 icon_url: None,
                 proxy_icon_url: None,
-                text: "Black Mesa Rust Beta by Tyler#0911 running on rustc 1.63.0".to_string()
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
             }),
             fields,
             kind: "rich".to_string(),
