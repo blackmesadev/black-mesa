@@ -11,7 +11,6 @@ RUN cargo chef cook --release --recipe-path recipe.json
 COPY . .
 RUN cargo build --release
 
-FROM debian:buster-slim AS runtime
-RUN apt-get update && apt-get install -y libssl-dev
+FROM rust AS runtime
 COPY --from=build /usr/src/black-mesa/target/release/black-mesa .
 CMD ["./black-mesa"]
