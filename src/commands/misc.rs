@@ -37,10 +37,10 @@ impl Handler {
         let ok = permissions::check_permission(conf, roles, &author_id, vec![perm]);
         if !ok {
             self.rest.create_message(msg.channel_id)
-            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", perm).as_str())?
-            .exec()
-            .await?;
-            return Ok(());
+                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", perm).as_str())?
+                .exec()
+                .await?;
+                return Ok(());
         }
 
         let guild_id = match &msg.guild_id {

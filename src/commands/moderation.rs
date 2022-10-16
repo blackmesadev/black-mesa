@@ -192,21 +192,22 @@ impl Handler {
                             Some(a) => a,
                             None => {
                                 self.rest.create_message(msg.channel_id)
-                                .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
-                                .as_str())?
-                                .exec()
-                                .await?;
+                                    .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
+                                    .as_str())?
+                                    .exec()
+                                    .await?;
+
                                 return Ok(());
                             }
                         }
                     },
                     Err(_) => {
                         self.rest.create_message(msg.channel_id)
-                        .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
-                        .as_str())?
-                        .exec()
-                        .await?;
-        
+                            .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
+                            .as_str())?
+                            .exec()
+                            .await?;
+
                         return Ok(());
                     }
                 };
@@ -232,9 +233,9 @@ impl Handler {
             }
             _ => {
                 self.rest.create_message(msg.channel_id)
-                .content("<:mesaCommand:832350527131746344> `reason [uuid:uuid] [reason:string...]`")?
-                .exec()
-                .await?;
+                    .content("<:mesaCommand:832350527131746344> `reason [uuid:uuid] [reason:string...]`")?
+                    .exec()
+                    .await?;
                 return Ok(());
             }
         };
@@ -277,9 +278,10 @@ impl Handler {
 
             if original_issuer_level >= author_level && !conf.modules.moderation.update_higher_level_reason {
                 self.rest.create_message(msg.channel_id)
-                .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
-                .exec()
-                .await?;
+                    .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
+                    .exec()
+                    .await?;
+
                 return Ok(());
             }
         }
@@ -295,16 +297,16 @@ impl Handler {
         match res{
             UpdateResult{matched_count: 1, modified_count: 1, ..} => {
                 self.rest.create_message(msg.channel_id)
-                .content(format!("<:mesaCheck:832350526729224243> Updated punishment `{}`", punishment.uuid).as_str())?
-                .exec()
-                .await?;
+                    .content(format!("<:mesaCheck:832350526729224243> Updated punishment `{}`", punishment.uuid).as_str())?
+                    .exec()
+                    .await?;
             },
             UpdateResult{..} => {
                 self.rest.create_message(msg.channel_id)
-                .content(format!("<:mesaCross:832350526414127195> Unable to update punishment `{}`", punishment.uuid
-                ).as_str())?
-                .exec()
-                .await?;
+                    .content(format!("<:mesaCross:832350526414127195> Unable to update punishment `{}`", punishment.uuid)
+                    .as_str())?
+                    .exec()
+                    .await?;
             }
         }
 
@@ -315,7 +317,7 @@ impl Handler {
             self.rest.create_message(match &conf.modules.logging.channel_id {
                 Some(id) => Id::from_str(id.as_str())?,
                 None => {return Ok(())}
-                })
+            })
                 .content(log.as_str())?
                 .allowed_mentions(Some(&allowed_mentions))
                 .exec()
@@ -383,20 +385,21 @@ impl Handler {
                             Some(a) => a,
                             None => {
                                 self.rest.create_message(msg.channel_id)
-                                .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
-                                .as_str())?
-                                .exec()
-                                .await?;
+                                    .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
+                                    .as_str())?
+                                    .exec()
+                                    .await?;
+
                                 return Ok(());
                             }
                         }
                     },
                     Err(_) => {
                         self.rest.create_message(msg.channel_id)
-                        .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
-                        .as_str())?
-                        .exec()
-                        .await?;
+                            .content(format!("<:mesaCross:832350526414127195> Unable to get action {}", uuid)
+                            .as_str())?
+                            .exec()
+                            .await?;
         
                         return Ok(());
                     }
@@ -423,9 +426,10 @@ impl Handler {
             }
             _ => {
                 self.rest.create_message(msg.channel_id)
-                .content("<:mesaCommand:832350527131746344> `duration [uuid:uuid] [time:duration]`")?
-                .exec()
-                .await?;
+                    .content("<:mesaCommand:832350527131746344> `duration [uuid:uuid] [time:duration]`")?
+                    .exec()
+                    .await?;
+
                 return Ok(());
             }
         };
@@ -438,18 +442,20 @@ impl Handler {
             let ok = permissions::check_permission(conf, roles, &author_id, vec![permissions::PERMISSION_UPDATESELF]);
                 if !ok {
                     self.rest.create_message(msg.channel_id)
-                    .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UPDATESELF).as_str())?
-                    .exec()
-                    .await?;
+                        .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UPDATESELF).as_str())?
+                        .exec()
+                        .await?;
+
                     return Ok(());
                 }
         } else {
             let ok = permissions::check_permission(conf, roles, &author_id, vec![permissions::PERMISSION_UPDATE]);
             if !ok {
                 self.rest.create_message(msg.channel_id)
-                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UPDATE).as_str())?
-                .exec()
-                .await?;
+                    .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UPDATE).as_str())?
+                    .exec()
+                    .await?;
+
                 return Ok(());
             }
         
@@ -469,9 +475,10 @@ impl Handler {
 
             if original_issuer_level >= author_level && !conf.modules.moderation.update_higher_level_reason {
                 self.rest.create_message(msg.channel_id)
-                .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
-                .exec()
-                .await?;
+                    .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
+                    .exec()
+                    .await?;
+
                 return Ok(());
             }
         }
@@ -487,16 +494,16 @@ impl Handler {
         match res{
             UpdateResult{matched_count: 1, modified_count: 1, ..} => {
                 self.rest.create_message(msg.channel_id)
-                .content(format!("<:mesaCheck:832350526729224243> Updated punishment `{}`", punishment.uuid).as_str())?
-                .exec()
-                .await?;
+                    .content(format!("<:mesaCheck:832350526729224243> Updated punishment `{}`", punishment.uuid).as_str())?
+                    .exec()
+                    .await?;
             },
             UpdateResult{..} => {
                 self.rest.create_message(msg.channel_id)
-                .content(format!("<:mesaCross:832350526414127195> Unable to update punishment `{}`", punishment.uuid
-                ).as_str())?
-                .exec()
-                .await?;
+                    .content(format!("<:mesaCross:832350526414127195> Unable to update punishment `{}`", punishment.uuid)
+                    .as_str())?
+                    .exec()
+                    .await?;
             }
         }
 
@@ -508,10 +515,10 @@ impl Handler {
                 Some(id) => Id::from_str(id.as_str())?,
                 None => {return Ok(())}
                 })
-                .content(log.as_str())?
-                .allowed_mentions(Some(&allowed_mentions))
-                .exec()
-                .await?;
+                    .content(log.as_str())?
+                    .allowed_mentions(Some(&allowed_mentions))
+                    .exec()
+                    .await?;
             }
             None => {}
         }
@@ -531,9 +538,10 @@ impl Handler {
         let ok = permissions::check_permission(conf, roles, &author_id, vec![permissions::PERMISSION_STRIKE]);
         if !ok {
             self.rest.create_message(msg.channel_id)
-            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_STRIKE).as_str())?
-            .exec()
-            .await?;
+                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_STRIKE).as_str())?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -559,9 +567,10 @@ impl Handler {
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
-            .content("<:mesaCommand:832350527131746344> `strike <target:user[]> [time:duration] [reason:string...]`")?
-            .exec()
-            .await?;
+                .content("<:mesaCommand:832350527131746344> `strike <target:user[]> [time:duration] [reason:string...]`")?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -650,10 +659,10 @@ impl Handler {
                     Some(id) => Id::from_str(id.as_str())?,
                     None => {return Ok(())}
                     })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .exec()
-                    .await?;
+                        .content(log.as_str())?
+                        .allowed_mentions(Some(&allowed_mentions))
+                        .exec()
+                        .await?;
                 }
                 None => {}
             }
@@ -672,9 +681,10 @@ impl Handler {
         let ok = permissions::check_permission(conf, roles, &author_id, vec![permissions::PERMISSION_KICK]);
         if !ok {
             self.rest.create_message(msg.channel_id)
-            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_KICK).as_str())?
-            .exec()
-            .await?;
+                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_KICK).as_str())?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -700,9 +710,10 @@ impl Handler {
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
-            .content("<:mesaCommand:832350527131746344> `kick <target:user[]> [reason:string...]`")?
-            .exec()
-            .await?;
+                .content("<:mesaCommand:832350527131746344> `kick <target:user[]> [reason:string...]`")?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -763,10 +774,10 @@ impl Handler {
                     Some(id) => Id::from_str(id.as_str())?,
                     None => {return Ok(())}
                     })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .exec()
-                    .await?;
+                        .content(log.as_str())?
+                        .allowed_mentions(Some(&allowed_mentions))
+                        .exec()
+                        .await?;
                 }
                 None => {}
             }
@@ -785,9 +796,10 @@ impl Handler {
         let ok = permissions::check_permission(conf, roles, &author_id, vec![permissions::PERMISSION_BAN]);
         if !ok {
             self.rest.create_message(msg.channel_id)
-            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_BAN).as_str())?
-            .exec()
-            .await?;
+                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_BAN).as_str())?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -813,9 +825,10 @@ impl Handler {
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
-            .content("<:mesaCommand:832350527131746344> `ban <target:user[]> [time:duration] [reason:string...]`")?
-            .exec()
-            .await?;
+                .content("<:mesaCommand:832350527131746344> `ban <target:user[]> [time:duration] [reason:string...]`")?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -891,10 +904,10 @@ impl Handler {
                     Some(id) => Id::from_str(id.as_str())?,
                     None => {return Ok(())}
                     })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .exec()
-                    .await?;
+                        .content(log.as_str())?
+                        .allowed_mentions(Some(&allowed_mentions))
+                        .exec()
+                        .await?;
                 }
                 None => {}
             }
@@ -941,9 +954,10 @@ impl Handler {
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
-            .content("<:mesaCommand:832350527131746344> `unban <target:user[]> [reason:string...]`")?
-            .exec()
-            .await?;
+                .content("<:mesaCommand:832350527131746344> `unban <target:user[]> [reason:string...]`")?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -999,10 +1013,10 @@ impl Handler {
                     Some(id) => Id::from_str(id.as_str())?,
                     None => {return Ok(())}
                     })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .exec()
-                    .await?;
+                        .content(log.as_str())?
+                        .allowed_mentions(Some(&allowed_mentions))
+                        .exec()
+                        .await?;
                 }
                 None => {}
             }
@@ -1021,9 +1035,10 @@ impl Handler {
         let ok = permissions::check_permission(conf, roles, &author_id, vec![permissions::PERMISSION_MUTE]);
         if !ok {
             self.rest.create_message(msg.channel_id)
-            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_MUTE).as_str())?
-            .exec()
-            .await?;
+                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_MUTE).as_str())?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -1049,9 +1064,10 @@ impl Handler {
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
-            .content("<:mesaCommand:832350527131746344> `mute <target:user[]> [time:duration] [reason:string...]`")?
-            .exec()
-            .await?;
+                .content("<:mesaCommand:832350527131746344> `mute <target:user[]> [time:duration] [reason:string...]`")?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -1129,10 +1145,10 @@ impl Handler {
                     Some(id) => Id::from_str(id.as_str())?,
                     None => {return Ok(())}
                     })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .exec()
-                    .await?;
+                        .content(log.as_str())?
+                        .allowed_mentions(Some(&allowed_mentions))
+                        .exec()
+                        .await?;
                 }
                 None => {}
             }
@@ -1151,9 +1167,10 @@ impl Handler {
         let ok = permissions::check_permission(conf, roles, &author_id, vec![permissions::PERMISSION_UNMUTE]);
         if !ok {
             self.rest.create_message(msg.channel_id)
-            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UNMUTE).as_str())?
-            .exec()
-            .await?;
+                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UNMUTE).as_str())?
+                .exec()
+                .await?;
+
             return Ok(());
         }
 
@@ -1179,9 +1196,10 @@ impl Handler {
 
         if id_list.len() == 0 {
             self.rest.create_message(msg.channel_id)
-            .content("<:mesaCommand:832350527131746344> `unmute <target:user[]> [reason:string...]`")?
-            .exec()
-            .await?;
+                .content("<:mesaCommand:832350527131746344> `unmute <target:user[]> [reason:string...]`")?
+                .exec()
+                .await?;
+            
             return Ok(());
         }
 
@@ -1238,10 +1256,10 @@ impl Handler {
                     Some(id) => Id::from_str(id.as_str())?,
                     None => {return Ok(())}
                     })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .exec()
-                    .await?;
+                        .content(log.as_str())?
+                        .allowed_mentions(Some(&allowed_mentions))
+                        .exec()
+                        .await?;
                 }
                 None => {}
             }

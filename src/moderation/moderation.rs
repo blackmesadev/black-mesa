@@ -179,16 +179,16 @@ impl Handler {
         }];
 
         let dm_channel = match self.rest.create_private_channel(Id::from_str(user_id)?)
-        .exec()
-        .await {
-            Ok(channel) => {
-                match channel.model().await {
-                    Ok(channel) => channel,
-                    Err(_) => return Ok(())
-                }
-            },
-            Err(_) => return Ok(())
-        };
+            .exec()
+            .await {
+                Ok(channel) => {
+                    match channel.model().await {
+                        Ok(channel) => channel,
+                        Err(_) => return Ok(())
+                    }
+                },
+                Err(_) => return Ok(())
+            };
 
         match self.rest.create_message(dm_channel.id).embeds(&embeds) {
             Ok(m) => {
@@ -223,8 +223,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec()
-                .await?;
+                k.exec().await?;
                 Ok(punishment)
             },
             Err(e) => Err(e)?
@@ -252,8 +251,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec()
-                .await?;
+                k.exec().await?;
                 Ok(punishment)
             },
             Err(e) => Err(e)?
@@ -278,8 +276,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec()
-                .await?;
+                k.exec().await?;
                 Ok(())
             },
             Err(e) => Err(e)?
@@ -310,8 +307,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec()
-                .await?;
+                k.exec().await?;
                 Ok(punishment)
             },
             Err(e) => Err(e)?
@@ -348,8 +344,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec()
-                .await?;
+                k.exec().await?;
                 Ok(())
             },
             Err(e) => Err(e)?

@@ -93,9 +93,7 @@ impl Handler {
                     &Some("Exceeded strike limit".to_string())
                 ).await?;
             },
-            _ => {
-                println!("Invalid escalation type {}", esc_to.typ);
-            }
+            _ => {}
         }
         Ok(())
     }
