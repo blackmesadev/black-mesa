@@ -123,7 +123,7 @@ pub fn get_user_level(conf: &Config, roles: Option<&Vec<Id<RoleMarker>>>, user_i
         Some(roles) => {
             for role in roles {
                 let new = conf.levels.get(&role.to_string()).unwrap_or(&0);
-                if new > user_level {
+                if new > role_level {
                     role_level = new;
                 }
             }
