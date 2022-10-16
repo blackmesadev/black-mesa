@@ -269,7 +269,7 @@ impl Handler {
                 });
                 fields.push(EmbedField{
                     name: "Bot ID".to_string(),
-                    value: user.id.to_string(),
+                    value: format!("`{}`", user.id.to_string()),
                     inline: true
                 });
                 fields.push(EmbedField{
@@ -304,7 +304,7 @@ impl Handler {
         fields.append(&mut vec![
             EmbedField{
                 name: "Total Guilds".to_string(),
-                value: format!("`{}`", self.cache.stats().guilds()+self.cache.stats().unavailable_guilds()),
+                value: format!("{}", self.cache.stats().guilds()+self.cache.stats().unavailable_guilds()),
                 inline: true
             },
             EmbedField{
@@ -314,7 +314,7 @@ impl Handler {
             },
             EmbedField{
                 name: "Memory Usage".to_string(),
-                value: format!("{} MB", match self.redis.get_memory_usage().await {
+                value: format!("`{:.3} MB`", match self.redis.get_memory_usage().await {
                     Ok(usage) => usage as f64 / 1024.0 / 1024.0,
                     Err(_) => 0.0
                 }),

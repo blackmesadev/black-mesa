@@ -10,19 +10,29 @@ use super::AutomodMessage;
 
 impl Redis {
     pub async fn filter_messages(&self, spam_user : &Spam, msg: &AutomodMessage) -> bool {
-        let max = spam_user.max_messages.unwrap_or(0);
-        let exp: usize = spam_user.interval.unwrap_or(Spam::default().interval.unwrap_or(0)).try_into().unwrap();
-        if max == 0 {
-            return true;
-        }
+        let max = match spam_user.max_messages {
+            Some(max) => {
+                if max == 0 {
+                    return true;
+                }
+                max
+            },
+            None => return true,
+        };
+        let exp: usize = match spam_user.interval {
+            Some(interval) => match interval.try_into() {
+                Ok(interval) => interval,
+                Err(_) => return true,
+            },
+            None => return true,
+        };
 
         let guild_id = match msg.guild_id {
             Some(id) => id.get(),
             None => return true
         };
 
-    
-        match self.incr_max_messages(guild_id, msg.author.id.get(), exp).await {
+        match self.incr_max_messages(guild_id, msg.author.id.get(), exp, max).await {
             Some(count) => {
                 if count > max {
                     return false;

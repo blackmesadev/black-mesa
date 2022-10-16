@@ -15,27 +15,52 @@ pub async fn connect() -> Redis {
 }
 
 impl Redis {
-    pub async fn incr_max_messages(&self, guild_id: u64, user_id: u64, exp: usize) -> Option<i64> {
+    pub async fn incr_max_messages(&self, guild_id: u64, user_id: u64, exp: usize, max: i64) -> Option<i64> {
         let key = format!("max_messages:{}:{}", guild_id, user_id);
         match self.client.get_async_connection().await {
             Ok(mut connection) => {
                 match connection.incr(&key, 1).await {
                     Ok(value) => {
-                        match connection.expire(&key, exp).await {
-                            Ok(()) => (),
+                        let cur_ttl: i64 = match connection.ttl(&key).await {
+                            Ok(ttl) => ttl,
                             Err(e) => {
-                                println!("Error setting expire: {}", e);
+                                println!("Error getting ttl: {}", e);
                                 return None;
                             }
+                        };
+
+                        if cur_ttl == -1 {
+                            match connection.expire(&key, exp).await {
+                                Ok(()) => return Some(value),
+                                Err(e) => {
+                                    println!("Error setting ttl: {}", e);
+                                    return None;
+                                }
+                            }
                         }
+
+                        let mut new_ttl = cur_ttl + (exp as i64 / max);
+                        if new_ttl > exp as i64{
+                            new_ttl = exp as i64;
+                        }
+                        match connection.expire(&key, new_ttl.try_into().unwrap_or(exp)).await {
+                            Ok(()) => (),
+                            Err(e) => {
+                                println!("Error setting ttl: {}", e);
+                                return None;
+                            }
+                        };
                         Some(value)
                     }
-                    Err(_) => None,
+                    Err(e) => {
+                        println!("Error incrementing: {}", e);
+                        None
+                    },
                 }
             },
             Err(e) => {
                 println!("Error incrementing max messages: {}", e);
-                return None;
+                None
             }
         }
     }

@@ -39,9 +39,6 @@ impl Handler {
                     None => None
                 };
                 let lvl = permissions::get_user_level(conf, roles, &author_id);
-                if lvl == 0 {
-                    self.rest.create_message(msg.channel_id).content(format!("you're retarded, fuck off").as_str())?.exec().await?;
-                }
                 self.rest.create_message(msg.channel_id).content(format!("Level: `{}`", lvl).as_str())?.exec().await?;
                 Ok(())
             },
