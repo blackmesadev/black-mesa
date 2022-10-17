@@ -59,7 +59,7 @@ impl Handler {
         user_id: &String,
         issuer: &String,
         duration: Option<&Duration>,
-        reason: &Option<String>,
+        reason: Option<&String>,
         typ: &PunishmentType,
         role_id: Option<String>, // for mute
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
@@ -76,7 +76,7 @@ impl Handler {
             },
             role_id,
             weight: None,
-            reason: reason.clone(),
+            reason: reason.cloned(),
             uuid: Uuid::new_v4().to_string(),
             expired: false
         };
@@ -113,7 +113,7 @@ impl Handler {
         guild_id: &String,
         user_id: &String,
         issuer_id: &String,
-        reason: &Option<String>,
+        reason: Option<&String>,
         duration: Option<&Duration>,
         typ: &PunishmentType,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -206,7 +206,7 @@ impl Handler {
         guild_id: &String,
         user_id: &String,
         issuer: &String,
-        reason: &Option<String>,
+        reason: Option<&String>,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
         let punishment = self.add_punishment(guild_id, user_id, issuer, None, reason,
             &PunishmentType::Kick, None).await?;
@@ -235,7 +235,7 @@ impl Handler {
         user_id: &String,
         issuer: &String,
         duration: &Duration,
-        reason: &Option<String>,
+        reason: Option<&String>,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
         let punishment = self.add_punishment(guild_id, user_id, issuer, Some(duration), reason,
             &PunishmentType::Ban, None).await?;
@@ -262,7 +262,7 @@ impl Handler {
         guild_id: &String,
         user_id: &String,
         issuer: &String,
-        reason: &Option<String>,
+        reason: Option<&String>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.db.delete_ban(guild_id, user_id).await?;
 
@@ -289,7 +289,7 @@ impl Handler {
         user_id: &String,
         issuer: &String,
         duration: &Duration,
-        reason: &Option<String>
+        reason: Option<&String>
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>>{
         let mute_id = &conf.modules.moderation.mute_role;
         let punishment = self.add_punishment(guild_id, user_id, issuer, Some(duration), reason,
@@ -321,7 +321,7 @@ impl Handler {
         guild_id: &String,
         user_id: &String,
         issuer: &String,
-        reason: &Option<String>
+        reason: Option<&String>
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>{
         let role_id = match conf {
             Some(conf) => conf.modules.moderation.mute_role.clone(),

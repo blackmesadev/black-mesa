@@ -307,7 +307,7 @@ impl Handler {
 
         let allowed_mentions = AllowedMentions::builder().build();
 
-        match conf.modules.logging.log_update_action(msg.author.id.to_string(), punishment, None, Some(reason)) {
+        match conf.modules.logging.log_update_action(&msg.author.id.to_string(), punishment, None, Some(&reason)) {
             Some(log) => {
             self.rest.create_message(match &conf.modules.logging.channel_id {
                 Some(id) => Id::from_str(id.as_str())?,
@@ -498,7 +498,7 @@ impl Handler {
 
         let allowed_mentions = AllowedMentions::builder().build();
 
-        match conf.modules.logging.log_update_action(msg.author.id.to_string(), punishment, Some(duration), None) {
+        match conf.modules.logging.log_update_action(&msg.author.id.to_string(), punishment, Some(&duration), None) {
             Some(log) => {
             self.rest.create_message(match &conf.modules.logging.channel_id {
                 Some(id) => Id::from_str(id.as_str())?,
@@ -616,13 +616,15 @@ impl Handler {
 
         let mut uuids: Vec<String> = Vec::new();
 
+        let reason = reason.as_ref();
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
                     let punishment = self.issue_strike(conf,
                         &guild_id.to_string(),
                         id, &msg.author.id.to_string(),
-                        &reason,
+                        reason,
                         &duration)
                         .await?;
                     uuids.push(punishment.uuid);
@@ -635,11 +637,11 @@ impl Handler {
         let allowed_mentions = AllowedMentions::builder().build();
 
         for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_strike(msg.author.id.to_string(),
-            id.to_string(),
-            reason.clone(),
-            duration.clone(),
-            match uuids.get(i) {
+            match conf.modules.logging.log_strike(&msg.author.id.to_string(),
+            id,
+            reason,
+            &duration,
+            &match uuids.get(i) {
                 Some(uuid) => uuid.to_string(),
                 None => "".to_string()
             }){
@@ -733,13 +735,15 @@ impl Handler {
 
         let mut uuids: Vec<String> = Vec::new();
 
+        let reason = reason.as_ref();
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
                     let punishment = self.kick_user(&guild_id.to_string(),
                         id,
                         &msg.author.id.to_string(),
-                        &reason)
+                        reason)
                         .await?;
                     uuids.push(punishment.uuid);
                 }
@@ -751,10 +755,10 @@ impl Handler {
         let allowed_mentions = AllowedMentions::builder().build();
 
         for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_kick(msg.author.id.to_string(),
-            id.to_string(),
+            match conf.modules.logging.log_kick(&msg.author.id.to_string(),
+            id,
             reason.clone(),
-            match uuids.get(i) {
+            &match uuids.get(i) {
                 Some(uuid) => uuid.to_string(),
                 None => "".to_string()
             }){
@@ -861,6 +865,8 @@ impl Handler {
 
         let mut uuids: Vec<String> = Vec::new();
 
+        let reason = reason.as_ref();
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -868,7 +874,7 @@ impl Handler {
                         id,
                         &msg.author.id.to_string(),
                         &duration,
-                        &reason)
+                        reason)
                         .await?;
                     uuids.push(punishment.uuid);
                 }
@@ -880,11 +886,11 @@ impl Handler {
         let allowed_mentions = AllowedMentions::builder().build();
 
         for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_ban(msg.author.id.to_string(),
-            id.to_string(),
-            reason.clone(),
-            duration.clone(),
-            match uuids.get(i) {
+            match conf.modules.logging.log_ban(&msg.author.id.to_string(),
+            id,
+            reason,
+            &duration,
+            &match uuids.get(i) {
                 Some(uuid) => uuid.to_string(),
                 None => "".to_string()
             }){
@@ -975,13 +981,15 @@ impl Handler {
         };
         self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
+        let reason = reason.as_ref();
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
                     self.unban_user(&guild_id.to_string(),
                         id,
                         &msg.author.id.to_string(),
-                        &reason)
+                        reason)
                         .await?;
                 }
             }
@@ -993,9 +1001,9 @@ impl Handler {
         let allowed_mentions = AllowedMentions::builder().build();
 
         for id in id_list {
-            match conf.modules.logging.log_unban(msg.author.id.to_string(),
-            id.to_string(),
-            reason.clone()
+            match conf.modules.logging.log_unban(&msg.author.id.to_string(),
+            &id,
+            reason
             ){
                 Some(log) => {
                 self.rest.create_message(match &conf.modules.logging.channel_id {
@@ -1100,6 +1108,8 @@ impl Handler {
 
         let mut uuids: Vec<String> = Vec::new();
 
+        let reason = reason.as_ref();
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -1108,7 +1118,7 @@ impl Handler {
                         id,
                         &msg.author.id.to_string(),
                         &duration,
-                        &reason)
+                        reason)
                         .await?;
 
                     uuids.push(punishment.uuid);
@@ -1121,11 +1131,11 @@ impl Handler {
         let allowed_mentions = AllowedMentions::builder().build();
 
         for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_mute(msg.author.id.to_string(),
-            id.to_string(),
-            reason.clone(),
-            duration.clone(),
-            match uuids.get(i) {
+            match conf.modules.logging.log_mute(&msg.author.id.to_string(),
+            id,
+            reason,
+            &duration,
+            &match uuids.get(i) {
                 Some(uuid) => uuid.to_string(),
                 None => "".to_string()
             }){
@@ -1217,6 +1227,8 @@ impl Handler {
         };
         self.rest.create_message(msg.channel_id).content(resp.as_str())?.exec().await?;
 
+        let reason = reason.as_ref();
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -1225,7 +1237,7 @@ impl Handler {
                         &guild_id.to_string(),
                         id,
                         &msg.author.id.to_string(),
-                        &reason)
+                        reason)
                         .await?;
                 }
             }
@@ -1236,9 +1248,9 @@ impl Handler {
         let allowed_mentions = AllowedMentions::builder().build();
 
         for id in id_list {
-            match conf.modules.logging.log_unmute(msg.author.id.to_string(),
-            id.to_string(),
-            reason.clone()
+            match conf.modules.logging.log_unmute(&msg.author.id.to_string(),
+            &id,
+            reason
             ){
                 Some(log) => {
                 self.rest.create_message(match &conf.modules.logging.channel_id {

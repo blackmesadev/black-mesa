@@ -71,7 +71,7 @@ impl Logging {
         msg.author.id.get(), msg.author.id.get(), res.typ.get_name(), msg.channel_id.get(), msg.channel_id.get()))
     }
 
-    pub fn log_strike(&self, actor: String, target: String, reason: Option<String>, duration: Duration, uuid: String) -> Option<String> {
+    pub fn log_strike(&self, actor: &String, target: &String, reason: Option<&String>, duration: &Duration, uuid: &String) -> Option<String> {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::Strike) {
                 return None;
@@ -86,17 +86,17 @@ impl Logging {
         }
     }
 
-    pub fn log_remove_action(&self, actor: String, punishment: &Punishment, reason: Option<String>) -> Option<String>  {
+    pub fn log_remove_action(&self, actor: &String, punishment: &Punishment, reason: Option<&String>) -> Option<String>  {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::RemoveAction) {
                 return None;
         }
         
         Some(format!("<:mesaCheck:832350526729224243> <@{}> (`{}`) removed action of UUID `{}` from `{}` with type `{}` for `{}`",
-            actor, actor, punishment.uuid, punishment.user_id, punishment.typ.pretty_string(), reason.unwrap_or("No reason provided".to_string())))
+            actor, actor, punishment.uuid, punishment.user_id, punishment.typ.pretty_string(), reason.unwrap_or(&"No reason provided".to_string())))
     }
 
-    pub fn log_update_action(&self, actor: String, punishment: &Punishment, duration: Option<Duration>, reason: Option<String>) -> Option<String>  {
+    pub fn log_update_action(&self, actor: &String, punishment: &Punishment, duration: Option<&Duration>, reason: Option<&String>) -> Option<String>  {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::UpdateAction) {
                 return None;
@@ -116,7 +116,7 @@ impl Logging {
         Some(log)
     }
 
-    pub fn log_mute(&self, actor: String, target: String, reason: Option<String>, duration: Duration, uuid: String) -> Option<String> {
+    pub fn log_mute(&self, actor: &String, target: &String, reason: Option<&String>, duration: &Duration, uuid: &String) -> Option<String> {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::RemoveAction) {
                 return None;
@@ -124,10 +124,10 @@ impl Logging {
         
         Some(format!("<:mesaMemberMute:869663336814497832> <@{}> (`{}`) muted <@{}> (`{}`) expiring {}: `{}`. UUID: `{}`",
             actor, actor, target, target,
-            duration.to_discord_timestamp(), reason.unwrap_or("No reason provided".to_string()), uuid))
+            duration.to_discord_timestamp(), reason.unwrap_or(&"No reason provided".to_string()), uuid))
     }
 
-    pub fn log_unmute(&self, actor: String, target: String, reason: Option<String>) -> Option<String> {
+    pub fn log_unmute(&self, actor: &String, target: &String, reason: Option<&String>) -> Option<String> {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::Unmute) {
                 return None;
@@ -135,10 +135,10 @@ impl Logging {
         
         Some(format!("<:mesaUnstrike:869664457788358716> <@{}> (`{}`) unmuted <@{}> (`{}`): `{}`.",
             actor, actor, target, target,
-            reason.unwrap_or("No reason provided".to_string())))
+            reason.unwrap_or(&"No reason provided".to_string())))
     }
 
-    pub fn log_kick(&self, actor: String, target: String, reason: Option<String>, uuid: String) -> Option<String> {
+    pub fn log_kick(&self, actor: &String, target: &String, reason: Option<&String>, uuid: &String) -> Option<String> {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::Kick) {
                 return None;
@@ -146,10 +146,10 @@ impl Logging {
         
         Some(format!("<:mesaKick:869665034312253460> <@{}> (`{}`) kicked <@{}> (`{}`): `{}`. UUID: `{}`",
             actor, actor, target, target,
-            reason.unwrap_or("No reason provided".to_string()), uuid))
+            reason.unwrap_or(&"No reason provided".to_string()), uuid))
     }
 
-    pub fn log_ban(&self, actor: String, target: String, reason: Option<String>, duration: Duration, uuid: String) -> Option<String> {
+    pub fn log_ban(&self, actor: &String, target: &String, reason: Option<&String>, duration: &Duration, uuid: &String) -> Option<String> {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::Ban) {
                 return None;
@@ -157,10 +157,10 @@ impl Logging {
         
         Some(format!("<:mesaBan:869663336625733634> <@{}> (`{}`) banned <@{}> (`{}`) expiring {}: `{}`. UUID: `{}`",
             actor, actor, target, target,
-            duration.to_discord_timestamp(), reason.unwrap_or("No reason provided".to_string()), uuid))
+            duration.to_discord_timestamp(), reason.unwrap_or(&"No reason provided".to_string()), uuid))
     }
 
-    pub fn log_unban(&self, actor: String, target: String, reason: Option<String>) -> Option<String> {
+    pub fn log_unban(&self, actor: &String, target: &String, reason: Option<&String>) -> Option<String> {
         if !self.enabled.unwrap_or(false) 
         || self.exclude_actions.as_ref().unwrap_or(&vec![Actions::None]).contains(&Actions::Unban) {
                 return None;
@@ -168,7 +168,7 @@ impl Logging {
         
         Some(format!("<:mesaUnban:869663336697069619> <@{}> (`{}`) unbanned <@{}> (`{}`): `{}`",
             actor, actor, target, target,
-            reason.unwrap_or("No reason provided".to_string())))
+            reason.unwrap_or(&"No reason provided".to_string())))
     }
 
     pub fn log_message_delete(&self, msg: Reference<'_, twilight_model::id::Id<MessageMarker>, CachedMessage>, actor: Option<String>) -> Option<String>  {

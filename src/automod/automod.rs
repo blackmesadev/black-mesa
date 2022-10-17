@@ -1,9 +1,11 @@
 #![allow(dead_code)]
 
 use serde::Deserialize as SerdeDeserialize;
+use twilight_model::channel::message::AllowedMentions;
 use twilight_model::id::Id;
 use std::collections::HashMap;
 use std::error::Error;
+use std::str::FromStr;
 use serde_derive::{Serialize, Deserialize};
 use serde_with::skip_serializing_none;
 use strum::IntoEnumIterator;
@@ -239,6 +241,15 @@ impl Handler {
             None => return Ok(())
         };
 
+        let id = match &conf.modules.logging.channel_id {
+            Some(id) => id,
+            None => return Ok(())
+        };
+
+        let channel_id = Id::from_str(&id)?;
+
+        let allowed_ment = AllowedMentions::builder().build();
+
         match res.typ {
             AutomodType::Censor(_) => {
                 self.rest.delete_message(msg.channel_id, msg.id).exec().await?;
@@ -250,7 +261,7 @@ impl Handler {
                         Some(u) => u.id.to_string(),
                         None => "AutoMod".to_string()
                     },
-                    &Some(format!("Censor->{}({})", &res.typ.get_name(), res.trigger.clone().unwrap_or("unknown".to_string()))),
+                    Some(format!("Censor->{}({})", &res.typ.get_name(), res.trigger.clone().unwrap_or("unknown".to_string()))).as_ref(),
                     &Duration::new(match &conf.modules.moderation.default_strike_duration {
                         Some(d) => d.to_string(),
                         None => "30d".to_string()
@@ -263,11 +274,11 @@ impl Handler {
                     None => return Ok(())
                 };
 
-                let id = conf.modules.logging.clone().channel_id.unwrap();
-
-                let channel_id = Id::new(id.parse::<u64>().unwrap());
-
-                self.rest.create_message(channel_id).content(log.as_str())?.exec().await?;
+                self.rest.create_message(channel_id)
+                    .content(log.as_str())?
+                    .allowed_mentions(Some(&allowed_ment))
+                    .exec()
+                    .await?;
             }
             AutomodType::Spam(_) => {
                 self.rest.delete_message(msg.channel_id, msg.id).exec().await?;
@@ -279,7 +290,7 @@ impl Handler {
                         Some(u) => u.id.to_string(),
                         None => "AutoMod".to_string()
                     },
-                    &Some(format!("Spam->{}", &res.typ.get_name())),
+                    Some(format!("Spam->{}", &res.typ.get_name())).as_ref(),
                     &Duration::new(match &conf.modules.moderation.default_strike_duration {
                         Some(d) => d.to_string(),
                         None => "30d".to_string()
@@ -291,11 +302,11 @@ impl Handler {
                     None => return Ok(())
                 };
 
-                let id = conf.modules.logging.clone().channel_id.unwrap();
-
-                let channel_id = Id::new(id.parse::<u64>().unwrap());
-
-                self.rest.create_message(channel_id).content(log.as_str())?.exec().await?;
+                self.rest.create_message(channel_id)
+                    .content(log.as_str())?
+                    .allowed_mentions(Some(&allowed_ment))
+                    .exec()
+                    .await?;
             }
         }
 

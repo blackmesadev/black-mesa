@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use bson::oid::ObjectId;
+use twilight_model::{channel::message::AllowedMentions, id::Id};
 use uuid::Uuid;
 
 use crate::{handlers::Handler, util::duration::Duration, mongo::mongo::{Punishment, PunishmentType, Config}};
@@ -9,7 +12,7 @@ impl Handler {
         guild_id: &String,
         user_id: &String,
         issuer: &String,
-        reason: &Option<String>,
+        reason: Option<&String>,
         duration: &Duration) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
 
         let infraction_uuid = Uuid::new_v4().to_string();
@@ -25,7 +28,7 @@ impl Handler {
             expires: dur,
             role_id: None, 
             weight: None,
-            reason: reason.clone(),
+            reason: reason.cloned(),
             uuid: infraction_uuid,
             expired: false
         };
@@ -48,6 +51,15 @@ impl Handler {
             None => return Ok(()),
         };
 
+        let id = match &conf.modules.logging.channel_id {
+            Some(id) => id,
+            None => return Ok(())
+        };
+
+        let channel_id = Id::from_str(&id)?;
+
+        let allowed_ment = AllowedMentions::builder().build();
+
         match esc_to.typ {
             PunishmentType::Mute => {
                 let issuer = &match self.cache.current_user() {
@@ -55,14 +67,34 @@ impl Handler {
                     None => return Ok(()),
                 };
 
-                self.mute_user(
+                let duration = &Duration::new(esc_to.duration.clone());
+                let reason = Some("Exceeded strike limit".to_string());
+
+                let punishment = self.mute_user(
                     conf,
                     guild_id,
                     user_id,
                     issuer,
-                    &Duration::new(esc_to.duration.clone()),
-                    &Some("Exceeded strike limit".to_string())
+                    duration,
+                    reason.as_ref(),
                 ).await?;
+
+                let log = match conf.modules.logging.log_mute(
+                    issuer,
+                    user_id,
+                    reason.as_ref(),
+                    duration,
+                    &punishment.uuid,
+                ) {
+                    Some(log) => log,
+                    None => return Ok(()),
+                };
+
+                self.rest.create_message(channel_id)
+                    .content(log.as_str())?
+                    .allowed_mentions(Some(&allowed_ment))
+                    .exec()
+                    .await?;
             },
 
             PunishmentType::Kick => {
@@ -71,12 +103,30 @@ impl Handler {
                     None => return Ok(()),
                 };
 
-                self.kick_user(
+                let reason = Some("Exceeded strike limit".to_string());
+
+                let punishment = self.kick_user(
                     guild_id,
                     user_id,
                     issuer,
-                    &Some("Exceeded strike limit".to_string())
+                    reason.as_ref()
                 ).await?;
+
+                let log = match conf.modules.logging.log_kick(
+                    issuer,
+                    user_id,
+                    reason.as_ref(),
+                    &punishment.uuid,
+                ) {
+                    Some(log) => log,
+                    None => return Ok(()),
+                };
+
+                self.rest.create_message(channel_id)
+                    .content(log.as_str())?
+                    .allowed_mentions(Some(&allowed_ment))
+                    .exec()
+                    .await?;
             },
 
             PunishmentType::Ban => {
@@ -85,13 +135,33 @@ impl Handler {
                     None => return Ok(()),
                 };
 
-                self.ban_user(
+                let duration = &Duration::new(esc_to.duration.clone());
+                let reason = Some("Exceeded strike limit".to_string());
+
+                let punishment = self.ban_user(
                     guild_id,
                     user_id,
                     issuer,
-                    &Duration::new(esc_to.duration.clone()),
-                    &Some("Exceeded strike limit".to_string())
+                    duration,
+                    reason.as_ref()
                 ).await?;
+
+                let log = match conf.modules.logging.log_ban(
+                    issuer,
+                    user_id,
+                    reason.as_ref(),
+                    duration,
+                    &punishment.uuid,
+                ) {
+                    Some(log) => log,
+                    None => return Ok(()),
+                };
+
+                self.rest.create_message(channel_id)
+                    .content(log.as_str())?
+                    .allowed_mentions(Some(&allowed_ment))
+                    .exec()
+                    .await?;
             },
             _ => {}
         }
