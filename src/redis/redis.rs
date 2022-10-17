@@ -41,17 +41,6 @@ impl Redis {
                             }
                         }
 
-                        let mut new_ttl = cur_ttl + (exp as i64 / max);
-                        if new_ttl > exp as i64{
-                            new_ttl = exp as i64;
-                        }
-                        match connection.expire(&key, new_ttl.try_into().unwrap_or(exp)).await {
-                            Ok(()) => (),
-                            Err(e) => {
-                                warn!("Error setting expire: {}", e);
-                                return None;
-                            }
-                        };
                         Some(value)
                     }
                     Err(e) => {
