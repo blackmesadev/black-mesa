@@ -228,7 +228,7 @@ impl Database {
         query.insert("uuid", doc! { "$in": uuids });
 
         let res = punishments.update_many(query,
-            doc! { "$set": { "expired": true } },
+            doc! { "$set": { "expired": true, "expires": chrono::Utc::now().timestamp() } },
             None)
             .await?;
 
