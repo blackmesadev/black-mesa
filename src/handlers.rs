@@ -1,10 +1,11 @@
 use std::{error::Error, time::SystemTime, sync::Arc, str::FromStr};
 
-use tracing::info;
+use tracing::{info, error};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Event;
 use twilight_http::Client as HttpClient;
-use twilight_model::gateway::payload::incoming::{MemberUpdate, MemberAdd, BanRemove, MessageDelete, MessageUpdate, MessageCreate};
+use twilight_model::gateway::event::shard::Connected;
+use twilight_model::gateway::payload::incoming::{MemberUpdate, MemberAdd, BanRemove, MessageDelete, MessageUpdate, MessageCreate, Ready};
 use twilight_model::guild::audit_log::AuditLogChange;
 use twilight_model::{channel::message::AllowedMentions, guild::audit_log::AuditLogEventType};
 use twilight_model::id::Id;
@@ -22,39 +23,80 @@ pub struct Handler {
 }
 
 impl Handler {
+    #[tracing::instrument(skip(self))]
     pub async fn handle_event(&self, shard_id: u64, event: &Event) -> Result<(), Box<dyn Error + Send + Sync>> {
         match event {
             Event::Ready(ready) => {
-                info!("{} is connected!", ready.user.name);
-                
+                match self.on_ready(shard_id, ready).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="on_ready", e);
+                    }
+                }
             }
 
             Event::MessageCreate(msg) => {
-                self.message_create(shard_id, msg).await?;
+                match self.message_create(shard_id, msg).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="message_create", e);
+                    }
+                }
             }
 
             Event::MessageUpdate(msg_update) => {
-                self.message_update(shard_id, msg_update).await?;
+                match self.message_update(shard_id, msg_update).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="message_update", e);
+                    }
+                }
             }
 
             Event::MessageDelete(msg_delete) => {
-                self.message_delete(shard_id, msg_delete).await?;
+                match self.message_delete(shard_id, msg_delete).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="message_delete", e);
+                    }
+                }
             }
+
             Event::BanRemove(unban) => {
-                self.ban_remove(shard_id, unban).await?;
+                match self.ban_remove(shard_id, unban).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="ban_remove", e);
+                    }
+                }
             }
 
             Event::MemberAdd(member) => {
-                self.member_add(shard_id, &member).await?;
+                match self.member_add(shard_id, &member).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="member_add", e);
+                    }
+                }
             }
 
             Event::MemberUpdate(update) => {
-                self.member_update(shard_id, update).await?;
+                match self.member_update(shard_id, update).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="member_update", e);
+                    }
+                }
 
             }
 
-            Event::ShardConnected(_) => {
-                info!("Connected to shard {}", shard_id);
+            Event::ShardConnected(conn) => {
+                match self.shard_connected(shard_id, conn).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        error!(target="shard_connected", e);
+                    }
+                }
             }
             _ => {}
         }
@@ -64,6 +106,12 @@ impl Handler {
         Ok(())
     }
 
+    async fn on_ready(&self, shard_id: u64, ready: &Ready) -> Result<(), Box<dyn Error + Send + Sync>> {
+        info!("{} is connected!", ready.user.name);
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn message_create(&self, _shard_id: u64, msg: &MessageCreate) -> Result<(), Box<dyn Error + Send + Sync>> {
         let conf = match self.db.get_guild(&match &msg.guild_id {
             Some(id) => id.to_string(),
@@ -99,6 +147,7 @@ impl Handler {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
     async fn message_update(&self, _shard_id: u64, msg_update: &MessageUpdate) -> Result<(), Box<dyn Error + Send + Sync>> {
         let conf = match self.db.get_guild(&match &msg_update.guild_id {
             Some(id) => id.to_string(),
@@ -159,6 +208,7 @@ impl Handler {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
     async fn message_delete(&self, _shard_id: u64, msg_delete: &MessageDelete) -> Result<(), Box<dyn Error + Send + Sync>> {
         let guild_id = match msg_delete.guild_id {
             Some(id) => id,
@@ -228,11 +278,13 @@ impl Handler {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
     async fn ban_remove(&self, _shard_id: u64, unban: &BanRemove) -> Result<(), Box<dyn Error + Send + Sync>> {
         self.db.delete_ban(&unban.guild_id.to_string(), &unban.user.id.to_string()).await?;
         Ok(())
     }
-
+    
+    #[tracing::instrument(skip(self))]
     async fn member_add(&self, _shard_id: u64, member: &MemberAdd) -> Result<(), Box<dyn Error + Send + Sync>> {
         let guild_id = &member.guild_id.to_string();
         let user_id = &member.user.id.to_string();
@@ -252,6 +304,7 @@ impl Handler {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     async fn member_update(&self, _shard_id: u64, update: &MemberUpdate) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let conf = match self.db.get_guild( &update.guild_id.to_string()).await? {
             Some(conf) => conf,
@@ -303,6 +356,11 @@ impl Handler {
                 return Ok(())
             }
         }
+        Ok(())
+    }
+
+    async fn shard_connected(&self, shard_id: u64, connected: &Connected) -> Result<(), Box<dyn Error + Send + Sync>> {
+        tracing::info!("Shard {} connected to gateway", shard_id);
         Ok(())
     }
 }

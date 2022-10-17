@@ -67,7 +67,6 @@ impl Redis {
         }
     }
 
-    #[tracing::instrument(skip(self))]
     pub async fn set_max_messages(&self, guild_id: u64, user_id: u64, value: i64, exp: usize) -> Option<i64> {
         let key = format!("max_messages:{}:{}", guild_id, user_id);
         match self.client.get_async_connection().await {
@@ -87,7 +86,6 @@ impl Redis {
         }
     }
 
-    #[tracing::instrument(skip(self))]
     pub async fn set_memory_usage(&self, value: i64) -> Option<redis::Value> {
         let key = "memory_usage";
         match self.client.get_async_connection().await {
@@ -107,7 +105,6 @@ impl Redis {
         }
     }
 
-    #[tracing::instrument(skip(self))]
     pub async fn get_memory_usage(&self) -> Result<i64, redis::RedisError> {
         let key = "memory_usage";
         match self.client.get_async_connection().await {
