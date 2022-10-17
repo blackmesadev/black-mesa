@@ -149,6 +149,14 @@ impl Handler {
 
     #[tracing::instrument(skip(self))]
     async fn message_update(&self, _shard_id: u64, msg_update: &MessageUpdate) -> Result<(), Box<dyn Error + Send + Sync>> {
+        match &msg_update.author {
+            Some(author) => {
+                if author.bot {
+                    return Ok(())
+                }
+            }
+            None => {}
+        }
         let conf = match self.db.get_guild(&match &msg_update.guild_id {
             Some(id) => id.to_string(),
             None => return Ok(())
