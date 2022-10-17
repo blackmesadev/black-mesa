@@ -16,7 +16,7 @@ services:
     environment:
       - DISCORD_TOKEN=
       - MONGO_URI=mongodb://username:password@mongo:27017
-      - REDIS_URI=redis:6379
+      - REDIS_URI=redis://redis:6379
 
   mongo:
     image: mongo
