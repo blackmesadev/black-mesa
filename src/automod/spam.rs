@@ -2,6 +2,7 @@ use std::convert::TryInto;
 
 use lazy_static::lazy_static;
 use regex::Regex;
+use tracing::error;
 
 use crate::{automod::automod::{Spam}, util};
 use crate::redis::redis::*;
@@ -49,7 +50,7 @@ impl Redis {
                         return true;
                     },
                     None => {
-                        println!("Error setting max messages");
+                        error!("Error setting max messages");
                         return true;
                     }
                 }

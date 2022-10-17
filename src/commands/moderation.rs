@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use mongodb::results::UpdateResult;
+use tracing::warn;
 use twilight_mention::Mention;
 use twilight_model::{channel::{Message, embed::*, message::AllowedMentions}, id::Id};
 use lazy_static::lazy_static;
@@ -59,7 +60,7 @@ impl Handler {
                 Err(e) => {
                     self.rest.create_message(msg.channel_id).content("Error getting punishments")?.exec().await?;
                     // Return Ok here because an error here shouldn't cause further issue, this can be manually investigated.
-                    println!("Error getting punishments: {:?}", e);
+                    warn!("Error getting punishments: {:?}", e);
                     return Ok(());
                 }
             };
@@ -212,13 +213,7 @@ impl Handler {
                     }
                 };
                 punishment_list.push(punishment);
-                match content.split_once(" ") {
-                    Some(s) => s.1.to_string() + " ",
-                    None => {
-                        self.rest.create_message(msg.channel_id).content("<:mesaCommand:832350527131746344> `reason [uuid:uuid] [reason:string...]`")?.exec().await?;
-                        return Ok(());
-                    }
-                }
+                content.split(" ").collect::<Vec<&str>>()[1].to_string() + " "
             },
             _ => {
                 self.rest.create_message(msg.channel_id).content("<:mesaCommand:832350527131746344> `reason [uuid:uuid] [reason:string...]`")?.exec().await?;
@@ -405,13 +400,7 @@ impl Handler {
                     }
                 };
                 punishment_list.push(punishment);
-                match content.split_once(" ") {
-                    Some(s) => s.1.to_string() + " ",
-                    None => {
-                        self.rest.create_message(msg.channel_id).content("<:mesaCommand:832350527131746344> `duration [uuid:uuid] [time:duration]`")?.exec().await?;
-                        return Ok(());
-                    }
-                }
+                content.split(" ").collect::<Vec<&str>>()[1].to_string() + " "
             },
             _ => {
                 self.rest.create_message(msg.channel_id).content("<:mesaCommand:832350527131746344> `duration [uuid:uuid] [time:duration]`")?.exec().await?;

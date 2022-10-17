@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
+use tracing::{warn, error};
 use twilight_http::request::AuditLogReason;
 use twilight_model::id::Id;
 
@@ -15,17 +16,21 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
         match db.get_expired().await {
             Ok(ref exp) => {
                 for punishment in exp {
+                    let guild_id = match Id::from_str(&punishment.guild_id) {
+                        Ok(id) => id,
+                        Err(_) => continue
+                    };
+
+                    let user_id = match Id::from_str(&punishment.user_id) {
+                            Ok(id) => id,
+                            Err(_) => continue
+                    };
+
                     match punishment.typ {
                         PunishmentType::Mute => {
                             match rest.remove_guild_member_role(
-                                match Id::from_str(&punishment.guild_id) {
-                                    Ok(id) => id,
-                                    Err(_) => continue
-                                },
-                                match Id::from_str(&punishment.user_id) {
-                                        Ok(id) => id,
-                                        Err(_) => continue
-                                },
+                                guild_id,
+                                user_id,
                                 match Id::from_str(match punishment.role_id{
                                     Some(ref role_id) => role_id,
                                     None => continue // this should never happen, but just in case
@@ -33,7 +38,7 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
                                     Ok(id) => id,
                                     Err(_) => continue
                                 },
-                                )
+                            )
                                 .reason("Punishment expired.") {
                                 Ok(e) => {
                                     match e.exec().await {
@@ -42,21 +47,16 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
                                     }
                                 },
                                 Err(e) => {
-                                    println!("Failed to remove role from user: {}", e);
+                                    warn!("Failed to remove role from user: {}", e);
                                     continue;
                                 }
                             }
                         }
                         PunishmentType::Ban => {
                             match rest.delete_ban(
-                                match Id::from_str(&punishment.guild_id) {
-                                    Ok(id) => id,
-                                    Err(_) => continue
-                                },
-                                match Id::from_str(&punishment.user_id) {
-                                    Ok(id) => id,
-                                    Err(_) => continue
-                                })
+                                guild_id,
+                                user_id
+                            )
                                 .reason("Punishment expired.") {
                                 Ok(e) => {
                                     match e.exec().await {
@@ -65,7 +65,7 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
                                     }
                                 },
                                 Err(e) => {
-                                    println!("Failed to remove role from user: {}", e);
+                                    warn!("Failed to remove role from user: {}", e);
                                     continue;
                                 }
                             }
@@ -73,17 +73,17 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
                         _ => {}
                     }
                     let update_uuids = exp.iter().map(|x| x.uuid.clone()).collect::<Vec<String>>();
-                    match db.expire_actions(update_uuids).await {
+                    match db.expire_actions(None, &update_uuids).await {
                         Ok(_) => {}
                         Err(e) => {
-                            println!("Error updating actions: {}", e);
+                            error!("Error updating actions: {}", e);
                         }
                     }
                 }
             }
 
             Err(e) => {
-                println!("Error getting expired actions: {}", e);
+                error!("Error getting expired actions: {}", e);
             }
         }
 

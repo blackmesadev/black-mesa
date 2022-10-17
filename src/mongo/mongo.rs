@@ -216,11 +216,18 @@ impl Database {
         Ok(res)
     }
 
-    pub async fn expire_actions(&self, uuids: Vec<String>) -> Result<UpdateResult, mongodb::error::Error> {
+    pub async fn expire_actions(&self, guild_id: Option<String>, uuids: &Vec<String>) -> Result<UpdateResult, mongodb::error::Error> {
         let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
         
-        let res = punishments.update_many(doc!
-            { "uuid": { "$in": uuids } },
+        let mut query = Document::new();
+
+        if let Some(guild_id) = guild_id {
+            query.insert("guildID", guild_id);
+        }
+
+        query.insert("uuid", doc! { "$in": uuids });
+
+        let res = punishments.update_many(query,
             doc! { "$set": { "expired": true } },
             None)
             .await?;

@@ -1,5 +1,6 @@
 use std::env;
 use redis::AsyncCommands;
+use tracing::{warn, error};
 
 #[derive(Clone, Debug)]
 pub struct Redis {
@@ -15,6 +16,7 @@ pub async fn connect() -> Redis {
 }
 
 impl Redis {
+    #[tracing::instrument(skip(self))]
     pub async fn incr_max_messages(&self, guild_id: u64, user_id: u64, exp: usize, max: i64) -> Option<i64> {
         let key = format!("max_messages:{}:{}", guild_id, user_id);
         match self.client.get_async_connection().await {
@@ -24,7 +26,7 @@ impl Redis {
                         let cur_ttl: i64 = match connection.ttl(&key).await {
                             Ok(ttl) => ttl,
                             Err(e) => {
-                                println!("Error getting ttl: {}", e);
+                                warn!("Error getting ttl: {}", e);
                                 return None;
                             }
                         };
@@ -33,7 +35,7 @@ impl Redis {
                             match connection.expire(&key, exp).await {
                                 Ok(()) => return Some(value),
                                 Err(e) => {
-                                    println!("Error setting ttl: {}", e);
+                                    warn!("Error setting expire: {}", e);
                                     return None;
                                 }
                             }
@@ -46,25 +48,26 @@ impl Redis {
                         match connection.expire(&key, new_ttl.try_into().unwrap_or(exp)).await {
                             Ok(()) => (),
                             Err(e) => {
-                                println!("Error setting ttl: {}", e);
+                                warn!("Error setting expire: {}", e);
                                 return None;
                             }
                         };
                         Some(value)
                     }
                     Err(e) => {
-                        println!("Error incrementing: {}", e);
+                        warn!("Error incrementing max messages: {}", e);
                         None
                     },
                 }
             },
             Err(e) => {
-                println!("Error incrementing max messages: {}", e);
+                error!("Error getting connection: {}", e);
                 None
             }
         }
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn set_max_messages(&self, guild_id: u64, user_id: u64, value: i64, exp: usize) -> Option<i64> {
         let key = format!("max_messages:{}:{}", guild_id, user_id);
         match self.client.get_async_connection().await {
@@ -72,18 +75,19 @@ impl Redis {
                 match connection.set_ex(key, value, exp).await {
                     Ok(value) => Some(value),
                     Err(e) => {
-                        println!("Error setting max messages: {}", e);
+                        warn!("Error setting max messages: {}", e);
                         return None;
                     }
                 }
             },
             Err(e) => {
-                println!("Error setting max messages: {}", e);
+                error!("Error getting connection: {}", e);
                 return None;
             }
         }
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn set_memory_usage(&self, value: i64) -> Option<redis::Value> {
         let key = "memory_usage";
         match self.client.get_async_connection().await {
@@ -91,18 +95,19 @@ impl Redis {
                 match connection.set(key, value).await {
                     Ok(value) => Some(value),
                     Err(e) => {
-                        println!("Error setting memory usage: {}", e);
+                        warn!("Error setting memory usage: {}", e);
                         return None;
                     }
                 }
             },
             Err(e) => {
-                println!("Error setting memory usage: {}", e);
+                error!("Error getting connection: {}", e);
                 return None;
             }
         }
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn get_memory_usage(&self) -> Result<i64, redis::RedisError> {
         let key = "memory_usage";
         match self.client.get_async_connection().await {

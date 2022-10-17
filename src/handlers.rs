@@ -1,5 +1,6 @@
 use std::{error::Error, time::SystemTime, sync::Arc, str::FromStr};
 
+use tracing::info;
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Event;
 use twilight_http::Client as HttpClient;
@@ -10,6 +11,7 @@ use twilight_model::id::Id;
 
 use crate::{mongo::mongo::*, redis::redis::*, automod::AutomodMessage};
 
+#[derive(Debug)]
 pub struct Handler {
     pub db: Database,
     pub redis: Redis,
@@ -23,7 +25,7 @@ impl Handler {
     pub async fn handle_event(&self, shard_id: u64, event: &Event) -> Result<(), Box<dyn Error + Send + Sync>> {
         match event {
             Event::Ready(ready) => {
-                println!("{} is connected!", ready.user.name);
+                info!("{} is connected!", ready.user.name);
                 
             }
 
@@ -52,7 +54,7 @@ impl Handler {
             }
 
             Event::ShardConnected(_) => {
-                println!("Connected to shard {}", shard_id);
+                info!("Connected to shard {}", shard_id);
             }
             _ => {}
         }

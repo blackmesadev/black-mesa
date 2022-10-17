@@ -143,7 +143,6 @@ pub fn filter_ips(censor_user : &automod::Censor, content: &String) -> (String, 
     for ip in ips {
         let ip_vec = ip.as_str().split(".").collect::<Vec<&str>>();
         if ip_vec.len() != 4 { // ? wtf
-            println!("there was an error parsing the ip {:?}", ip.as_str());
             return ("".to_string(), true);
         }
         let ip = ip_vec.iter().map(|octet| octet.parse::<u8>().unwrap()).collect::<Vec<u8>>();

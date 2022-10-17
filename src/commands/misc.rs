@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use regex::Regex;
+use tracing::warn;
 use twilight_model::{channel::{Message, embed::{Embed, EmbedField}}, id::Id};
 use lazy_static::lazy_static;
 
@@ -316,7 +317,10 @@ impl Handler {
                 name: "Memory Usage".to_string(),
                 value: format!("`{:.3} MB`", match self.redis.get_memory_usage().await {
                     Ok(usage) => usage as f64 / 1024.0 / 1024.0,
-                    Err(_) => 0.0
+                    Err(e) => {
+                        warn!("Failed to get memory usage: {}", e);
+                        0.0
+                    }
                 }),
                 inline: true
             },

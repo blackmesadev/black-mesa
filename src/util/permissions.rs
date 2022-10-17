@@ -20,6 +20,7 @@ pub const PERMISSION_MUTE             :&str = "moderation.mute";
 pub const PERMISSION_PURGE            :&str = "moderation.purge";
 pub const PERMISSION_PURGE_ALL        :&str = "moderation.purgeall";
 pub const PERMISSION_REMOVEACTIONSELF :&str = "moderation.removeself";
+pub const PERMISSION_EXPIREACTIONSELF :&str = "moderation.expireself";
 pub const PERMISSION_SEARCH           :&str = "moderation.search";
 pub const PERMISSION_SEARCHSELF       :&str = "moderation.searchself";
 pub const PERMISSION_SOFTBAN          :&str = "moderation.softban";
@@ -33,6 +34,7 @@ pub const PERMISSION_CONFIGSET    :&str = "admin.set";
 pub const PERMISSION_MAKEMUTE     :&str = "admin.makemute";
 pub const PERMISSION_SETUP        :&str = "admin.setup";
 pub const PERMISSION_REMOVEACTION :&str = "admin.remove";
+pub const PERMISSION_EXPIREACTION :&str = "moderation.expire";
 pub const PERMISSION_UPDATE       :&str = "admin.update";
 
 pub const PERMISSION_VIEWCMDLEVEL  :&str = "guild.viewcommandlevel";

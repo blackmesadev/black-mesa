@@ -62,6 +62,7 @@ impl Handler {
             "reason" => self.update_reason_cmd(conf, msg).await,
             "duration" => self.update_duration_cmd(&conf, msg).await,
             "remove" => self.remove_punishment_cmd(conf, msg).await,
+            "expire" => self.expire_punishment_cmd(conf, msg).await,
 
             "strike" => self.strike_user_cmd(&conf, msg).await,
             "kick" => self.kick_user_cmd(&conf, msg).await,

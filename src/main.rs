@@ -4,6 +4,7 @@ use futures_util::stream::StreamExt;
 use twilight_cache_inmemory::{InMemoryCache, ResourceType};
 use twilight_gateway::{cluster::{Cluster, ShardScheme}, Intents};
 use twilight_http::Client as HttpClient;
+use tracing::{info, error, warn};
 
 mod handlers;
 mod automod;
@@ -19,6 +20,10 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+    tracing_subscriber::fmt::init();
+
+    info!("Starting Black Mesa v{}", VERSION);
+
     let token = env::var("DISCORD_TOKEN")?;
 
     let db = mongo::mongo::connect().await;
@@ -75,7 +80,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     while let Some((shard_id, event)) = events.next().await {
         match handler.handle_event(shard_id, &event).await {
             Ok(()) => {}
-            Err(e) => println!("Error: {}", e),
+            Err(e) => error!("Error: {}", e),
         }
     }
     
@@ -89,7 +94,7 @@ async fn run_meter(redis: redis::redis::Redis) {
     loop {
         let res = meter.scan();
         if let Err(err) = res {
-            println!("Meter Error: {}", err);
+            warn!("Meter Error: {}", err);
         }
 
         match meter.report() {
