@@ -41,7 +41,7 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
                             )
                                 .reason("Punishment expired.") {
                                 Ok(e) => {
-                                    match e.exec().await {
+                                    match e.await {
                                         Ok(_) => {},
                                         Err(_) => continue
                                     }
@@ -59,7 +59,7 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
                             )
                                 .reason("Punishment expired.") {
                                 Ok(e) => {
-                                    match e.exec().await {
+                                    match e.await {
                                         Ok(_) => {},
                                         Err(_) => continue
                                     }

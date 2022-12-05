@@ -28,7 +28,7 @@ impl Handler {
             "ping" => {
                 let msg_time = (std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).expect("?").as_micros() as i64 - msg.timestamp.as_micros()) / 1000;
                 let ping = format!("Ping: `{}ms`", msg_time.to_string());
-                self.rest.create_message(msg.channel_id).content(ping.as_str())?.exec().await?;
+                self.rest.create_message(msg.channel_id).content(ping.as_str())?.await?;
                 Ok(())
             },
 
@@ -39,7 +39,7 @@ impl Handler {
                     None => None
                 };
                 let lvl = permissions::get_user_level(conf, roles, &author_id);
-                self.rest.create_message(msg.channel_id).content(format!("Level: `{}`", lvl).as_str())?.exec().await?;
+                self.rest.create_message(msg.channel_id).content(format!("Level: `{}`", lvl).as_str())?.await?;
                 Ok(())
             },
 
@@ -49,7 +49,7 @@ impl Handler {
                     None => return Ok(())
                 };
                 let lvl = permissions::get_permission(conf, cmd_name)?;
-                self.rest.create_message(msg.channel_id).content(format!("Cmd Level: `{}`", lvl).as_str())?.exec().await?;
+                self.rest.create_message(msg.channel_id).content(format!("Cmd Level: `{}`", lvl).as_str())?.await?;
                 Ok(())
             },
 

@@ -252,7 +252,7 @@ impl Handler {
 
         match res.typ {
             AutomodType::Censor(_) => {
-                self.rest.delete_message(msg.channel_id, msg.id).exec().await?;
+                self.rest.delete_message(msg.channel_id, msg.id).await?;
                 // Action
                 self.issue_strike(&conf,
                     &msg.guild_id.unwrap().to_string(),
@@ -277,11 +277,11 @@ impl Handler {
                 self.rest.create_message(channel_id)
                     .content(log.as_str())?
                     .allowed_mentions(Some(&allowed_ment))
-                    .exec()
+                    
                     .await?;
             }
             AutomodType::Spam(_) => {
-                self.rest.delete_message(msg.channel_id, msg.id).exec().await?;
+                self.rest.delete_message(msg.channel_id, msg.id).await?;
                 // Action
                 self.issue_strike(&conf,
                     &msg.guild_id.unwrap().to_string(),
@@ -305,7 +305,7 @@ impl Handler {
                 self.rest.create_message(channel_id)
                     .content(log.as_str())?
                     .allowed_mentions(Some(&allowed_ment))
-                    .exec()
+                    
                     .await?;
             }
         }
@@ -333,7 +333,7 @@ impl Handler {
         let roles = match self.cache.member(guild_id, msg.author.id) {
             Some(m) => m.roles().to_vec(),
             None => {
-                match self.rest.guild_member(guild_id, msg.author.id).exec().await {
+                match self.rest.guild_member(guild_id, msg.author.id).await {
                     Ok(m) => match m.model().await {
                         Ok(m) => m.roles,
                         Err(_) => return None

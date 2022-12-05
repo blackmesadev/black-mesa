@@ -3,7 +3,7 @@ use std::{collections::HashMap, str::FromStr};
 use bson::oid::ObjectId;
 use serde::Deserialize as SerdeDeserialize;
 use serde_derive::{Serialize, Deserialize};
-use twilight_model::{id::Id, channel::embed::{Embed, EmbedField}};
+use twilight_model::{id::Id, channel::message::{Embed, embed::{EmbedField, self}}};
 use twilight_http::request::AuditLogReason;
 use uuid::Uuid;
 
@@ -162,7 +162,7 @@ impl Handler {
             title: Some(format!("You have been {}.", typ.past_tense_string())),
             description: None,
             color: Some(0),
-            footer: Some(twilight_model::channel::embed::EmbedFooter { 
+            footer: Some(embed::EmbedFooter { 
                 icon_url: None,
                 proxy_icon_url: None,
                 text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
@@ -179,7 +179,6 @@ impl Handler {
         }];
 
         let dm_channel = match self.rest.create_private_channel(Id::from_str(user_id)?)
-            .exec()
             .await {
                 Ok(channel) => {
                     match channel.model().await {
@@ -190,14 +189,9 @@ impl Handler {
                 Err(_) => return Ok(())
             };
 
-        match self.rest.create_message(dm_channel.id).embeds(&embeds) {
-            Ok(m) => {
-                match m.exec().await {
-                    Ok(_) => return Ok(()),
-                    Err(_) => return Ok(())
-                };
-            },
-            Err(_) => return Ok(())
+        match self.rest.create_message(dm_channel.id).embeds(&embeds)?.await {
+            Ok(_) => Ok(()),
+            Err(_) => Ok(())
         }
 
     }
@@ -223,7 +217,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec().await?;
+                k.await?;
                 Ok(punishment)
             },
             Err(e) => Err(e)?
@@ -251,7 +245,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec().await?;
+                k.await?;
                 Ok(punishment)
             },
             Err(e) => Err(e)?
@@ -276,7 +270,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec().await?;
+                k.await?;
                 Ok(())
             },
             Err(e) => Err(e)?
@@ -307,7 +301,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec().await?;
+                k.await?;
                 Ok(punishment)
             },
             Err(e) => Err(e)?
@@ -344,7 +338,7 @@ impl Handler {
             None => "No reason provided".to_string()
         }).as_str()) {
             Ok(k) => {
-                k.exec().await?;
+                k.await?;
                 Ok(())
             },
             Err(e) => Err(e)?

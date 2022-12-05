@@ -35,7 +35,7 @@ impl Handler {
                     if !ok {
                         self.rest.create_message(msg.channel_id)
                             .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_REMOVEACTIONSELF).as_str())?
-                            .exec()
+                            
                             .await?;
                             return Ok(());
                     }
@@ -44,7 +44,7 @@ impl Handler {
                 if !ok {
                     self.rest.create_message(msg.channel_id)
                         .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_REMOVEACTION).as_str())?
-                        .exec()
+                        
                         .await?;
                         return Ok(());
                 }
@@ -54,7 +54,7 @@ impl Handler {
                 let original_issuer_roles = match self.cache.member(guild_id_marker, original_issuer_id) {
                     Some(member) => member.to_owned().roles().to_vec(),
                     None => {
-                        self.rest.guild_member(guild_id_marker, original_issuer_id).exec().await?.model().await?.roles
+                        self.rest.guild_member(guild_id_marker, original_issuer_id).await?.model().await?.roles
                     }
                 };
 
@@ -65,7 +65,7 @@ impl Handler {
                 if original_issuer_level >= author_level && !conf.modules.moderation.update_higher_level_reason {
                     self.rest.create_message(msg.channel_id)
                         .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
-                        .exec()
+                        
                         .await?;
                         return Ok(());
                 }
@@ -82,12 +82,12 @@ impl Handler {
                     self.rest.create_message(msg.channel_id)
                         .content(format!("<:mesaCross:832350526414127195> Unable to delete `{}` punishments", punishment_list.len())
                         .as_str())?
-                        .exec()
+                        
                         .await?;
                 } else {
                     self.rest.create_message(msg.channel_id)
                         .content(format!("<:mesaUnstrike:869664457788358716> Deleted `{}` punishments", deleted_count).as_str())?
-                        .exec()
+                        
                         .await?;
                 }
             },
@@ -123,7 +123,7 @@ impl Handler {
                     if !ok {
                         self.rest.create_message(msg.channel_id)
                             .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_EXPIREACTIONSELF).as_str())?
-                            .exec()
+                            
                             .await?;
                             return Ok(());
                     }
@@ -132,7 +132,7 @@ impl Handler {
                 if !ok {
                     self.rest.create_message(msg.channel_id)
                         .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_EXPIREACTION).as_str())?
-                        .exec()
+                        
                         .await?;
                         return Ok(());
                 }
@@ -142,7 +142,7 @@ impl Handler {
                 let original_issuer_roles = match self.cache.member(guild_id_marker, original_issuer_id) {
                     Some(member) => member.to_owned().roles().to_vec(),
                     None => {
-                        self.rest.guild_member(guild_id_marker, original_issuer_id).exec().await?.model().await?.roles
+                        self.rest.guild_member(guild_id_marker, original_issuer_id).await?.model().await?.roles
                     }
                 };
 
@@ -153,7 +153,7 @@ impl Handler {
                 if original_issuer_level >= author_level && !conf.modules.moderation.update_higher_level_reason {
                     self.rest.create_message(msg.channel_id)
                         .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
-                        .exec()
+                        
                         .await?;
                         return Ok(());
                 }
@@ -170,12 +170,12 @@ impl Handler {
                     self.rest.create_message(msg.channel_id)
                         .content(format!("<:mesaCross:832350526414127195> Unable to expire `{}` punishments", punishment_list.len())
                         .as_str())?
-                        .exec()
+                        
                         .await?;
                 } else {
                     self.rest.create_message(msg.channel_id)
                         .content(format!("<:mesaUnstrike:869664457788358716> Expired `{}` punishments", modified_count).as_str())?
-                        .exec()
+                        
                         .await?;
                 }
             },

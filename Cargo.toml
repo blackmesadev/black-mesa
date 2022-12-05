@@ -4,15 +4,15 @@ version = "0.3.4"
 edition = "2021"
 
 [dependencies]
-twilight-cache-inmemory = "0.13"
+twilight-cache-inmemory = "0.14"
 twilight-command-parser = "0.9"
 twilight-embed-builder = "0.11"
-twilight-gateway = "0.13"
-twilight-gateway-queue = "0.13"
-twilight-http = "0.13"
-twilight-mention = "0.13"
-twilight-model = "0.13"
-twilight-util = { version = "0.13", features = ["builder"] }
+twilight-gateway = "0.14"
+twilight-gateway-queue = "0.14"
+twilight-http = "0.14"
+twilight-mention = "0.14"
+twilight-model = "0.14"
+twilight-util = { version = "0.14", features = ["builder"] }
 tokio = { version = "1.21", features = ["full"] }
 mongodb = { version = "2.3", features = ["tokio-runtime"] }
 serde = { version = "1.0" }
@@ -29,7 +29,7 @@ strum_macros = "0.24"
 futures = "0.3"
 futures-util = "0.3"
 chrono = "0.4"
-cached = "0.39"
+cached = "0.40"
 self-meter = "0.6"
 tracing = "0.1"
 tracing-subscriber = "0.3"

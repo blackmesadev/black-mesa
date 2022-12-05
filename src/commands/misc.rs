@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use regex::Regex;
 use tracing::warn;
-use twilight_model::{channel::{Message, embed::{Embed, EmbedField}}, id::Id};
+use twilight_model::{channel::{Message, message::{Embed, embed::{EmbedField, EmbedFooter, EmbedThumbnail}}}, id::Id};
 use lazy_static::lazy_static;
 
 use crate::{handlers::Handler, util::{permissions, snowflakes::snowflake_to_unix}, mongo::mongo::Config, VERSION};
@@ -26,7 +26,7 @@ impl Handler {
         }
         let id = &id_list[0];
         if id == "" {
-            self.rest.create_message(msg.channel_id).content("No user id found")?.exec().await?;
+            self.rest.create_message(msg.channel_id).content("No user id found")?.await?;
         }
 
         let mut perm = permissions::PERMISSION_USERINFO;
@@ -39,7 +39,7 @@ impl Handler {
         if !ok {
             self.rest.create_message(msg.channel_id)
                 .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", perm).as_str())?
-                .exec()
+                
                 .await?;
                 return Ok(());
         }
@@ -49,12 +49,12 @@ impl Handler {
             None => return Ok(())
         };
 
-        let guild = self.rest.guild(*guild_id).exec().await?.model().await?;
+        let guild = self.rest.guild(*guild_id).await?.model().await?;
 
-        let member = match self.rest.guild_member(*guild_id, Id::from_str(id)?).exec().await {
+        let member = match self.rest.guild_member(*guild_id, Id::from_str(id)?).await {
             Ok(member) => member.model().await?,
             Err(_) => {
-                self.rest.create_message(msg.channel_id).content("<:mesaCross:832350526414127195> Member not found.")?.exec().await?;
+                self.rest.create_message(msg.channel_id).content("<:mesaCross:832350526414127195> Member not found.")?.await?;
                 return Ok(());
             }
         };
@@ -126,7 +126,7 @@ impl Handler {
             title: Some(format!("{}#{:04}'s User Info", &member.user.name, &member.user.discriminator)),
             description: None,
             color: Some(0),
-            footer: Some(twilight_model::channel::embed::EmbedFooter { 
+            footer: Some(EmbedFooter { 
                 icon_url: None,
                 proxy_icon_url: None,
                 text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
@@ -136,7 +136,7 @@ impl Handler {
             author: None,
             image: None,
             provider: None,
-            thumbnail: Some(twilight_model::channel::embed::EmbedThumbnail {
+            thumbnail: Some(EmbedThumbnail {
                 height: None,
                 proxy_url: None,
                 url: icon_url,
@@ -147,7 +147,7 @@ impl Handler {
             video: None
         }];
 
-        self.rest.create_message(msg.channel_id).embeds(&embeds)?.exec().await?;
+        self.rest.create_message(msg.channel_id).embeds(&embeds)?.await?;
 
         Ok(())
     }
@@ -157,7 +157,7 @@ impl Handler {
         let guild = self.rest.guild(match msg.guild_id {
             Some(id) => id,
             None => return Ok(())
-        }).exec().await?.model().await?;
+        }).await?.model().await?;
 
         let mut fields = vec![
             EmbedField{
@@ -231,7 +231,7 @@ impl Handler {
             title: Some(format!("{}'s Guild Info", &guild.name)),
             description: None,
             color: Some(0),
-            footer: Some(twilight_model::channel::embed::EmbedFooter { 
+            footer: Some(EmbedFooter { 
                 icon_url: None,
                 proxy_icon_url: None,
                 text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
@@ -241,7 +241,7 @@ impl Handler {
             author: None,
             image: None,
             provider: None,
-            thumbnail: Some(twilight_model::channel::embed::EmbedThumbnail {
+            thumbnail: Some(EmbedThumbnail {
                 height: None,
                 proxy_url: None,
                 url: icon_url,
@@ -252,7 +252,7 @@ impl Handler {
             video: None
         }];
 
-        self.rest.create_message(msg.channel_id).embeds(&embeds)?.exec().await?;
+        self.rest.create_message(msg.channel_id).embeds(&embeds)?.await?;
 
         Ok(())
     }
@@ -292,7 +292,7 @@ impl Handler {
                     }
                 };
 
-                Some(twilight_model::channel::embed::EmbedThumbnail {
+                Some(EmbedThumbnail {
                     height: None,
                     proxy_url: None,
                     url: icon_url,
@@ -330,7 +330,7 @@ impl Handler {
             title: Some("Black Mesa Info".to_string()),
             description: None,
             color: Some(0),
-            footer: Some(twilight_model::channel::embed::EmbedFooter { 
+            footer: Some(EmbedFooter { 
                 icon_url: None,
                 proxy_icon_url: None,
                 text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
@@ -346,7 +346,7 @@ impl Handler {
             video: None
         }];
 
-        self.rest.create_message(msg.channel_id).embeds(&embeds)?.exec().await?;
+        self.rest.create_message(msg.channel_id).embeds(&embeds)?.await?;
 
         Ok(())
     }

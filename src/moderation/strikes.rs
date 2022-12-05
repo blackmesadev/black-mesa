@@ -93,7 +93,7 @@ impl Handler {
                 self.rest.create_message(channel_id)
                     .content(log.as_str())?
                     .allowed_mentions(Some(&allowed_ment))
-                    .exec()
+                    
                     .await?;
             },
 
@@ -125,7 +125,6 @@ impl Handler {
                 self.rest.create_message(channel_id)
                     .content(log.as_str())?
                     .allowed_mentions(Some(&allowed_ment))
-                    .exec()
                     .await?;
             },
 
@@ -160,7 +159,7 @@ impl Handler {
                 self.rest.create_message(channel_id)
                     .content(log.as_str())?
                     .allowed_mentions(Some(&allowed_ment))
-                    .exec()
+                    
                     .await?;
             },
             _ => {}

@@ -211,7 +211,7 @@ impl Handler {
         self.rest.create_message(channel_id)
             .content(log.as_str())?
             .allowed_mentions(Some(&allowed_ment))
-            .exec().await?;
+            .await?;
 
         Ok(())
     }
@@ -237,7 +237,7 @@ impl Handler {
         let audit_log = self.rest.audit_log(guild_id)
             .action_type(AuditLogEventType::MessageDelete)
             .limit(1)?
-            .exec()
+            
             .await?
             .model()
             .await?
@@ -281,7 +281,7 @@ impl Handler {
         self.rest.create_message(channel_id)
             .content(log.as_str())?
             .allowed_mentions(Some(&allowed_ment))
-            .exec().await?;
+            .await?;
 
         Ok(())
     }
@@ -302,7 +302,7 @@ impl Handler {
                 match mute.role_id {
                     Some(role_id) => {
                         let role_id_marker = Id::from_str(&role_id)?;
-                        self.rest.add_guild_member_role(member.guild_id, member.user.id, role_id_marker).exec().await?;
+                        self.rest.add_guild_member_role(member.guild_id, member.user.id, role_id_marker).await?;
                         Ok(())
                     },
                     None => Ok(())
@@ -324,7 +324,7 @@ impl Handler {
         let audit_log = self.rest.audit_log(update.guild_id)
             .action_type(AuditLogEventType::MemberRoleUpdate)
             .limit(1)?
-            .exec()
+            
             .await?
             .model()
             .await?
