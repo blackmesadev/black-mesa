@@ -1,15 +1,15 @@
-use std::{env, fmt};
-use std::collections::HashMap;
-use std::str::FromStr;
+use bson::{serde_helpers::*, Document};
 use chrono::Utc;
+use futures_util::TryStreamExt;
 use mongodb::bson::oid::ObjectId;
 use mongodb::options::FindOneOptions;
 use mongodb::results::{DeleteResult, UpdateResult};
 use mongodb::{bson::doc, options::ClientOptions, Client, Collection};
-use futures_util::TryStreamExt;
-use serde_derive::{Serialize, Deserialize};
-use bson::{serde_helpers::*, Document};
 use serde_aux::prelude::*;
+use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::str::FromStr;
+use std::{env, fmt};
 
 use crate::automod::*;
 use crate::logging::*;
@@ -91,7 +91,7 @@ pub struct Config {
     pub prefix: Option<String>,
     pub permissions: HashMap<String, i64>,
     pub levels: HashMap<String, i64>,
-    pub modules: Modules
+    pub modules: Modules,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -114,7 +114,7 @@ pub struct Punishment {
     pub user_id: String,
     pub issuer: String,
     #[serde(rename = "type")]
-    pub typ : PunishmentType,
+    pub typ: PunishmentType,
     pub expires: Option<i64>,
     #[serde(rename = "roleID")]
     pub role_id: Option<String>,
@@ -137,26 +137,179 @@ pub struct Database {
 }
 
 impl Database {
-    pub async fn get_guild(&self, guild_id: &String) -> Result<Option<Config>, mongodb::error::Error> {
+    pub async fn get_guild(
+        &self,
+        guild_id: &String,
+    ) -> Result<Option<Config>, mongodb::error::Error> {
         let guilds: Collection<Guild> = self.client.database("black-mesa").collection("guilds");
-        
-        let res = guilds.find_one(doc!
-            { "guildID": guild_id },
-            None)
-            .await?;
-        
+
+        let res = guilds.find_one(doc! { "guildID": guild_id }, None).await?;
+
         match res {
             Some(guild) => Ok(Some(guild.config)),
-            None => Ok(None)
+            None => Ok(None),
         }
     }
 
-    pub async fn get_punishments(&self, guild_id: &String, user_id: &String) -> Result<Vec<Punishment>, mongodb::error::Error>{
+    pub async fn get_punishments(
+        &self,
+        guild_id: &String,
+        user_id: &String,
+    ) -> Result<Vec<Punishment>, mongodb::error::Error> {
         let mut punishments_vec: Vec<Punishment> = Vec::new();
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-    
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let mut cur = punishments
+            .find(doc! { "guildID": guild_id, "userID": user_id }, None)
+            .await?;
+
+        loop {
+            let next_cur = cur.try_next().await;
+            match next_cur {
+                Ok(Some(punishment)) => punishments_vec.push(punishment),
+                Ok(None) => break,
+                Err(e) => return Err(e),
+            }
+        }
+
+        Ok(punishments_vec)
+    }
+
+    pub async fn get_mute(
+        &self,
+        guild_id: &String,
+        user_id: &String,
+    ) -> Result<Option<Punishment>, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let res = punishments.find_one(doc!
+            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Mute.to_string() },
+            None)
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn delete_mute(
+        &self,
+        guild_id: &String,
+        user_id: &String,
+    ) -> Result<DeleteResult, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let res = punishments.delete_one(doc!
+            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Mute.to_string() },
+            None)
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn delete_ban(
+        &self,
+        guild_id: &String,
+        user_id: &String,
+    ) -> Result<DeleteResult, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let res = punishments.delete_one(doc!
+            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Ban.to_string() },
+            None)
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn delete_many_by_uuid(
+        &self,
+        guild_id: &String,
+        uuids: &Vec<String>,
+    ) -> Result<DeleteResult, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let res = punishments
+            .delete_many(doc! { "guildID": guild_id, "uuid": { "$in": uuids } }, None)
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn expire_actions(
+        &self,
+        guild_id: Option<String>,
+        uuids: &Vec<String>,
+    ) -> Result<UpdateResult, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let mut query = Document::new();
+
+        if let Some(guild_id) = guild_id {
+            query.insert("guildID", guild_id);
+        }
+
+        query.insert("uuid", doc! { "$in": uuids });
+
+        let res = punishments
+            .update_many(
+                query,
+                doc! { "$set": { "expired": true, "expires": chrono::Utc::now().timestamp() } },
+                None,
+            )
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn update_punishment(
+        &self,
+        uuid: &String,
+        guild_id: &String,
+        user_id: &String,
+        issuer: &String,
+        reason: Option<String>,
+        duration: Option<i64>,
+    ) -> Result<UpdateResult, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let mut update = Document::new();
+
+        if let Some(reason) = reason {
+            update.insert("reason", bson::Bson::String(reason));
+        }
+
+        if let Some(duration) = duration {
+            update.insert("expires", bson::Bson::Int64(duration));
+        }
+
+        let res = punishments
+            .update_one(
+                doc! { "uuid": uuid, "guildID": guild_id, "issuer": issuer, "userID": user_id },
+                doc! { "$set": update },
+                None,
+            )
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn get_strikes(
+        &self,
+        guild_id: &String,
+        user_id: &String,
+    ) -> Result<Vec<Punishment>, mongodb::error::Error> {
+        let mut punishments_vec: Vec<Punishment> = Vec::new();
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
         let mut cur = punishments.find(doc!
-            { "guildID": guild_id, "userID": user_id },
+            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Strike.to_string() },
             None)
             .await?;
 
@@ -172,105 +325,52 @@ impl Database {
         Ok(punishments_vec)
     }
 
-    pub async fn get_mute(&self, guild_id: &String, user_id: &String) -> Result<Option<Punishment>, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-        
-        let res = punishments.find_one(doc!
-            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Mute.to_string() },
-            None)
-            .await?;
-
-        Ok(res)
-    }
-
-    pub async fn delete_mute(&self, guild_id: &String, user_id: &String) -> Result<DeleteResult, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-        
-        let res = punishments.delete_one(doc!
-            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Mute.to_string() },
-            None)
-            .await?;
-
-        Ok(res)
-    }
-
-    pub async fn delete_ban(&self, guild_id: &String, user_id: &String) -> Result<DeleteResult, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-        
-        let res = punishments.delete_one(doc!
-            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Ban.to_string() },
-            None)
-            .await?;
-
-        Ok(res)
-    }
-
-    pub async fn delete_many_by_uuid(&self, guild_id: &String, uuids: &Vec<String>) -> Result<DeleteResult, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-
-        let res = punishments.delete_many(doc!
-            { "guildID": guild_id, "uuid": { "$in": uuids } },
-            None)
-            .await?;
-
-        Ok(res)
-    }
-
-    pub async fn expire_actions(&self, guild_id: Option<String>, uuids: &Vec<String>) -> Result<UpdateResult, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-        
-        let mut query = Document::new();
-
-        if let Some(guild_id) = guild_id {
-            query.insert("guildID", guild_id);
-        }
-
-        query.insert("uuid", doc! { "$in": uuids });
-
-        let res = punishments.update_many(query,
-            doc! { "$set": { "expired": true, "expires": chrono::Utc::now().timestamp() } },
-            None)
-            .await?;
-
-        Ok(res)
-    }
-
-    pub async fn update_punishment(&self,
-        uuid: &String,
+    pub async fn get_last_action(
+        &self,
         guild_id: &String,
-        user_id: &String,
-        issuer: &String,
-        reason: Option<String>,
-        duration: Option<i64>,
-    ) -> Result<UpdateResult, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
+        issuer_id: &String,
+    ) -> Result<Option<Punishment>, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
 
-        let mut update = Document::new();
-
-        if let Some(reason) = reason {
-            update.insert("reason", bson::Bson::String(reason));
-        }
-
-        if let Some(duration) = duration {
-            update.insert("expires", bson::Bson::Int64(duration));
-        }
-
-        let res = punishments.update_one(
-            doc! { "uuid": uuid, "guildID": guild_id, "issuer": issuer, "userID": user_id },
-            doc! { "$set": update },
-            None)
+        let res = punishments
+            .find_one(
+                doc! { "guildID": guild_id, "issuer": issuer_id },
+                FindOneOptions::builder()
+                    .sort(doc! {"$natural": -1})
+                    .build(),
+            )
             .await?;
 
         Ok(res)
     }
 
-    pub async fn get_strikes(&self, guild_id: &String, user_id: &String) -> Result<Vec<Punishment>, mongodb::error::Error> {
-        let mut punishments_vec: Vec<Punishment> = Vec::new();
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
+    pub async fn get_action_by_uuid(
+        &self,
+        guild_id: &String,
+        uuid: &String,
+    ) -> Result<Option<Punishment>, mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
 
-        let mut cur = punishments.find(doc!
-            { "guildID": guild_id, "userID": user_id, "type": PunishmentType::Strike.to_string() },
-            None)
+        let res = punishments
+            .find_one(doc! { "guildID": guild_id, "uuid": uuid }, None)
+            .await?;
+
+        Ok(res)
+    }
+
+    pub async fn get_actions_by_uuid(
+        &self,
+        guild_id: &String,
+        uuids: Vec<String>,
+    ) -> Result<Vec<Punishment>, mongodb::error::Error> {
+        let mut punishments_vec: Vec<Punishment> = Vec::new();
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let mut cur = punishments
+            .find(doc! { "guildID": guild_id, "uuid": { "$in": uuids } }, None)
             .await?;
 
         loop {
@@ -278,85 +378,49 @@ impl Database {
             match next_cur {
                 Ok(Some(punishment)) => punishments_vec.push(punishment),
                 Ok(None) => break,
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             }
         }
 
         Ok(punishments_vec)
     }
 
-    pub async fn get_last_action(&self, guild_id: &String, issuer_id: &String) -> Result<Option<Punishment>, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-        
-        let res = punishments.find_one(doc!
-            { "guildID": guild_id, "issuer": issuer_id },
-            FindOneOptions::builder().sort(doc! {"$natural": -1}).build())
-            .await?;
+    pub async fn add_punishment(
+        &self,
+        punishment: &Punishment,
+    ) -> Result<(), mongodb::error::Error> {
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
 
-        Ok(res)
-    }
-
-    pub async fn get_action_by_uuid(&self, guild_id: &String, uuid: &String) -> Result<Option<Punishment>, mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-        
-        let res = punishments.find_one(doc!
-            { "guildID": guild_id, "uuid": uuid },
-            None)
-            .await?;
-
-        Ok(res)
-    }
-
-    pub async fn get_actions_by_uuid(&self, guild_id: &String, uuids: Vec<String>) -> Result<Vec<Punishment>, mongodb::error::Error> {
-        let mut punishments_vec: Vec<Punishment> = Vec::new();
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-    
-        let mut cur = punishments.find(doc!
-            { "guildID": guild_id, "uuid": { "$in": uuids } },
-            None)
-            .await?;
-
-        loop {
-            let next_cur = cur.try_next().await;
-            match next_cur {
-                Ok(Some(punishment)) => punishments_vec.push(punishment),
-                Ok(None) => break,
-                Err(e) => return Err(e)
-            }
-        }
-
-        Ok(punishments_vec)
-    }
-
-    pub async fn add_punishment(&self, punishment: &Punishment) -> Result<(), mongodb::error::Error> {
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-        
         match punishments.insert_one(punishment, None).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(e)
+            Err(e) => Err(e),
         }
     }
 
     pub async fn get_expired(&self) -> Result<Vec<Punishment>, mongodb::error::Error> {
         let mut punishments_vec: Vec<Punishment> = Vec::new();
-        let punishments: Collection<Punishment> = self.client.database("black-mesa").collection("actions");
-    
-        let mut cur = punishments.find(doc!
-            {
-                "expires": { 
-                    "$lte": Utc::now().timestamp()
-                },
-            
-                "$or": [
-                    {
-                        "expired": false
+        let punishments: Collection<Punishment> =
+            self.client.database("black-mesa").collection("actions");
+
+        let mut cur = punishments
+            .find(
+                doc! {
+                    "expires": {
+                        "$lte": Utc::now().timestamp()
                     },
-                    {
-                        "expired": { "$exists": false }
-                    }
-                ]
-            },
-            None)
+
+                    "$or": [
+                        {
+                            "expired": false
+                        },
+                        {
+                            "expired": { "$exists": false }
+                        }
+                    ]
+                },
+                None,
+            )
             .await?;
 
         loop {
@@ -364,7 +428,7 @@ impl Database {
             match next_cur {
                 Ok(Some(punishment)) => punishments_vec.push(punishment),
                 Ok(None) => break,
-                Err(e) => return Err(e)
+                Err(e) => return Err(e),
             }
         }
 
@@ -374,7 +438,9 @@ impl Database {
 
 pub async fn connect() -> Database {
     let uri = env::var("MONGO_URI").expect("Expected a MongoDB URI in the environment");
-    let mut options = ClientOptions::parse(&uri).await.expect("Error creating client options");
+    let mut options = ClientOptions::parse(&uri)
+        .await
+        .expect("Error creating client options");
 
     options.app_name = Some("Black Mesa".to_string());
 

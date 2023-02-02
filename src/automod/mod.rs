@@ -1,6 +1,7 @@
+use serde::{Deserialize, Serialize};
 use twilight_model::{
     channel::{
-        message::{Mention, Embed},
+        message::{Embed, Mention},
         Attachment,
     },
     id::{
@@ -10,11 +11,10 @@ use twilight_model::{
     user::User,
     util::Timestamp,
 };
-use serde::{Deserialize, Serialize};
 
 pub mod automod;
-pub mod clean;
 pub mod censor;
+pub mod clean;
 pub mod spam;
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]

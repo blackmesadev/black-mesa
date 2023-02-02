@@ -1,5 +1,5 @@
-use regex::Regex;
 use lazy_static::lazy_static;
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct Duration {
@@ -25,7 +25,7 @@ impl Duration {
             seconds: 0,
             full_string: "".to_string(),
         };
-    
+
         lazy_static! {
             static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\S*(y|mo|w|d|h|m|s)").unwrap();
         }
@@ -61,7 +61,7 @@ impl Duration {
             seconds: 0,
             full_string: "".to_string(),
         };
-    
+
         lazy_static! {
             static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\S*(y|mo|w|d|h|m|s)").unwrap();
         }
@@ -124,6 +124,12 @@ impl Duration {
     }
 
     pub fn is_permenant(&self) -> bool {
-        self.years == 0 && self.months == 0 && self.weeks == 0 && self.days == 0 && self.hours == 0 && self.minutes == 0 && self.seconds == 0
+        self.years == 0
+            && self.months == 0
+            && self.weeks == 0
+            && self.days == 0
+            && self.hours == 0
+            && self.minutes == 0
+            && self.seconds == 0
     }
 }

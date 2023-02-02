@@ -1,4 +1,4 @@
-pub mod commands;
-pub mod moderation;
 pub mod administration;
+pub mod commands;
 pub mod misc;
+pub mod moderation;

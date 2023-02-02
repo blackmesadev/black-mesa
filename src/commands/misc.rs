@@ -1,32 +1,55 @@
 use std::str::FromStr;
 
+use lazy_static::lazy_static;
 use regex::Regex;
 use tracing::warn;
-use twilight_model::{channel::{Message, message::{Embed, embed::{EmbedField, EmbedFooter, EmbedThumbnail}}}, id::Id};
-use lazy_static::lazy_static;
+use twilight_model::{
+    channel::{
+        message::{
+            embed::{EmbedField, EmbedFooter, EmbedThumbnail},
+            Embed,
+        },
+        Message,
+    },
+    id::Id,
+};
 
-use crate::{handlers::Handler, util::{permissions, snowflakes::snowflake_to_unix}, mongo::mongo::Config, VERSION};
+use crate::{
+    handlers::Handler,
+    mongo::mongo::Config,
+    util::{permissions, snowflakes::snowflake_to_unix},
+    VERSION,
+};
 
 impl Handler {
-    pub async fn user_info_cmd(&self, conf: &Config, msg: &Message)
-    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn user_info_cmd(
+        &self,
+        conf: &Config,
+        msg: &Message,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let author_id = msg.author.id.to_string();
         let roles = match &msg.member {
             Some(member) => Some(&member.roles),
-            None => None
+            None => None,
         };
 
         let content = &msg.content;
         lazy_static! {
             static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
         }
-        let mut id_list: Vec<String> = RE.find_iter(content).map(|m| m.as_str().to_string()).collect();
+        let mut id_list: Vec<String> = RE
+            .find_iter(content)
+            .map(|m| m.as_str().to_string())
+            .collect();
         if id_list.len() == 0 {
             id_list.push(msg.author.id.to_string());
         }
         let id = &id_list[0];
         if id == "" {
-            self.rest.create_message(msg.channel_id).content("No user id found")?.await?;
+            self.rest
+                .create_message(msg.channel_id)
+                .content("No user id found")?
+                .await?;
         }
 
         let mut perm = permissions::PERMISSION_USERINFO;
@@ -37,16 +60,22 @@ impl Handler {
 
         let ok = permissions::check_permission(conf, roles, &author_id, vec![perm]);
         if !ok {
-            self.rest.create_message(msg.channel_id)
-                .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", perm).as_str())?
-                
+            self.rest
+                .create_message(msg.channel_id)
+                .content(
+                    format!(
+                        "<:mesaCross:832350526414127195> You do not have permission to `{}`",
+                        perm
+                    )
+                    .as_str(),
+                )?
                 .await?;
-                return Ok(());
+            return Ok(());
         }
 
         let guild_id = match &msg.guild_id {
             Some(id) => id,
-            None => return Ok(())
+            None => return Ok(()),
         };
 
         let guild = self.rest.guild(*guild_id).await?.model().await?;
@@ -54,7 +83,10 @@ impl Handler {
         let member = match self.rest.guild_member(*guild_id, Id::from_str(id)?).await {
             Ok(member) => member.model().await?,
             Err(_) => {
-                self.rest.create_message(msg.channel_id).content("<:mesaCross:832350526414127195> Member not found.")?.await?;
+                self.rest
+                    .create_message(msg.channel_id)
+                    .content("<:mesaCross:832350526414127195> Member not found.")?
+                    .await?;
                 return Ok(());
             }
         };
@@ -76,13 +108,22 @@ impl Handler {
         let icon_url = match &member.user.avatar {
             Some(hash) => {
                 if hash.is_animated() {
-                    format!("https://cdn.discordapp.com/avatars/{}/{}.gif", user_id, hash)
+                    format!(
+                        "https://cdn.discordapp.com/avatars/{}/{}.gif",
+                        user_id, hash
+                    )
                 } else {
-                    format!("https://cdn.discordapp.com/avatars/{}/{}.png", user_id, hash)
+                    format!(
+                        "https://cdn.discordapp.com/avatars/{}/{}.png",
+                        user_id, hash
+                    )
                 }
             }
             None => {
-                format!("https://cdn.discordapp.com/embed/avatars/{}.png", member.user.discriminator % 5)
+                format!(
+                    "https://cdn.discordapp.com/embed/avatars/{}.png",
+                    member.user.discriminator % 5
+                )
             }
         };
 
@@ -90,46 +131,49 @@ impl Handler {
 
         match &member.nick {
             Some(nick) => {
-                fields.push(EmbedField{
+                fields.push(EmbedField {
                     name: "Nickname".to_string(),
                     value: nick.to_string(),
-                    inline: true
+                    inline: true,
                 });
             }
             None => {}
         }
 
         fields.append(&mut vec![
-            EmbedField{
+            EmbedField {
                 name: "ID".to_string(),
                 value: format!("`{}`", user_id),
-                inline: true
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Created".to_string(),
-                value: format!("<t:{}:f>", (snowflake_to_unix(member.user.id)/1000)),
-                inline: true
+                value: format!("<t:{}:f>", (snowflake_to_unix(member.user.id) / 1000)),
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Joined".to_string(),
                 value: format!("<t:{}:f>", member.joined_at.as_secs()),
-                inline: true
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Top Role".to_string(),
                 value: format!("<@&{}>", top_role.id),
-                inline: true
-            }
+                inline: true,
+            },
         ]);
 
         let embeds = vec![Embed {
-            title: Some(format!("{}#{:04}'s User Info", &member.user.name, &member.user.discriminator)),
+            title: Some(format!(
+                "{}#{:04}'s User Info",
+                &member.user.name, &member.user.discriminator
+            )),
             description: None,
             color: Some(0),
-            footer: Some(EmbedFooter { 
+            footer: Some(EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -140,75 +184,86 @@ impl Handler {
                 height: None,
                 proxy_url: None,
                 url: icon_url,
-                width: None
+                width: None,
             }),
             timestamp: None,
             url: None,
-            video: None
+            video: None,
         }];
 
-        self.rest.create_message(msg.channel_id).embeds(&embeds)?.await?;
+        self.rest
+            .create_message(msg.channel_id)
+            .embeds(&embeds)?
+            .await?;
 
         Ok(())
     }
 
-    pub async fn guild_info_cmd(&self, _conf: &Config, msg: &Message)
-    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let guild = self.rest.guild(match msg.guild_id {
-            Some(id) => id,
-            None => return Ok(())
-        }).await?.model().await?;
+    pub async fn guild_info_cmd(
+        &self,
+        _conf: &Config,
+        msg: &Message,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let guild = self
+            .rest
+            .guild(match msg.guild_id {
+                Some(id) => id,
+                None => return Ok(()),
+            })
+            .await?
+            .model()
+            .await?;
 
         let mut fields = vec![
-            EmbedField{
+            EmbedField {
                 name: "Name".to_string(),
                 value: guild.name.to_string(),
-                inline: true
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "ID".to_string(),
                 value: format!("`{}`", guild.id.to_string()),
-                inline: true
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Created".to_string(),
-                value: format!("<t:{}:f>", snowflake_to_unix(guild.id)/1000),
-                inline: true
+                value: format!("<t:{}:f>", snowflake_to_unix(guild.id) / 1000),
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Owner".to_string(),
                 value: format!("<@{}>", guild.owner_id.to_string()),
-                inline: true
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Role Count".to_string(),
-                value:  guild.roles.len().to_string(),
-                inline: true
+                value: guild.roles.len().to_string(),
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Emoji Count".to_string(),
-                value:  guild.emojis.len().to_string(),
-                inline: true
+                value: guild.emojis.len().to_string(),
+                inline: true,
             },
         ];
 
         match &guild.max_members {
             Some(max) => {
-                fields.push(EmbedField{
+                fields.push(EmbedField {
                     name: "Max Members".to_string(),
-                    value:  max.to_string(),
-                    inline: true
+                    value: max.to_string(),
+                    inline: true,
                 });
-            },
+            }
             None => {}
         }
 
         match &guild.member_count {
             Some(count) => {
-                fields.push(EmbedField{
+                fields.push(EmbedField {
                     name: "Member Count".to_string(),
                     value: count.to_string(),
-                    inline: true
+                    inline: true,
                 });
             }
             None => {}
@@ -222,19 +277,17 @@ impl Handler {
                     format!("https://cdn.discordapp.com/icons/{}/{}.png", guild.id, hash)
                 }
             }
-            None => {
-                "".to_string()
-            }
+            None => "".to_string(),
         };
 
         let embeds = vec![Embed {
             title: Some(format!("{}'s Guild Info", &guild.name)),
             description: None,
             color: Some(0),
-            footer: Some(EmbedFooter { 
+            footer: Some(EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -245,50 +298,67 @@ impl Handler {
                 height: None,
                 proxy_url: None,
                 url: icon_url,
-                width: None
+                width: None,
             }),
             timestamp: None,
             url: None,
-            video: None
+            video: None,
         }];
 
-        self.rest.create_message(msg.channel_id).embeds(&embeds)?.await?;
+        self.rest
+            .create_message(msg.channel_id)
+            .embeds(&embeds)?
+            .await?;
 
         Ok(())
     }
 
-    pub async fn bot_info(&self, _conf: &Config, msg: &Message)
-    -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn bot_info(
+        &self,
+        _conf: &Config,
+        msg: &Message,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut fields = vec![];
 
         let thumbnail = match self.cache.current_user() {
             Some(user) => {
-                fields.push(EmbedField{
+                fields.push(EmbedField {
                     name: "Bot Name".to_string(),
                     value: format!("{}#{:04}", user.name.to_string(), user.discriminator),
-                    inline: true
+                    inline: true,
                 });
-                fields.push(EmbedField{
+                fields.push(EmbedField {
                     name: "Bot ID".to_string(),
                     value: format!("`{}`", user.id.to_string()),
-                    inline: true
+                    inline: true,
                 });
-                fields.push(EmbedField{
+                fields.push(EmbedField {
                     name: "Bot Created".to_string(),
-                    value: format!("<t:{}:f>", snowflake_to_unix(user.id)/1000),
-                    inline: true
+                    value: format!("<t:{}:f>", snowflake_to_unix(user.id) / 1000),
+                    inline: true,
                 });
 
                 let icon_url = match &user.avatar {
                     Some(hash) => {
                         if hash.is_animated() {
-                            format!("https://cdn.discordapp.com/avatars/{}/{}.gif", user.id.to_string(), hash)
+                            format!(
+                                "https://cdn.discordapp.com/avatars/{}/{}.gif",
+                                user.id.to_string(),
+                                hash
+                            )
                         } else {
-                            format!("https://cdn.discordapp.com/avatars/{}/{}.png", user.id.to_string(), hash)
+                            format!(
+                                "https://cdn.discordapp.com/avatars/{}/{}.png",
+                                user.id.to_string(),
+                                hash
+                            )
                         }
                     }
                     None => {
-                        format!("https://cdn.discordapp.com/embed/avatars/{}.png", user.discriminator % 5)
+                        format!(
+                            "https://cdn.discordapp.com/embed/avatars/{}.png",
+                            user.discriminator % 5
+                        )
                     }
                 };
 
@@ -296,33 +366,39 @@ impl Handler {
                     height: None,
                     proxy_url: None,
                     url: icon_url,
-                    width: None
+                    width: None,
                 })
             }
-            None => None
+            None => None,
         };
 
         fields.append(&mut vec![
-            EmbedField{
+            EmbedField {
                 name: "Total Guilds".to_string(),
-                value: format!("{}", self.cache.stats().guilds()+self.cache.stats().unavailable_guilds()),
-                inline: true
+                value: format!(
+                    "{}",
+                    self.cache.stats().guilds() + self.cache.stats().unavailable_guilds()
+                ),
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Version".to_string(),
                 value: format!("v{}", VERSION),
-                inline: true
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Memory Usage".to_string(),
-                value: format!("`{:.3} MB`", match self.redis.get_memory_usage().await {
-                    Ok(usage) => usage as f64 / 1024.0 / 1024.0,
-                    Err(e) => {
-                        warn!("Failed to get memory usage: {}", e);
-                        0.0
+                value: format!(
+                    "`{:.3} MB`",
+                    match self.redis.get_memory_usage().await {
+                        Ok(usage) => usage as f64 / 1024.0 / 1024.0,
+                        Err(e) => {
+                            warn!("Failed to get memory usage: {}", e);
+                            0.0
+                        }
                     }
-                }),
-                inline: true
+                ),
+                inline: true,
             },
         ]);
 
@@ -330,10 +406,10 @@ impl Handler {
             title: Some("Black Mesa Info".to_string()),
             description: None,
             color: Some(0),
-            footer: Some(EmbedFooter { 
+            footer: Some(EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -343,12 +419,14 @@ impl Handler {
             thumbnail,
             timestamp: None,
             url: None,
-            video: None
+            video: None,
         }];
 
-        self.rest.create_message(msg.channel_id).embeds(&embeds)?.await?;
+        self.rest
+            .create_message(msg.channel_id)
+            .embeds(&embeds)?
+            .await?;
 
         Ok(())
     }
-    
 }

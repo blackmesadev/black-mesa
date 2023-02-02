@@ -2,12 +2,23 @@ use std::{collections::HashMap, str::FromStr};
 
 use bson::oid::ObjectId;
 use serde::Deserialize as SerdeDeserialize;
-use serde_derive::{Serialize, Deserialize};
-use twilight_model::{id::Id, channel::message::{Embed, embed::{EmbedField, self}}};
+use serde_derive::{Deserialize, Serialize};
 use twilight_http::request::AuditLogReason;
+use twilight_model::{
+    channel::message::{
+        embed::{self, EmbedField},
+        Embed,
+    },
+    id::Id,
+};
 use uuid::Uuid;
 
-use crate::{mongo::mongo::{PunishmentType, Punishment, Config}, handlers::Handler, util::duration::Duration, VERSION};
+use crate::{
+    handlers::Handler,
+    mongo::mongo::{Config, Punishment, PunishmentType},
+    util::duration::Duration,
+    VERSION,
+};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -63,8 +74,7 @@ impl Handler {
         typ: &PunishmentType,
         role_id: Option<String>, // for mute
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
-
-        let punishment = Punishment{
+        let punishment = Punishment {
             oid: ObjectId::new(),
             guild_id: guild_id.to_string(),
             user_id: user_id.to_string(),
@@ -78,17 +88,19 @@ impl Handler {
             weight: None,
             reason: reason.cloned(),
             uuid: Uuid::new_v4().to_string(),
-            expired: false
+            expired: false,
         };
-        
+
         if typ == &PunishmentType::Mute {
             let current = self.db.get_mute(guild_id, user_id).await?;
             match current {
                 Some(_) => {
-                    if issuer == &match self.cache.current_user() {
-                        Some(user) => user.id.to_string(),
-                        None => return Err("No current user".into()),
-                    } {
+                    if issuer
+                        == &match self.cache.current_user() {
+                            Some(user) => user.id.to_string(),
+                            None => return Err("No current user".into()),
+                        }
+                    {
                         // we don't want to overwrite the mute of a moderator and it can't be us if they're already muted
                         Err("already muted during automod")?
                     }
@@ -96,20 +108,20 @@ impl Handler {
                     self.db.delete_mute(guild_id, user_id).await?;
 
                     self.db.add_punishment(&punishment).await?;
-                },
+                }
                 None => {
                     self.db.add_punishment(&punishment).await?;
                 }
             };
-        }
-        else {
+        } else {
             self.db.add_punishment(&punishment).await?;
         }
 
         Ok(punishment)
     }
 
-    pub async fn send_punishment_embed(&self,
+    pub async fn send_punishment_embed(
+        &self,
         guild_id: &String,
         user_id: &String,
         issuer_id: &String,
@@ -121,40 +133,38 @@ impl Handler {
         let issuer = self.cache.user(Id::from_str(&issuer_id)?);
 
         let mut fields = vec![
-            EmbedField{
+            EmbedField {
                 name: "Server Name".to_string(),
                 value: match guild {
                     Some(guild) => guild.name().to_string(),
                     None => guild_id.to_string(),
                 },
-                inline: true
+                inline: true,
             },
-            EmbedField{
+            EmbedField {
                 name: "Actioned by".to_string(),
                 value: match issuer {
                     Some(user) => user.name.to_string(),
                     None => format!("<@{}>", issuer_id).to_string(),
                 },
-                inline: false
+                inline: false,
             },
-            EmbedField{
+            EmbedField {
                 name: "Reason".to_string(),
                 value: match reason {
                     Some(reason) => reason.to_string(),
-                    None => "No reason provided".to_string()
+                    None => "No reason provided".to_string(),
                 },
-                inline: false
-            }
+                inline: false,
+            },
         ];
-        
+
         match duration {
-            Some(duration) => {
-                fields.push(EmbedField{
-                    name: "Expires".to_string(),
-                    value: duration.to_discord_timestamp(),
-                    inline: false
-                })
-            }
+            Some(duration) => fields.push(EmbedField {
+                name: "Expires".to_string(),
+                value: duration.to_discord_timestamp(),
+                inline: false,
+            }),
             None => {}
         }
 
@@ -162,10 +172,10 @@ impl Handler {
             title: Some(format!("You have been {}.", typ.past_tense_string())),
             description: None,
             color: Some(0),
-            footer: Some(embed::EmbedFooter { 
+            footer: Some(embed::EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION)
+                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -175,84 +185,137 @@ impl Handler {
             thumbnail: None,
             timestamp: None,
             url: Some("https://blackmesa.bot".to_string()),
-            video: None
+            video: None,
         }];
 
-        let dm_channel = match self.rest.create_private_channel(Id::from_str(user_id)?)
-            .await {
-                Ok(channel) => {
-                    match channel.model().await {
-                        Ok(channel) => channel,
-                        Err(_) => return Ok(())
-                    }
-                },
-                Err(_) => return Ok(())
-            };
+        let dm_channel = match self
+            .rest
+            .create_private_channel(Id::from_str(user_id)?)
+            .await
+        {
+            Ok(channel) => match channel.model().await {
+                Ok(channel) => channel,
+                Err(_) => return Ok(()),
+            },
+            Err(_) => return Ok(()),
+        };
 
-        match self.rest.create_message(dm_channel.id).embeds(&embeds)?.await {
+        match self
+            .rest
+            .create_message(dm_channel.id)
+            .embeds(&embeds)?
+            .await
+        {
             Ok(_) => Ok(()),
-            Err(_) => Ok(())
+            Err(_) => Ok(()),
         }
-
     }
 
-    pub async fn kick_user(&self,
+    pub async fn kick_user(
+        &self,
         guild_id: &String,
         user_id: &String,
         issuer: &String,
         reason: Option<&String>,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
-        let punishment = self.add_punishment(guild_id, user_id, issuer, None, reason,
-            &PunishmentType::Kick, None).await?;
-            
+        let punishment = self
+            .add_punishment(
+                guild_id,
+                user_id,
+                issuer,
+                None,
+                reason,
+                &PunishmentType::Kick,
+                None,
+            )
+            .await?;
 
-        self.send_punishment_embed(guild_id, user_id, issuer, reason, None,
-            &PunishmentType::Kick).await?;
+        self.send_punishment_embed(
+            guild_id,
+            user_id,
+            issuer,
+            reason,
+            None,
+            &PunishmentType::Kick,
+        )
+        .await?;
 
-        match self.rest.remove_guild_member(
-            Id::from_str(guild_id)?,
-            Id::from_str(user_id)?
-        ).reason(format!("{} - {}", issuer, match reason {
-            Some(r) => r.to_string(),
-            None => "No reason provided".to_string()
-        }).as_str()) {
+        match self
+            .rest
+            .remove_guild_member(Id::from_str(guild_id)?, Id::from_str(user_id)?)
+            .reason(
+                format!(
+                    "{} - {}",
+                    issuer,
+                    match reason {
+                        Some(r) => r.to_string(),
+                        None => "No reason provided".to_string(),
+                    }
+                )
+                .as_str(),
+            ) {
             Ok(k) => {
                 k.await?;
                 Ok(punishment)
-            },
-            Err(e) => Err(e)?
+            }
+            Err(e) => Err(e)?,
         }
     }
 
-    pub async fn ban_user(&self,
+    pub async fn ban_user(
+        &self,
         guild_id: &String,
         user_id: &String,
         issuer: &String,
         duration: &Duration,
         reason: Option<&String>,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
-        let punishment = self.add_punishment(guild_id, user_id, issuer, Some(duration), reason,
-            &PunishmentType::Ban, None).await?;
+        let punishment = self
+            .add_punishment(
+                guild_id,
+                user_id,
+                issuer,
+                Some(duration),
+                reason,
+                &PunishmentType::Ban,
+                None,
+            )
+            .await?;
 
-        self.send_punishment_embed(guild_id, user_id, issuer, reason, Some(duration),
-            &PunishmentType::Ban).await?;
+        self.send_punishment_embed(
+            guild_id,
+            user_id,
+            issuer,
+            reason,
+            Some(duration),
+            &PunishmentType::Ban,
+        )
+        .await?;
 
-        match self.rest.create_ban(
-            Id::from_str(guild_id)?,
-            Id::from_str(user_id)?
-        ).reason(format!("{} - {}", issuer, match reason {
-            Some(r) => r.to_string(),
-            None => "No reason provided".to_string()
-        }).as_str()) {
+        match self
+            .rest
+            .create_ban(Id::from_str(guild_id)?, Id::from_str(user_id)?)
+            .reason(
+                format!(
+                    "{} - {}",
+                    issuer,
+                    match reason {
+                        Some(r) => r.to_string(),
+                        None => "No reason provided".to_string(),
+                    }
+                )
+                .as_str(),
+            ) {
             Ok(k) => {
                 k.await?;
                 Ok(punishment)
-            },
-            Err(e) => Err(e)?
+            }
+            Err(e) => Err(e)?,
         }
     }
 
-    pub async fn unban_user(&self,
+    pub async fn unban_user(
+        &self,
         guild_id: &String,
         user_id: &String,
         issuer: &String,
@@ -261,87 +324,132 @@ impl Handler {
         self.db.delete_ban(guild_id, user_id).await?;
 
         // might be nice to have some sort of embed sent to the user on an unban / any other punishment removal
-        
-        match self.rest.delete_ban(
-            Id::from_str(guild_id)?,
-            Id::from_str(user_id)?
-        ).reason(format!("{} - {}", issuer, match reason {
-            Some(r) => r.to_string(),
-            None => "No reason provided".to_string()
-        }).as_str()) {
+
+        match self
+            .rest
+            .delete_ban(Id::from_str(guild_id)?, Id::from_str(user_id)?)
+            .reason(
+                format!(
+                    "{} - {}",
+                    issuer,
+                    match reason {
+                        Some(r) => r.to_string(),
+                        None => "No reason provided".to_string(),
+                    }
+                )
+                .as_str(),
+            ) {
             Ok(k) => {
                 k.await?;
                 Ok(())
-            },
-            Err(e) => Err(e)?
+            }
+            Err(e) => Err(e)?,
         }
     }
 
-    pub async fn mute_user(&self,
+    pub async fn mute_user(
+        &self,
         conf: &Config,
         guild_id: &String,
         user_id: &String,
         issuer: &String,
         duration: &Duration,
-        reason: Option<&String>
-    ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>>{
+        reason: Option<&String>,
+    ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
         let mute_id = &conf.modules.moderation.mute_role;
-        let punishment = self.add_punishment(guild_id, user_id, issuer, Some(duration), reason,
-            &PunishmentType::Mute, Some(mute_id.to_string())).await?;
-        
-        self.send_punishment_embed(guild_id, user_id, issuer, reason, Some(duration),
-            &PunishmentType::Mute).await?;
-        
-        match self.rest.add_guild_member_role(
-            Id::from_str(guild_id)?,
-            Id::from_str(user_id)?,
-            Id::from_str(mute_id)?
-        ).reason(format!("{} - {}", issuer, match reason {
-            Some(r) => r.to_string(),
-            None => "No reason provided".to_string()
-        }).as_str()) {
+        let punishment = self
+            .add_punishment(
+                guild_id,
+                user_id,
+                issuer,
+                Some(duration),
+                reason,
+                &PunishmentType::Mute,
+                Some(mute_id.to_string()),
+            )
+            .await?;
+
+        self.send_punishment_embed(
+            guild_id,
+            user_id,
+            issuer,
+            reason,
+            Some(duration),
+            &PunishmentType::Mute,
+        )
+        .await?;
+
+        match self
+            .rest
+            .add_guild_member_role(
+                Id::from_str(guild_id)?,
+                Id::from_str(user_id)?,
+                Id::from_str(mute_id)?,
+            )
+            .reason(
+                format!(
+                    "{} - {}",
+                    issuer,
+                    match reason {
+                        Some(r) => r.to_string(),
+                        None => "No reason provided".to_string(),
+                    }
+                )
+                .as_str(),
+            ) {
             Ok(k) => {
                 k.await?;
                 Ok(punishment)
-            },
-            Err(e) => Err(e)?
+            }
+            Err(e) => Err(e)?,
         }
     }
 
     // rather conf or role_id MUST be specified or this will error.
-    pub async fn unmute_user(&self,
+    pub async fn unmute_user(
+        &self,
         conf: Option<&Config>,
         mute_role_id: Option<String>,
         guild_id: &String,
         user_id: &String,
         issuer: &String,
-        reason: Option<&String>
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>{
+        reason: Option<&String>,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let role_id = match conf {
             Some(conf) => conf.modules.moderation.mute_role.clone(),
             None => match mute_role_id {
                 Some(mute_role_id) => mute_role_id,
-                None => return Err("No mute role specified".into())
-            }
+                None => return Err("No mute role specified".into()),
+            },
         };
 
         // might be nice to have some sort of embed sent to the user on an unmute / any other punishment removal
 
         self.db.delete_mute(guild_id, user_id).await?;
 
-        match self.rest.remove_guild_member_role(
-            Id::from_str(guild_id)?,
-            Id::from_str(user_id)?,
-            Id::from_str(&role_id)?
-        ).reason(format!("{} - {}", issuer, match reason {
-            Some(r) => r.to_string(),
-            None => "No reason provided".to_string()
-        }).as_str()) {
+        match self
+            .rest
+            .remove_guild_member_role(
+                Id::from_str(guild_id)?,
+                Id::from_str(user_id)?,
+                Id::from_str(&role_id)?,
+            )
+            .reason(
+                format!(
+                    "{} - {}",
+                    issuer,
+                    match reason {
+                        Some(r) => r.to_string(),
+                        None => "No reason provided".to_string(),
+                    }
+                )
+                .as_str(),
+            ) {
             Ok(k) => {
                 k.await?;
                 Ok(())
-            },
-            Err(e) => Err(e)?
+            }
+            Err(e) => Err(e)?,
         }
     }
 }

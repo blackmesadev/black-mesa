@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use tracing::{warn, error};
+use tracing::{error, warn};
 use twilight_http::request::AuditLogReason;
 use twilight_model::id::Id;
 
@@ -11,40 +11,43 @@ use crate::HttpClient;
 // this function is responsible for all action expiry, this is written to not care about any errors and just skip over them if presented,
 // as this can not return under any circumstances
 
-pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn action_expiry(
+    db: Database,
+    rest: Arc<HttpClient>,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     loop {
         match db.get_expired().await {
             Ok(ref exp) => {
                 for punishment in exp {
                     let guild_id = match Id::from_str(&punishment.guild_id) {
                         Ok(id) => id,
-                        Err(_) => continue
+                        Err(_) => continue,
                     };
 
                     let user_id = match Id::from_str(&punishment.user_id) {
-                            Ok(id) => id,
-                            Err(_) => continue
+                        Ok(id) => id,
+                        Err(_) => continue,
                     };
 
                     match punishment.typ {
                         PunishmentType::Mute => {
-                            match rest.remove_guild_member_role(
-                                guild_id,
-                                user_id,
-                                match Id::from_str(match punishment.role_id{
-                                    Some(ref role_id) => role_id,
-                                    None => continue // this should never happen, but just in case
-                                    }){
-                                    Ok(id) => id,
-                                    Err(_) => continue
-                                },
-                            )
-                                .reason("Punishment expired.") {
-                                Ok(e) => {
-                                    match e.await {
-                                        Ok(_) => {},
-                                        Err(_) => continue
-                                    }
+                            match rest
+                                .remove_guild_member_role(
+                                    guild_id,
+                                    user_id,
+                                    match Id::from_str(match punishment.role_id {
+                                        Some(ref role_id) => role_id,
+                                        None => continue, // this should never happen, but just in case
+                                    }) {
+                                        Ok(id) => id,
+                                        Err(_) => continue,
+                                    },
+                                )
+                                .reason("Punishment expired.")
+                            {
+                                Ok(e) => match e.await {
+                                    Ok(_) => {}
+                                    Err(_) => continue,
                                 },
                                 Err(e) => {
                                     warn!("Failed to remove role from user: {}", e);
@@ -53,16 +56,13 @@ pub async fn action_expiry(db: Database, rest: Arc<HttpClient>) -> Result<(), Bo
                             }
                         }
                         PunishmentType::Ban => {
-                            match rest.delete_ban(
-                                guild_id,
-                                user_id
-                            )
-                                .reason("Punishment expired.") {
-                                Ok(e) => {
-                                    match e.await {
-                                        Ok(_) => {},
-                                        Err(_) => continue
-                                    }
+                            match rest
+                                .delete_ban(guild_id, user_id)
+                                .reason("Punishment expired.")
+                            {
+                                Ok(e) => match e.await {
+                                    Ok(_) => {}
+                                    Err(_) => continue,
                                 },
                                 Err(e) => {
                                     warn!("Failed to remove role from user: {}", e);
