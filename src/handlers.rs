@@ -19,7 +19,6 @@ pub struct Handler {
     pub rest: Arc<HttpClient>,
     pub cache: InMemoryCache,
     pub last_process: SystemTime,
-
 }
 
 impl Handler {

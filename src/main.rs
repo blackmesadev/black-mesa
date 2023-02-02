@@ -83,7 +83,6 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
             Err(e) => error!("Error: {}", e),
         }
     }
-    
 
     Ok(())
 }

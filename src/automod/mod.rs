@@ -1,7 +1,6 @@
 use twilight_model::{
     channel::{
-        embed::Embed,
-        message::Mention,
+        message::{Mention, Embed},
         Attachment,
     },
     id::{
