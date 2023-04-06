@@ -5,14 +5,15 @@ use mongodb::bson::oid::ObjectId;
 use mongodb::options::FindOneOptions;
 use mongodb::results::{DeleteResult, UpdateResult};
 use mongodb::{bson::doc, options::ClientOptions, Client, Collection};
+use serde::{Deserialize, Serialize};
 use serde_aux::prelude::*;
-use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::{env, fmt};
 
 use crate::automod::*;
 use crate::logging::*;
+use crate::misc::starboard;
 use crate::moderation::*;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
@@ -83,6 +84,21 @@ pub struct Modules {
     pub automod: automod::Automod,
     pub logging: logging::Logging,
     pub moderation: moderation::Moderation,
+    #[serde(deserialize_with = "de_starboard")]
+    pub starboard: starboard::Starboard,
+}
+
+fn de_starboard<'de, D>(deserializer: D) -> Result<starboard::Starboard, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    // deserialize into a Vec<StarboardSettings> and then convert it to a HashMap
+    let starboards = Vec::<starboard::StarboardSettings>::deserialize(deserializer)?;
+    let mut map = HashMap::new();
+    for starboard in starboards {
+        map.insert(starboard.channel_id, starboard);
+    }
+    Ok(map)
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -433,6 +449,19 @@ impl Database {
         }
 
         Ok(punishments_vec)
+    }
+
+    pub async fn get_starboard_settings(
+        &self,
+        guild_id: &String,
+    ) -> Result<Option<starboard::Starboard>, mongodb::error::Error> {
+        let conf = match self.get_guild(guild_id).await {
+            Ok(Some(conf)) => conf,
+            Ok(None) => return Ok(None),
+            Err(e) => return Err(e),
+        };
+
+        Ok(Some(conf.modules.starboard.into()))
     }
 }
 

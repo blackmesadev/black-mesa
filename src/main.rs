@@ -14,6 +14,7 @@ mod commands;
 mod expiry;
 mod handlers;
 mod logging;
+mod misc;
 mod moderation;
 mod mongo;
 mod redis;

@@ -4,9 +4,12 @@ use tracing::{error, info};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Event;
 use twilight_http::Client as HttpClient;
+use twilight_model::channel::message::embed::{EmbedField, EmbedImage, EmbedVideo};
+use twilight_model::channel::message::{Embed, ReactionType};
 use twilight_model::gateway::event::shard::Connected;
 use twilight_model::gateway::payload::incoming::{
-    BanRemove, MemberAdd, MemberUpdate, MessageCreate, MessageDelete, MessageUpdate, Ready,
+    BanRemove, MemberAdd, MemberUpdate, MessageCreate, MessageDelete, MessageUpdate, ReactionAdd,
+    Ready,
 };
 use twilight_model::guild::audit_log::AuditLogChange;
 use twilight_model::id::Id;
@@ -90,6 +93,13 @@ impl Handler {
                     error!(target = "shard_connected", e);
                 }
             },
+
+            Event::ReactionAdd(reaction) => match self.reaction_add(shard_id, reaction).await {
+                Ok(_) => (),
+                Err(e) => {
+                    error!(target = "reaction_add", e);
+                }
+            },
             _ => {}
         }
 
@@ -100,7 +110,7 @@ impl Handler {
 
     async fn on_ready(
         &self,
-        shard_id: u64,
+        _shard_id: u64,
         ready: &Ready,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         info!("{} is connected!", ready.user.name);
@@ -403,10 +413,151 @@ impl Handler {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
+    async fn reaction_add(
+        &self,
+        _shard_id: u64,
+        reaction: &ReactionAdd,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // on reaction add, check if a board exists for the channel
+        // if it does, check if the reaction is the board's reaction
+        // check the number of reactions of the board's reaction
+        // if it is equal to the board's max reactions, send the board's message in the board channel
+
+        let guild_id = match reaction.guild_id {
+            Some(id) => id.get(),
+            None => return Ok(()),
+        };
+
+        let starboards = match self
+            .db
+            .get_starboard_settings(&guild_id.to_string())
+            .await?
+        {
+            Some(s) => s,
+            None => return Ok(()),
+        };
+
+        let starboard = match starboards.get(&reaction.channel_id.get()) {
+            Some(s) => s,
+            None => return Ok(()),
+        };
+
+        let reaction_emoji: String = match &reaction.emoji {
+            ReactionType::Custom {
+                animated: _,
+                id,
+                name: _,
+            } => {
+                if !starboard.emojis.contains(&id.get().to_string()) {
+                    return Ok(());
+                }
+                id.to_string()
+            }
+            ReactionType::Unicode { name } => {
+                if !starboard.emojis.contains(&name.to_string()) {
+                    return Ok(());
+                }
+                name.to_string()
+            }
+        };
+
+        let msg = self
+            .rest
+            .message(reaction.channel_id, reaction.message_id)
+            .await?
+            .model()
+            .await?;
+
+        let reactions = msg.reactions;
+
+        let reaction_count = reactions
+            .iter()
+            .filter(|r| match &r.emoji {
+                ReactionType::Custom {
+                    animated: _,
+                    id: r_id,
+                    name: _,
+                } => r_id.to_string() == reaction_emoji,
+                ReactionType::Unicode { name } => {
+                    name.to_string() == reaction_emoji
+                }
+            })
+            .map(|r| r.count)
+            .sum::<u64>();
+
+        if reaction_count < starboard.minimum {
+            return Ok(());
+        }
+
+        let mut embed = Embed {
+            author: None,
+            color: None,
+            description: None,
+            fields: vec![
+                EmbedField {
+                    inline: false,
+                    name: "Author".to_string(),
+                    value: format!("<@{}>", msg.author.id),
+                },
+                EmbedField {
+                    inline: false,
+                    name: "Content".to_string(),
+                    value: msg.content,
+                },
+            ],
+            footer: None,
+            image: None,
+            kind: String::from("rich"),
+            provider: None,
+            thumbnail: None,
+            timestamp: None,
+            title: Some(String::from("New Starboard Message!")),
+            url: None,
+            video: None,
+        };
+
+        if msg.attachments.len() > 0 {
+            // check if the attachment is an image or video
+
+            let attachment = &msg.attachments[0];
+
+            match attachment.content_type {
+                Some(ref c) => {
+                    if c.starts_with("image") {
+                        embed.image = Some(EmbedImage {
+                            height: attachment.height,
+                            proxy_url: None,
+                            url: attachment.url.clone(),
+                            width: attachment.width,
+                        });
+                    } else if c.starts_with("video") {
+                        embed.video = Some(EmbedVideo {
+                            height: attachment.height,
+                            proxy_url: None,
+                            url: Some(attachment.url.clone()),
+                            width: attachment.width,
+                        });
+                    }
+                }
+                None => return Ok(()),
+            };
+        }
+
+        let embeds = vec![embed];
+        
+        self.rest
+            .create_message(Id::new(starboard.channel_id))
+            .embeds(&embeds)?
+            .await?;
+
+        Ok(())
+    }
+
     async fn shard_connected(
         &self,
         shard_id: u64,
-        connected: &Connected,
+        _connected: &Connected,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         tracing::info!("Shard {} connected to gateway", shard_id);
         Ok(())
