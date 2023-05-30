@@ -24,23 +24,15 @@ use crate::{
 #[serde(rename_all = "camelCase")]
 pub struct Moderation {
     pub censor_searches: bool,
-    pub censor_staff_searches: bool,
-    pub confirm_actions_message: bool,
-    pub confirm_actions_message_expiry: i64,
-    pub confirm_actions_reaction: bool,
     pub default_strike_duration: Option<String>,
     pub display_no_permission: bool,
     pub mute_role: String,
-    pub remove_roles_on_mute: bool,
-    pub reason_edit_level: i64,
     pub notify_actions: bool,
     pub show_moderator_on_notify: bool,
-    pub silence_level: i64,
-    pub strike_cushioning: i64,
     #[serde(deserialize_with = "de_strike_esc")]
     pub strike_escalation: HashMap<i64, StrikeEscalation>,
     #[serde(default)]
-    pub update_higher_level_reason: bool,
+    pub update_higher_level_action: bool,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -36,8 +36,6 @@ pub struct Censor {
 
     #[serde(rename = "filterIPs")]
     pub filter_ips: Option<bool>,
-    pub filter_regex: Option<bool>,
-    pub filter_english: Option<bool>,
     pub invites_whitelist: Option<Vec<String>>,
     pub invites_blacklist: Option<Vec<String>>,
     pub domain_whitelist: Option<Vec<String>>,
@@ -51,9 +49,6 @@ pub struct Censor {
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Spam {
-    pub punishment: Option<PunishmentType>,
-    pub punishment_duration: Option<i64>,
-    pub count: Option<i64>,
     pub interval: Option<i64>,
     pub max_messages: Option<i64>,
     pub max_mentions: Option<i64>,
@@ -61,13 +56,8 @@ pub struct Spam {
     pub max_attachments: Option<i64>,
     pub max_emojis: Option<i64>,
     pub max_newlines: Option<i64>,
-    pub max_duplicates: Option<i64>,
     pub max_characters: Option<i64>,
     pub max_uppercase_percent: Option<f64>,
-    pub min_uppercase_limit: Option<i64>,
-    pub clean: Option<bool>,
-    pub clean_count: Option<i64>,
-    pub clean_duration: Option<i64>,
 }
 
 #[skip_serializing_none]
@@ -82,9 +72,6 @@ pub struct Automod {
     #[serde(deserialize_with = "de_spam_levels")]
     pub spam_levels: Option<HashMap<i64, Spam>>,
     pub spam_channels: Option<HashMap<String, Spam>>,
-    pub public_humilation: Option<bool>,
-    pub staff_bypass: Option<bool>,
-    pub reaction_message: Option<String>,
 }
 
 fn de_censor_levels<'de, D>(deserializer: D) -> Result<Option<HashMap<i64, Censor>>, D::Error>

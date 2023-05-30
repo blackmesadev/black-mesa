@@ -13,19 +13,15 @@ pub struct Logging {
     pub enabled: Option<bool>,
     #[serde(rename = "channelID")]
     pub channel_id: Option<String>,
-    pub include_actions: Option<Vec<Actions>>,
-    pub exclude_actions: Option<Vec<Actions>>,
-    pub timestamps: Option<bool>,
-    pub timezone: Option<String>,
+    pub include_events: Option<Vec<Event>>,
     pub ignored_users: Option<Vec<String>>,
     pub ignored_channels: Option<Vec<String>>,
-    pub ignored_roles: Option<Vec<String>>,
 }
 
 #[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum Actions {
+pub enum Event {
     None,
     AutomodCensor,
     AutomodSpam,
@@ -43,16 +39,28 @@ pub enum Actions {
     ChannelDelete,
     ChannelEdit,
     ChannelCreate,
+
+    AuditLog,
+    MessageLog,
+    ModLog,
+    AutomodLog,
+
+    All
 }
 
 impl Logging {
     pub fn log_message_censor(&self, res: AutomodResult) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::AutomodCensor)
+            || events.contains(&Event::AutomodCensor)
+            || events.contains(&Event::AutomodLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -65,12 +73,17 @@ impl Logging {
     }
 
     pub fn log_message_spam(&self, res: AutomodResult) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::AutomodSpam)
+            || events.contains(&Event::AutomodSpam)
+            || events.contains(&Event::AutomodLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -89,12 +102,17 @@ impl Logging {
         duration: &Duration,
         uuid: &String,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::Strike)
+            || events.contains(&Event::Strike)
+            || events.contains(&Event::ModLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -114,12 +132,17 @@ impl Logging {
         punishment: &Punishment,
         reason: Option<&String>,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::RemoveAction)
+            || events.contains(&Event::RemoveAction)
+            || events.contains(&Event::AuditLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -135,12 +158,17 @@ impl Logging {
         duration: Option<&Duration>,
         reason: Option<&String>,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::UpdateAction)
+            || events.contains(&Event::UpdateAction)
+            || events.contains(&Event::AuditLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -169,12 +197,17 @@ impl Logging {
         duration: &Duration,
         uuid: &String,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::RemoveAction)
+            || events.contains(&Event::RemoveAction)
+            || events.contains(&Event::AuditLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -190,12 +223,17 @@ impl Logging {
         target: &String,
         reason: Option<&String>,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::Unmute)
+            || events.contains(&Event::Unmute)
+            || events.contains(&Event::ModLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -217,12 +255,17 @@ impl Logging {
         reason: Option<&String>,
         uuid: &String,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::Kick)
+            || events.contains(&Event::Kick)
+            || events.contains(&Event::ModLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -246,12 +289,17 @@ impl Logging {
         duration: &Duration,
         uuid: &String,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::Ban)
+            || events.contains(&Event::Ban)
+            || events.contains(&Event::ModLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -267,12 +315,17 @@ impl Logging {
         target: &String,
         reason: Option<&String>,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::Unban)
+            || events.contains(&Event::Unban)
+            || events.contains(&Event::ModLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -292,12 +345,17 @@ impl Logging {
         msg: Reference<'_, twilight_model::id::Id<MessageMarker>, CachedMessage>,
         actor: Option<String>,
     ) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::MessageDelete)
+            || events.contains(&Event::MessageDelete)
+            || events.contains(&Event::MessageLog)
+            || events.contains(&Event::All)
         {
             return None;
         }
@@ -328,12 +386,17 @@ impl Logging {
     }
 
     pub fn log_message_edit(&self, msg: &MessageUpdate, before: String) -> Option<String> {
+        let events = match self
+        .include_events
+        .as_ref() {
+            Some(events) => events,
+            None => return None,
+        };
+
         if !self.enabled.unwrap_or(false)
-            || self
-                .exclude_actions
-                .as_ref()
-                .unwrap_or(&vec![Actions::None])
-                .contains(&Actions::MessageEdit)
+            || events.contains(&Event::MessageEdit)
+            || events.contains(&Event::MessageLog)
+            || events.contains(&Event::All)
         {
             return None;
         }

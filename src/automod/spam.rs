@@ -176,9 +176,6 @@ pub fn filter_uppercase(spam_user: &Spam, msg: &AutomodMessage) -> bool {
     let max = spam_user
         .max_uppercase_percent
         .unwrap_or(Spam::default().max_uppercase_percent.unwrap_or(0.0));
-    let min = spam_user
-        .min_uppercase_limit
-        .unwrap_or(Spam::default().min_uppercase_limit.unwrap_or(0));
     if max == 0.0 {
         return true;
     }
@@ -188,9 +185,6 @@ pub fn filter_uppercase(spam_user: &Spam, msg: &AutomodMessage) -> bool {
         None => return true,
     };
 
-    if min > msg_content.len() as i64 {
-        return true;
-    }
     let mut uppercase_count = 0;
     for c in msg_content.chars() {
         if c.is_uppercase() {

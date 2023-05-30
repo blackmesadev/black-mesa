@@ -61,20 +61,24 @@ impl Handler {
                 .await?;
         }
 
-        let mut perm = permissions::PERMISSION_SEARCH;
+        let mut perms = vec![permissions::PERMISSION_SEARCH];
 
         if id == &author_id {
-            perm = permissions::PERMISSION_SEARCHSELF;
+            perms = vec![permissions::PERMISSION_SEARCHSELF];
+        } else if deep {
+            perms.push(permissions::PERMISSION_DEEPSEARCH);
         }
 
-        let ok = permissions::check_permission(conf, roles, &author_id, vec![perm]);
+        let perm_str = perms.join("`, `");
+
+        let ok = permissions::check_permission(conf, roles, &author_id, perms);
         if !ok {
             self.rest
                 .create_message(msg.channel_id)
                 .content(
                     format!(
                         "<:mesaCross:832350526414127195> You do not have permission to `{}`",
-                        perm
+                        perm_str
                     )
                     .as_str(),
                 )?
@@ -382,7 +386,7 @@ impl Handler {
             let author_level = permissions::get_user_level(conf, roles, &author_id);
 
             if original_issuer_level >= author_level
-                && !conf.modules.moderation.update_higher_level_reason
+                && !conf.modules.moderation.update_higher_level_action
             {
                 self.rest.create_message(msg.channel_id)
                     .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
@@ -663,7 +667,7 @@ impl Handler {
             let author_level = permissions::get_user_level(conf, roles, &author_id);
 
             if original_issuer_level >= author_level
-                && !conf.modules.moderation.update_higher_level_reason
+                && !conf.modules.moderation.update_higher_level_action
             {
                 self.rest.create_message(msg.channel_id)
                     .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?

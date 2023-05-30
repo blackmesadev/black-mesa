@@ -91,7 +91,7 @@ impl Handler {
                 let author_level = permissions::get_user_level(conf, roles, &author_id);
 
                 if original_issuer_level >= author_level
-                    && !conf.modules.moderation.update_higher_level_reason
+                    && !conf.modules.moderation.update_higher_level_action
                 {
                     self.rest.create_message(msg.channel_id)
                         .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
@@ -171,11 +171,11 @@ impl Handler {
                     conf,
                     roles,
                     &author_id,
-                    vec![permissions::PERMISSION_EXPIREACTIONSELF],
+                    vec![permissions::PERMISSION_UPDATE],
                 );
                 if !ok {
                     self.rest.create_message(msg.channel_id)
-                            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_EXPIREACTIONSELF).as_str())?
+                            .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UPDATESELF).as_str())?
                             .await?;
                     return Ok(());
                 }
@@ -184,11 +184,11 @@ impl Handler {
                     conf,
                     roles,
                     &author_id,
-                    vec![permissions::PERMISSION_EXPIREACTION],
+                    vec![permissions::PERMISSION_UPDATE],
                 );
                 if !ok {
                     self.rest.create_message(msg.channel_id)
-                        .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_EXPIREACTION).as_str())?
+                        .content(format!("<:mesaCross:832350526414127195> You do not have permission to `{}`", permissions::PERMISSION_UPDATESELF).as_str())?
                         .await?;
                     return Ok(());
                 }
@@ -217,7 +217,7 @@ impl Handler {
                 let author_level = permissions::get_user_level(conf, roles, &author_id);
 
                 if original_issuer_level >= author_level
-                    && !conf.modules.moderation.update_higher_level_reason
+                    && !conf.modules.moderation.update_higher_level_action
                 {
                     self.rest.create_message(msg.channel_id)
                         .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?

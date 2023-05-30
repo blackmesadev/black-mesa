@@ -10,44 +10,40 @@ pub const CATEGORY_MODERATION: &str = "moderation";
 pub const CATEGORY_ADMIN: &str = "admin";
 pub const CATEGORY_GUILD: &str = "guild";
 pub const CATEGORY_ROLES: &str = "roles";
-pub const CATEGORY_TRUSTED: &str = "trusted";
 pub const CATEGORY_MUSIC: &str = "music";
 pub const CATEGORY_VOTING: &str = "voting";
 
 pub const PERMISSION_BAN: &str = "moderation.ban";
 pub const PERMISSION_KICK: &str = "moderation.kick";
 pub const PERMISSION_MUTE: &str = "moderation.mute";
-pub const PERMISSION_PURGE: &str = "moderation.purge";
-pub const PERMISSION_PURGE_ALL: &str = "moderation.purgeall";
 pub const PERMISSION_REMOVEACTIONSELF: &str = "moderation.removeself";
-pub const PERMISSION_EXPIREACTIONSELF: &str = "moderation.expireself";
 pub const PERMISSION_SEARCH: &str = "moderation.search";
-pub const PERMISSION_SEARCHSELF: &str = "moderation.searchself";
 pub const PERMISSION_SOFTBAN: &str = "moderation.softban";
 pub const PERMISSION_STRIKE: &str = "moderation.strike";
 pub const PERMISSION_UNBAN: &str = "moderation.unban";
 pub const PERMISSION_UNMUTE: &str = "moderation.unmute";
 pub const PERMISSION_UPDATESELF: &str = "moderation.updateself";
 
-pub const PERMISSION_CONFIGGET: &str = "admin.get";
-pub const PERMISSION_CONFIGSET: &str = "admin.set";
 pub const PERMISSION_MAKEMUTE: &str = "admin.makemute";
 pub const PERMISSION_SETUP: &str = "admin.setup";
 pub const PERMISSION_REMOVEACTION: &str = "admin.remove";
-pub const PERMISSION_EXPIREACTION: &str = "moderation.expire";
 pub const PERMISSION_UPDATE: &str = "admin.update";
+pub const PERMISSION_PURGE: &str = "admin.purge";
+pub const PERMISSION_DEEPSEARCH: &str = "admin.deepsearch";
 
 pub const PERMISSION_VIEWCMDLEVEL: &str = "guild.viewcommandlevel";
 pub const PERMISSION_VIEWUSERLEVEL: &str = "guild.viewuserlevel";
 pub const PERMISSION_USERINFO: &str = "guild.userinfo";
 pub const PERMISSION_USERINFOSELF: &str = "guild.userinfoself";
 pub const PERMISSION_GUILDINFO: &str = "guild.guildinfo";
+pub const PERMISSION_SEARCHSELF: &str = "guild.searchself";
 
 pub const PERMISSION_ROLEADD: &str = "roles.add";
 pub const PERMISSION_ROLEREMOVE: &str = "roles.remove";
 pub const PERMISSION_ROLECREATE: &str = "roles.create";
-
-pub const PERMISSION_BANFILE: &str = "trusted.banfile";
+pub const PERMISSION_ROLERMROLE: &str = "roles.rmrole";
+pub const PERMISSION_ROLEUPDATE: &str = "roles.update";
+pub const PERMISSION_ROLELIST: &str = "roles.list";
 
 pub const PERMISSION_PLAY: &str = "music.play";
 pub const PERMISSION_STOP: &str = "music.stop";
@@ -56,7 +52,6 @@ pub const PERMISSION_REMOVE: &str = "music.remove";
 pub const PERMISSION_DC: &str = "music.dc";
 pub const PERMISSION_SEEK: &str = "music.seek";
 pub const PERMISSION_VOLUME: &str = "music.volume";
-pub const PERMISSION_QUERY: &str = "music.query";
 
 pub const PERMISSION_VOTEMUTE: &str = "voting.mute";
 
