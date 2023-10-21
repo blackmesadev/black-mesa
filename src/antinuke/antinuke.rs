@@ -137,40 +137,40 @@ impl Handler {
     where
         T: AntinukeTriggerTrait,
     {
-        if let Some(modules) = &conf.modules {
-            if let Some(antinuke) = &modules.antinuke {
-                if let Some(enabled) = antinuke.enabled {
-                    if !enabled {
-                        return Ok(());
-                    }
-                }
-
-                if antinuke.triggers.is_empty() {
-                    return Ok(());
-                }
-
-                if !antinuke.triggers.iter().any(|t| t.trigger == trigger.typ()) {
-                    return Ok(());
-                }
-
-                let guild_id = trigger.guild_id();
-                let id = trigger.id();
-                let typ = trigger.typ();
-
-                let user_id = self.get_user_audit(trigger).await?;
-
-                if !permissions::check_permission(
-                    conf,
-                    None,
-                    user_id,
-                    permissions::PERMISSION_ANTINUKE_BYPASS,
-                ) {
-                    return Ok(());
-                }
-
-                // TODO: implement antinuke fully
-            }
-        };
+        //if let Some(modules) = &conf.modules {
+        //    if let Some(antinuke) = &modules.antinuke {
+        //        if let Some(enabled) = antinuke.enabled {
+        //            if !enabled {
+        //                return Ok(());
+        //            }
+        //        }
+        //
+        //        if antinuke.triggers.is_empty() {
+        //            return Ok(());
+        //        }
+        //
+        //        if !antinuke.triggers.iter().any(|t| t.trigger == trigger.typ()) {
+        //            return Ok(());
+        //        }
+        //
+        //        let guild_id = trigger.guild_id();
+        //        let id = trigger.id();
+        //        let typ = trigger.typ();
+        //
+        //        let user_id = self.get_user_audit(trigger).await?;
+        //
+        //        if !permissions::check_permission(
+        //            conf,
+        //            None,
+        //            user_id,
+        //            permissions::PERMISSION_ANTINUKE_BYPASS,
+        //        ) {
+        //            return Ok(());
+        //        }
+        //
+        //        // TODO: implement antinuke fully
+        //    }
+        //};
 
         Ok(())
     }
