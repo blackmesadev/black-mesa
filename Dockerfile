@@ -1,4 +1,4 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1.64 AS chef
+FROM lukemathwalker/cargo-chef:latest AS chef
 WORKDIR /usr/src/black-mesa
 
 FROM chef AS prepare
