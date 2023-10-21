@@ -1,7 +1,7 @@
-use lazy_static::lazy_static;
-use regex::Regex;
+use crate::util;
+use serde::{Deserialize, Deserializer, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Duration {
     pub years: i64,
     pub months: i64,
@@ -14,23 +14,10 @@ pub struct Duration {
 }
 
 impl Duration {
-    pub fn new(str: String) -> Duration {
-        let mut dur = Duration {
-            years: 0,
-            months: 0,
-            weeks: 0,
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-            full_string: "".to_string(),
-        };
+    pub fn new(str: String) -> Self {
+        let mut dur = Self::default();
 
-        lazy_static! {
-            static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\S*(y|mo|w|d|h|m|s)").unwrap();
-        }
-
-        for cap in DUR_REGEX.captures_iter(&str) {
+        for cap in util::regex::DURATION.captures_iter(&str) {
             dur.full_string.push_str(&cap[0]);
             let num = cap[1].parse::<i64>().unwrap();
             let unit = &cap[2];
@@ -50,23 +37,10 @@ impl Duration {
         dur
     }
 
-    pub fn new_no_str(str: String) -> Duration {
-        let mut dur = Duration {
-            years: 0,
-            months: 0,
-            weeks: 0,
-            days: 0,
-            hours: 0,
-            minutes: 0,
-            seconds: 0,
-            full_string: "".to_string(),
-        };
+    pub fn new_no_str(str: String) -> Self {
+        let mut dur = Self::default();
 
-        lazy_static! {
-            static ref DUR_REGEX: Regex = Regex::new(r"(\d+)\S*(y|mo|w|d|h|m|s)").unwrap();
-        }
-
-        for cap in DUR_REGEX.captures_iter(&str) {
+        for cap in util::regex::DURATION.captures_iter(&str) {
             let num = cap[1].parse::<i64>().unwrap();
             let unit = &cap[2];
 
@@ -131,5 +105,24 @@ impl Duration {
             && self.hours == 0
             && self.minutes == 0
             && self.seconds == 0
+    }
+}
+
+impl<'de> Deserialize<'de> for Duration {
+    fn deserialize<D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let str: String = Deserialize::deserialize(deserializer)?;
+        Ok(Duration::new(str))
+    }
+}
+
+impl Serialize for Duration {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.full_string)
     }
 }

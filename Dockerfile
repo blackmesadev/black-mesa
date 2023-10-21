@@ -13,4 +13,5 @@ RUN cargo build --release
 
 FROM rust AS runtime
 COPY --from=build /usr/src/black-mesa/target/release/black-mesa .
+EXPOSE 3000
 CMD ["./black-mesa"]

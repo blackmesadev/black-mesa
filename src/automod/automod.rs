@@ -1,40 +1,32 @@
 #![allow(dead_code)]
 
-use serde::Deserialize as SerdeDeserialize;
 use serde_derive::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::error::Error;
-use std::str::FromStr;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use twilight_model::channel::message::AllowedMentions;
-use twilight_model::id::Id;
 
 use crate::automod::{censor::*, clean, spam::*};
+use crate::config::Config;
 use crate::handlers::Handler;
-use crate::mongo::mongo::{Config, PunishmentType};
 use crate::util::duration::Duration;
 use crate::util::permissions;
 
-use super::AutomodMessage;
+use super::MessageTrait;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct GuildOptions {
     pub minimum_account_age: String,
 }
 
 #[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct Censor {
     pub filter_zalgo: Option<bool>,
     pub filter_invites: Option<bool>,
     pub filter_domains: Option<bool>,
     pub filter_strings: Option<bool>,
-
-    #[serde(rename = "filterIPs")]
     pub filter_ips: Option<bool>,
     pub invites_whitelist: Option<Vec<String>>,
     pub invites_blacklist: Option<Vec<String>>,
@@ -43,11 +35,14 @@ pub struct Censor {
     pub blocked_substrings: Option<Vec<String>>,
     pub blocked_strings: Option<Vec<String>>,
     pub regex: Option<String>,
+
+    pub bypass: Vec<String>,
+    pub monitor_channels: Vec<String>,
+    pub ignore_channels: Vec<String>,
 }
 
 #[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 pub struct Spam {
     pub interval: Option<i64>,
     pub max_messages: Option<i64>,
@@ -58,51 +53,29 @@ pub struct Spam {
     pub max_newlines: Option<i64>,
     pub max_characters: Option<i64>,
     pub max_uppercase_percent: Option<f64>,
+
+    pub bypass: Vec<String>,
+    pub monitor_channels: Vec<String>,
+    pub ignore_channels: Vec<String>,
 }
 
 #[skip_serializing_none]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Automod {
     pub enabled: Option<bool>,
     pub guild_options: Option<GuildOptions>,
-    #[serde(deserialize_with = "de_censor_levels")]
-    pub censor_levels: Option<HashMap<i64, Censor>>,
-    pub censor_channels: Option<HashMap<String, Censor>>,
-    #[serde(deserialize_with = "de_spam_levels")]
-    pub spam_levels: Option<HashMap<i64, Spam>>,
-    pub spam_channels: Option<HashMap<String, Spam>>,
+    pub censor: Option<Vec<Censor>>,
+    pub spam: Option<Vec<Spam>>,
 }
 
-fn de_censor_levels<'de, D>(deserializer: D) -> Result<Option<HashMap<i64, Censor>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let mut map = HashMap::new();
-    let mut map2: HashMap<String, Censor> = HashMap::deserialize(deserializer)?;
-    for (k, v) in map2.drain() {
-        map.insert(k.parse::<i64>().unwrap(), v);
-    }
-    if map.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(map))
-    }
-}
-
-fn de_spam_levels<'de, D>(deserializer: D) -> Result<Option<HashMap<i64, Spam>>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let mut map = HashMap::new();
-    let mut map2: HashMap<String, Spam> = HashMap::deserialize(deserializer)?;
-    for (k, v) in map2.drain() {
-        map.insert(k.parse::<i64>().unwrap(), v);
-    }
-    if map.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(map))
+impl Default for Automod {
+    fn default() -> Self {
+        Automod {
+            enabled: Some(false),
+            guild_options: None,
+            censor: None,
+            spam: None,
+        }
     }
 }
 
@@ -162,7 +135,7 @@ impl SpamType {
         .to_string()
     }
 
-    fn get_fn(&self) -> Option<fn(&Spam, &AutomodMessage) -> bool> {
+    fn get_fn<T: MessageTrait>(&self) -> Option<fn(&Spam, &T) -> bool> {
         match self {
             SpamType::Mentions => Some(filter_mentions),
             SpamType::Links => Some(filter_links),
@@ -183,20 +156,6 @@ pub enum AutomodType {
 }
 
 impl AutomodType {
-    pub fn get_censor(&self) -> &CensorType {
-        match self {
-            AutomodType::Censor(c) => c.clone(),
-            _ => panic!("Not a censor type"),
-        }
-    }
-
-    pub fn get_spam(&self) -> &SpamType {
-        match self {
-            AutomodType::Spam(s) => s.clone(),
-            _ => panic!("Not a spam type"),
-        }
-    }
-
     pub fn get_name(&self) -> String {
         match self {
             AutomodType::Censor(c) => c.get_name(),
@@ -206,47 +165,40 @@ impl AutomodType {
 }
 
 #[derive(Debug)]
-pub struct AutomodResult {
+pub struct AutomodResult<T: MessageTrait> {
     pub typ: AutomodType,
-    pub msg: AutomodMessage,
+    pub msg: Box<T>,
     pub trigger: Option<String>, // Only applicable in Censor
     pub censor: Option<Censor>,
     pub spam: Option<Spam>,
 }
 
 impl Handler {
-    pub async fn automod(
+    pub async fn automod<T: MessageTrait + Clone>(
         &self,
         conf: &Config,
-        msg: &AutomodMessage,
+        msg: &T,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
         // Bots shouldn't need to be moderated by us.
-        if msg.author.bot {
+        if msg.author().bot {
             return Ok(());
         }
 
-        let res = match self.run_automod(&conf, &msg).await {
+        let res = match self.run_automod(&conf, msg).await {
             Some(r) => r,
             None => return Ok(()),
         };
 
-        let id = match &conf.modules.logging.channel_id {
-            Some(id) => id,
-            None => return Ok(()),
-        };
-
-        let channel_id = Id::from_str(&id)?;
-
-        let allowed_ment = AllowedMentions::builder().build();
-
         match res.typ {
             AutomodType::Censor(_) => {
-                self.rest.delete_message(msg.channel_id, msg.id).await?;
+                self.rest
+                    .delete_message(*msg.channel_id(), *msg.id())
+                    .await?;
                 // Action
                 self.issue_strike(
                     &conf,
-                    &msg.guild_id.unwrap().to_string(),
-                    &msg.author.id.to_string(),
+                    &msg.guild_id().unwrap().to_string(),
+                    &msg.author().id.to_string(),
                     &match self.cache.current_user() {
                         Some(u) => u.id.to_string(),
                         None => "AutoMod".to_string(),
@@ -257,79 +209,88 @@ impl Handler {
                         res.trigger.clone().unwrap_or("unknown".to_string())
                     ))
                     .as_ref(),
-                    &Duration::new(match &conf.modules.moderation.default_strike_duration {
-                        Some(d) => d.to_string(),
+                    &Duration::new(match &conf.modules {
+                        Some(modules) => match &modules.moderation {
+                            Some(m) => match &m.default_strike_duration {
+                                Some(dur) => dur.to_string(),
+                                None => "30d".to_string(),
+                            },
+                            None => "30d".to_string(),
+                        },
                         None => "30d".to_string(),
                     }),
                 )
                 .await?;
 
-                // Log
-                let log = match conf.modules.logging.log_message_censor(res) {
-                    Some(l) => l,
-                    None => return Ok(()),
-                };
-
-                self.rest
-                    .create_message(channel_id)
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_ment))
-                    .await?;
+                if let Some(modules) = &conf.modules {
+                    if let Some(logging) = &modules.logging {
+                        self.log_message_censor(logging, res).await;
+                    }
+                }
             }
             AutomodType::Spam(_) => {
-                self.rest.delete_message(msg.channel_id, msg.id).await?;
+                self.rest
+                    .delete_message(*msg.channel_id(), *msg.id())
+                    .await?;
                 // Action
                 self.issue_strike(
                     &conf,
-                    &msg.guild_id.unwrap().to_string(),
-                    &msg.author.id.to_string(),
+                    &msg.guild_id().unwrap().to_string(),
+                    &msg.author().id.to_string(),
                     &match self.cache.current_user() {
                         Some(u) => u.id.to_string(),
                         None => "AutoMod".to_string(),
                     },
                     Some(format!("Spam->{}", &res.typ.get_name())).as_ref(),
-                    &Duration::new(match &conf.modules.moderation.default_strike_duration {
-                        Some(d) => d.to_string(),
+                    &Duration::new(match &conf.modules {
+                        Some(modules) => match &modules.moderation {
+                            Some(m) => match &m.default_strike_duration {
+                                Some(dur) => dur.to_string(),
+                                None => "30d".to_string(),
+                            },
+                            None => "30d".to_string(),
+                        },
                         None => "30d".to_string(),
                     }),
                 )
                 .await?;
 
-                let log = match conf.modules.logging.log_message_spam(res) {
-                    Some(l) => l,
-                    None => return Ok(()),
-                };
-
-                self.rest
-                    .create_message(channel_id)
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_ment))
-                    .await?;
+                if let Some(modules) = &conf.modules {
+                    if let Some(logging) = &modules.logging {
+                        self.log_message_spam(logging, res).await;
+                    }
+                }
             }
         }
 
         Ok(())
     }
 
-    pub async fn run_automod(&self, conf: &Config, msg: &AutomodMessage) -> Option<AutomodResult> {
-        let content = clean::replace_non_std_space(&msg.content.as_ref()?.to_lowercase());
-
-        let censor_levels = conf.modules.automod.censor_levels.as_ref()?;
-        let spam_levels = conf.modules.automod.spam_levels.as_ref()?;
-
-        let default_censor = &Censor::default();
-        let default_spam = &Spam::default();
-
-        let user_id = msg.author.id.to_string();
-
-        let guild_id = match msg.guild_id {
-            Some(g) => g,
+    pub async fn run_automod<T: MessageTrait + Clone>(
+        &self,
+        conf: &Config,
+        msg: &T,
+    ) -> Option<AutomodResult<T>> {
+        let automod = match &conf.modules {
+            Some(modules) => match &modules.automod {
+                Some(a) => a,
+                None => return None,
+            },
             None => return None,
         };
 
-        let roles = match self.cache.member(guild_id, msg.author.id) {
+        let content = clean::replace_non_std_space(&msg.content().to_lowercase());
+
+        let author_id = msg.author().id.to_string();
+
+        let guild_id = match msg.guild_id() {
+            Some(g) => *g,
+            None => return None,
+        };
+
+        let roles = match self.cache.member(guild_id, msg.author().id) {
             Some(m) => m.roles().to_vec(),
-            None => match self.rest.guild_member(guild_id, msg.author.id).await {
+            None => match self.rest.guild_member(guild_id, msg.author().id).await {
                 Ok(m) => match m.model().await {
                     Ok(m) => m.roles,
                     Err(_) => return None,
@@ -338,64 +299,79 @@ impl Handler {
             },
         };
 
-        let closest_censor_lvl: i64 = permissions::get_closest_level(
-            censor_levels.keys().cloned().collect(),
-            permissions::get_user_level(conf, Some(&roles), &user_id),
-        );
-        let censor_user = match censor_levels.get(&closest_censor_lvl) {
-            Some(level) => level,
-            None => censor_levels.get(&0).unwrap_or(default_censor),
-        };
+        let user_groups =
+            match permissions::get_user_groups_names(conf, msg.author().id, Some(&roles)) {
+                Ok(groups) => groups,
+                Err(_) => HashSet::new(),
+            };
 
-        let closest_spam_lvl: i64 = permissions::get_closest_level(
-            spam_levels.keys().cloned().collect(),
-            permissions::get_user_level(conf, Some(&roles), &user_id),
-        );
+        let censor = automod.censor.as_ref().map_or(Vec::new(), |censors| {
+            censors
+                .iter()
+                .filter(|censor| {
+                    !censor.bypass.contains(&author_id)
+                        && !user_groups
+                            .iter()
+                            .any(|group| censor.bypass.contains(group))
+                })
+                .cloned()
+                .collect::<Vec<_>>()
+        });
 
-        let spam_user = match spam_levels.get(&closest_spam_lvl) {
-            Some(level) => level,
-            None => spam_levels.get(&0).unwrap_or(default_spam),
-        };
+        let spam = automod.spam.as_ref().map_or(Vec::new(), |spams| {
+            spams
+                .iter()
+                .filter(|spam| {
+                    !spam.bypass.contains(&author_id)
+                        && !user_groups.iter().any(|group| spam.bypass.contains(group))
+                })
+                .cloned()
+                .collect::<Vec<_>>()
+        });
 
-        for typ in CensorType::iter() {
-            let censor_fn = typ.get_fn();
-            let (trigger, ok) = censor_fn(censor_user, &content);
-            if !ok {
+        for censor in censor {
+            for typ in CensorType::iter() {
+                let censor_fn = typ.get_fn();
+                let (trigger, ok) = censor_fn(&censor, &content);
+                if !ok {
+                    return Some(AutomodResult {
+                        typ: AutomodType::Censor(typ),
+                        msg: Box::new(msg.clone()),
+                        trigger: Some(trigger),
+                        censor: Some(censor.clone()),
+                        spam: None,
+                    });
+                }
+            }
+        }
+
+        for spam in spam {
+            for typ in SpamType::iter() {
+                match typ.get_fn() {
+                    Some(spam_fn) => {
+                        if !spam_fn(&spam, msg) {
+                            return Some(AutomodResult {
+                                typ: AutomodType::Spam(typ),
+                                msg: Box::new(msg.clone()),
+                                trigger: None,
+                                spam: Some(spam.clone()),
+                                censor: None,
+                            });
+                        }
+                    }
+                    None => (),
+                }
+            }
+
+            if !self.redis.filter_messages(&spam, msg).await {
                 return Some(AutomodResult {
-                    typ: AutomodType::Censor(typ),
-                    msg: msg.clone(),
-                    trigger: Some(trigger),
-                    censor: Some(censor_user.clone()),
-                    spam: None,
+                    typ: AutomodType::Spam(SpamType::Messages),
+                    msg: Box::new(msg.clone()),
+                    trigger: None,
+                    spam: Some(spam.clone()),
+                    censor: None,
                 });
             }
-        }
-        for typ in SpamType::iter() {
-            match typ.get_fn() {
-                Some(spam_fn) => {
-                    if !spam_fn(spam_user, msg) {
-                        return Some(AutomodResult {
-                            typ: AutomodType::Spam(typ),
-                            msg: msg.clone(),
-                            trigger: None,
-                            spam: Some(spam_user.clone()),
-                            censor: None,
-                        });
-                    }
-                }
-                None => (),
-            }
-        }
-
-        // now we have to do spam message detection all alone because we need direct redis access :trolldespair:
-        if !self.redis.filter_messages(spam_user, msg).await {
-            return Some(AutomodResult {
-                typ: AutomodType::Spam(SpamType::Messages),
-                msg: msg.clone(),
-                trigger: None,
-                spam: Some(spam_user.clone()),
-                censor: None,
-            });
         }
 
         None

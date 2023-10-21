@@ -36,8 +36,3 @@ services:
       - ./data/redis:/data
     ports:
       - 6739:6739
-
-networks:
-  default:
-    external:
-      name: black-mesa-network

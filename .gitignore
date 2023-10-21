@@ -1,1 +1,6 @@
+.vscode
+
 /target
+/data
+
+docker-compose.yml

@@ -1,12 +1,10 @@
-use std::str::FromStr;
-
 use bson::oid::ObjectId;
-use twilight_model::{channel::message::AllowedMentions, id::Id};
 use uuid::Uuid;
 
 use crate::{
+    config::Config,
     handlers::Handler,
-    mongo::mongo::{Config, Punishment, PunishmentType},
+    moderation::moderation::{Punishment, PunishmentType},
     util::duration::Duration,
 };
 
@@ -24,6 +22,29 @@ impl Handler {
 
         let dur = duration.to_unix_expiry();
 
+        let appealable = (*conf)
+            .modules
+            .as_ref()
+            .and_then(|modules| modules.appeals.as_ref())
+            .map(|appeals| appeals.enabled)
+            .unwrap_or(false);
+
+        let notif_id = match self
+            .send_punishment_embed(
+                guild_id,
+                user_id,
+                issuer,
+                reason,
+                Some(duration),
+                &PunishmentType::Strike,
+                appealable,
+            )
+            .await?
+        {
+            Some(msg) => Some(msg.id.to_string()),
+            None => None,
+        };
+
         let strike = Punishment {
             oid: ObjectId::new(),
             guild_id: guild_id.to_string(),
@@ -34,9 +55,20 @@ impl Handler {
             role_id: None,
             weight: None,
             reason: reason.cloned(),
-            uuid: infraction_uuid,
+            uuid: infraction_uuid.clone(),
+            escalation_uuid: None,
             expired: false,
+            expired_reason: None,
+            appeal_status: None,
+            notif_id,
         };
+
+        let appealable = (*conf)
+            .modules
+            .as_ref()
+            .and_then(|modules| modules.appeals.as_ref())
+            .map(|appeals| appeals.enabled)
+            .unwrap_or(false);
 
         self.send_punishment_embed(
             guild_id,
@@ -45,12 +77,14 @@ impl Handler {
             reason,
             Some(duration),
             &PunishmentType::Strike,
+            appealable,
         )
         .await?;
 
         self.db.add_punishment(&strike).await?;
 
-        self.escalate_strike(conf, guild_id, user_id).await?;
+        self.escalate_strike(conf, guild_id, user_id, infraction_uuid)
+            .await?;
 
         Ok(strike)
     }
@@ -60,22 +94,34 @@ impl Handler {
         conf: &Config,
         guild_id: &String,
         user_id: &String,
+        escalation_uuid: String,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        // this shouldn't even be possible but just in case
+        let modules = match &conf.modules {
+            Some(m) => m,
+            None => return Err("Modules not set".into()),
+        };
+
+        let moderation = match &modules.moderation {
+            Some(moderation) => moderation,
+            None => return Ok(()),
+        };
+
         let strikes = self.db.get_strikes(guild_id, user_id).await?;
-        let esc = &conf.modules.moderation.strike_escalation;
+        let esc = &moderation.strike_escalation;
         let esc_to = match esc.get(&(strikes.len() as i64)) {
             Some(esc_to) => esc_to,
             None => return Ok(()),
         };
 
-        let id = match &conf.modules.logging.channel_id {
-            Some(id) => id,
-            None => return Ok(()),
-        };
+        let logging = &modules.logging;
 
-        let channel_id = Id::from_str(&id)?;
-
-        let allowed_ment = AllowedMentions::builder().build();
+        let appealable = (*conf)
+            .modules
+            .as_ref()
+            .and_then(|modules| modules.appeals.as_ref())
+            .map(|appeals| appeals.enabled)
+            .unwrap_or(false);
 
         match esc_to.typ {
             PunishmentType::Mute => {
@@ -88,25 +134,29 @@ impl Handler {
                 let reason = Some("Exceeded strike limit".to_string());
 
                 let punishment = self
-                    .mute_user(conf, guild_id, user_id, issuer, duration, reason.as_ref())
+                    .mute_user(
+                        conf,
+                        guild_id,
+                        user_id,
+                        issuer,
+                        duration,
+                        reason.as_ref(),
+                        Some(escalation_uuid),
+                        appealable,
+                    )
                     .await?;
 
-                let log = match conf.modules.logging.log_mute(
-                    issuer,
-                    user_id,
-                    reason.as_ref(),
-                    duration,
-                    &punishment.uuid,
-                ) {
-                    Some(log) => log,
-                    None => return Ok(()),
-                };
-
-                self.rest
-                    .create_message(channel_id)
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_ment))
-                    .await?;
+                if let Some(logging) = logging {
+                    self.log_mute(
+                        logging,
+                        issuer,
+                        user_id,
+                        reason.as_ref(),
+                        duration,
+                        &punishment.uuid,
+                    )
+                    .await;
+                }
             }
 
             PunishmentType::Kick => {
@@ -118,24 +168,20 @@ impl Handler {
                 let reason = Some("Exceeded strike limit".to_string());
 
                 let punishment = self
-                    .kick_user(guild_id, user_id, issuer, reason.as_ref())
+                    .kick_user(
+                        guild_id,
+                        user_id,
+                        issuer,
+                        reason.as_ref(),
+                        Some(escalation_uuid),
+                        appealable,
+                    )
                     .await?;
 
-                let log = match conf.modules.logging.log_kick(
-                    issuer,
-                    user_id,
-                    reason.as_ref(),
-                    &punishment.uuid,
-                ) {
-                    Some(log) => log,
-                    None => return Ok(()),
-                };
-
-                self.rest
-                    .create_message(channel_id)
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_ment))
-                    .await?;
+                if let Some(logging) = logging {
+                    self.log_kick(logging, issuer, user_id, reason.as_ref(), &punishment.uuid)
+                        .await;
+                }
             }
 
             PunishmentType::Ban => {
@@ -148,25 +194,28 @@ impl Handler {
                 let reason = Some("Exceeded strike limit".to_string());
 
                 let punishment = self
-                    .ban_user(guild_id, user_id, issuer, duration, reason.as_ref())
+                    .ban_user(
+                        guild_id,
+                        user_id,
+                        issuer,
+                        duration,
+                        reason.as_ref(),
+                        Some(escalation_uuid),
+                        appealable,
+                    )
                     .await?;
 
-                let log = match conf.modules.logging.log_ban(
-                    issuer,
-                    user_id,
-                    reason.as_ref(),
-                    duration,
-                    &punishment.uuid,
-                ) {
-                    Some(log) => log,
-                    None => return Ok(()),
-                };
-
-                self.rest
-                    .create_message(channel_id)
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_ment))
-                    .await?;
+                if let Some(logging) = logging {
+                    self.log_ban(
+                        logging,
+                        issuer,
+                        user_id,
+                        reason.as_ref(),
+                        duration,
+                        &punishment.uuid,
+                    )
+                    .await;
+                }
             }
             _ => {}
         }

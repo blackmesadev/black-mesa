@@ -1,5 +1,4 @@
-use lazy_static::lazy_static;
-use regex::*;
+use crate::util;
 
 //pub fn clean(s: String) -> String {
 //    let mut s = s.clone();
@@ -16,10 +15,7 @@ pub fn remove_spaces(s: &String) -> String {
 pub fn replace_non_std_space(s: &String) -> String {
     let mut s = s.clone();
 
-    lazy_static! {
-        static ref NON_STD_RE: Regex = Regex::new(r"[\x{2000}-\x{200F}]+").unwrap();
-    }
-    s = NON_STD_RE.replace_all(&s, "").to_string();
+    s = util::regex::NON_STD_SP.replace_all(&s, "").to_string();
 
     s
 }

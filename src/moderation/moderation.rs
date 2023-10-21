@@ -1,27 +1,116 @@
+use core::fmt;
 use std::{collections::HashMap, str::FromStr};
 
-use bson::oid::ObjectId;
+use bson::{oid::ObjectId, serde_helpers::serialize_object_id_as_hex_string};
 use serde::Deserialize as SerdeDeserialize;
+use serde_aux::prelude::bool_true;
 use serde_derive::{Deserialize, Serialize};
 use twilight_http::request::AuditLogReason;
 use twilight_model::{
-    channel::message::{
-        embed::{self, EmbedField},
-        Embed,
+    channel::{
+        message::{
+            embed::{self, EmbedField},
+            Embed,
+        },
+        Message,
     },
     id::Id,
 };
 use uuid::Uuid;
 
 use crate::{
-    handlers::Handler,
-    mongo::mongo::{Config, Punishment, PunishmentType},
-    util::duration::Duration,
-    VERSION,
+    appeals::AppealStatus, config::Config, handlers::Handler, util::duration::Duration, VERSION,
 };
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Punishment {
+    #[serde(serialize_with = "serialize_object_id_as_hex_string")]
+    #[serde(rename = "_id")]
+    pub oid: ObjectId,
+    pub guild_id: String,
+    pub user_id: String,
+    pub issuer: String,
+    #[serde(rename = "type")]
+    pub typ: PunishmentType,
+    pub expires: Option<i64>,
+    pub role_id: Option<String>,
+    pub weight: Option<i64>,
+    pub reason: Option<String>,
+    pub uuid: String,
+    pub escalation_uuid: Option<String>,
+    #[serde(default = "bool_true")]
+    pub expired: bool,
+    pub expired_reason: Option<String>,
+    pub appeal_status: Option<AppealStatus>,
+    pub notif_id: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
+pub enum PunishmentType {
+    #[default]
+    Unknown,
+    None,
+    Strike,
+    Mute,
+    Kick,
+    Ban,
+    Softban,
+}
+impl FromStr for PunishmentType {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "strike" => Ok(PunishmentType::Strike),
+            "mute" => Ok(PunishmentType::Mute),
+            "kick" => Ok(PunishmentType::Kick),
+            "ban" => Ok(PunishmentType::Ban),
+            _ => Ok(PunishmentType::Unknown),
+        }
+    }
+}
+
+impl fmt::Display for PunishmentType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PunishmentType::Strike => write!(f, "strike"),
+            PunishmentType::Mute => write!(f, "mute"),
+            PunishmentType::Kick => write!(f, "kick"),
+            PunishmentType::Ban => write!(f, "ban"),
+            _ => write!(f, "unknown"),
+        }
+    }
+}
+
+impl PunishmentType {
+    pub fn pretty_string(&self) -> String {
+        match self {
+            PunishmentType::Unknown => "Unknown",
+            PunishmentType::None => "None",
+            PunishmentType::Strike => "Strike",
+            PunishmentType::Mute => "Mute",
+            PunishmentType::Kick => "Kick",
+            PunishmentType::Ban => "Ban",
+            PunishmentType::Softban => "Softban",
+        }
+        .to_string()
+    }
+
+    pub fn past_tense_string(&self) -> String {
+        match self {
+            PunishmentType::Unknown => "Unknown",
+            PunishmentType::None => "None",
+            PunishmentType::Strike => "Striked",
+            PunishmentType::Mute => "Muted",
+            PunishmentType::Kick => "Kicked",
+            PunishmentType::Ban => "Banned",
+            PunishmentType::Softban => "Softbanned",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(default)]
 pub struct Moderation {
     pub censor_searches: bool,
     pub default_strike_duration: Option<String>,
@@ -31,12 +120,10 @@ pub struct Moderation {
     pub show_moderator_on_notify: bool,
     #[serde(deserialize_with = "de_strike_esc")]
     pub strike_escalation: HashMap<i64, StrikeEscalation>,
-    #[serde(default)]
     pub update_higher_level_action: bool,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct StrikeEscalation {
     #[serde(rename = "type")]
     pub typ: PunishmentType,
@@ -65,6 +152,8 @@ impl Handler {
         reason: Option<&String>,
         typ: &PunishmentType,
         role_id: Option<String>, // for mute
+        escalation_uuid: Option<String>,
+        notif_id: Option<String>,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
         let punishment = Punishment {
             oid: ObjectId::new(),
@@ -80,7 +169,11 @@ impl Handler {
             weight: None,
             reason: reason.cloned(),
             uuid: Uuid::new_v4().to_string(),
+            escalation_uuid,
             expired: false,
+            expired_reason: None,
+            appeal_status: None,
+            notif_id,
         };
 
         if typ == &PunishmentType::Mute {
@@ -120,13 +213,14 @@ impl Handler {
         reason: Option<&String>,
         duration: Option<&Duration>,
         typ: &PunishmentType,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        appealable: bool,
+    ) -> Result<Option<Message>, Box<dyn std::error::Error + Send + Sync>> {
         let guild = self.cache.guild(Id::from_str(guild_id)?);
         let issuer = self.cache.user(Id::from_str(&issuer_id)?);
 
         let mut fields = vec![
             EmbedField {
-                name: "Server Name".to_string(),
+                name: "Guild Name".to_string(),
                 value: match guild {
                     Some(guild) => guild.name().to_string(),
                     None => guild_id.to_string(),
@@ -149,6 +243,15 @@ impl Handler {
                 },
                 inline: false,
             },
+            EmbedField {
+                name: "Appeal".to_string(),
+                value: String::from(if appealable {
+                    "You can appeal this punishment by replying to this message with `!appeal`."
+                } else {
+                    "You cannot appeal this punishment."
+                }),
+                inline: false,
+            },
         ];
 
         match duration {
@@ -167,7 +270,7 @@ impl Handler {
             footer: Some(embed::EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
+                text: format!("Black Mesa v{}", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -187,9 +290,9 @@ impl Handler {
         {
             Ok(channel) => match channel.model().await {
                 Ok(channel) => channel,
-                Err(_) => return Ok(()),
+                Err(_) => return Ok(None),
             },
-            Err(_) => return Ok(()),
+            Err(_) => return Ok(None),
         };
 
         match self
@@ -198,8 +301,8 @@ impl Handler {
             .embeds(&embeds)?
             .await
         {
-            Ok(_) => Ok(()),
-            Err(_) => Ok(()),
+            Ok(msg) => Ok(Some(msg.model().await?)),
+            Err(_) => return Ok(None),
         }
     }
 
@@ -209,7 +312,25 @@ impl Handler {
         user_id: &String,
         issuer: &String,
         reason: Option<&String>,
+        escalation_uuid: Option<String>,
+        appealable: bool,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
+        let notif_id = match self
+            .send_punishment_embed(
+                guild_id,
+                user_id,
+                issuer,
+                reason,
+                None,
+                &PunishmentType::Kick,
+                appealable,
+            )
+            .await?
+        {
+            Some(msg) => Some(msg.id.to_string()),
+            None => None,
+        };
+
         let punishment = self
             .add_punishment(
                 guild_id,
@@ -219,18 +340,10 @@ impl Handler {
                 reason,
                 &PunishmentType::Kick,
                 None,
+                escalation_uuid,
+                notif_id,
             )
             .await?;
-
-        self.send_punishment_embed(
-            guild_id,
-            user_id,
-            issuer,
-            reason,
-            None,
-            &PunishmentType::Kick,
-        )
-        .await?;
 
         match self
             .rest
@@ -254,6 +367,80 @@ impl Handler {
         }
     }
 
+    pub async fn softban_user(
+        &self,
+        guild_id: &String,
+        user_id: &String,
+        issuer: &String,
+        duration: &Duration,
+        reason: Option<&String>,
+        appealable: bool,
+    ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
+        let notif_id = match self
+            .send_punishment_embed(
+                guild_id,
+                user_id,
+                issuer,
+                reason,
+                Some(duration),
+                &PunishmentType::Softban,
+                appealable,
+            )
+            .await?
+        {
+            Some(msg) => Some(msg.id.to_string()),
+            None => None,
+        };
+
+        let punishment = self
+            .add_punishment(
+                guild_id,
+                user_id,
+                issuer,
+                Some(duration),
+                reason,
+                &PunishmentType::Softban,
+                None,
+                None,
+                notif_id,
+            )
+            .await?;
+
+        match self
+            .rest
+            .create_ban(Id::from_str(guild_id)?, Id::from_str(user_id)?)
+            .reason(
+                format!(
+                    "{} - {}",
+                    issuer,
+                    match reason {
+                        Some(r) => r.to_string(),
+                        None => "No reason provided".to_string(),
+                    }
+                )
+                .as_str(),
+            )?
+            .delete_message_seconds(duration.seconds.try_into().unwrap())
+        {
+            Ok(k) => {
+                k.await?;
+            }
+            Err(e) => Err(e)?,
+        }
+
+        match self
+            .rest
+            .delete_ban(Id::from_str(guild_id)?, Id::from_str(user_id)?)
+            .reason(format!("Softban ban removal - `{}`", punishment.uuid).as_str())
+        {
+            Ok(k) => {
+                k.await?;
+                Ok(punishment)
+            }
+            Err(e) => Err(e)?,
+        }
+    }
+
     pub async fn ban_user(
         &self,
         guild_id: &String,
@@ -261,7 +448,25 @@ impl Handler {
         issuer: &String,
         duration: &Duration,
         reason: Option<&String>,
+        escalation_uuid: Option<String>,
+        appealable: bool,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
+        let notif_id = match self
+            .send_punishment_embed(
+                guild_id,
+                user_id,
+                issuer,
+                reason,
+                Some(duration),
+                &PunishmentType::Ban,
+                appealable,
+            )
+            .await?
+        {
+            Some(msg) => Some(msg.id.to_string()),
+            None => None,
+        };
+
         let punishment = self
             .add_punishment(
                 guild_id,
@@ -271,18 +476,10 @@ impl Handler {
                 reason,
                 &PunishmentType::Ban,
                 None,
+                escalation_uuid,
+                notif_id,
             )
             .await?;
-
-        self.send_punishment_embed(
-            guild_id,
-            user_id,
-            issuer,
-            reason,
-            Some(duration),
-            &PunishmentType::Ban,
-        )
-        .await?;
 
         match self
             .rest
@@ -347,8 +544,41 @@ impl Handler {
         issuer: &String,
         duration: &Duration,
         reason: Option<&String>,
+        escalation_uuid: Option<String>,
+        appealable: bool,
     ) -> Result<Punishment, Box<dyn std::error::Error + Send + Sync>> {
-        let mute_id = &conf.modules.moderation.mute_role;
+        let modules = match &conf.modules {
+            Some(m) => m,
+            None => return Err("Modules not set".into()),
+        };
+
+        let moderation = match modules.moderation {
+            Some(ref m) => m,
+            None => return Err("Moderation module not enabled".into()),
+        };
+
+        if moderation.mute_role.is_empty() {
+            return Err("Mute role is not set".into());
+        }
+
+        let mute_id = &moderation.mute_role;
+
+        let notif_id = match self
+            .send_punishment_embed(
+                guild_id,
+                user_id,
+                issuer,
+                reason,
+                Some(duration),
+                &PunishmentType::Mute,
+                appealable,
+            )
+            .await?
+        {
+            Some(msg) => Some(msg.id.to_string()),
+            None => None,
+        };
+
         let punishment = self
             .add_punishment(
                 guild_id,
@@ -358,18 +588,10 @@ impl Handler {
                 reason,
                 &PunishmentType::Mute,
                 Some(mute_id.to_string()),
+                escalation_uuid,
+                notif_id,
             )
             .await?;
-
-        self.send_punishment_embed(
-            guild_id,
-            user_id,
-            issuer,
-            reason,
-            Some(duration),
-            &PunishmentType::Mute,
-        )
-        .await?;
 
         match self
             .rest
@@ -408,11 +630,25 @@ impl Handler {
         reason: Option<&String>,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let role_id = match conf {
-            Some(conf) => conf.modules.moderation.mute_role.clone(),
-            None => match mute_role_id {
-                Some(mute_role_id) => mute_role_id,
-                None => return Err("No mute role specified".into()),
+            Some(conf) => match &conf.modules {
+                Some(modules) => match &modules.moderation {
+                    Some(m) => {
+                        if m.mute_role.is_empty() {
+                            mute_role_id
+                        } else {
+                            Some(m.mute_role.clone())
+                        }
+                    }
+                    None => mute_role_id,
+                },
+                None => mute_role_id,
             },
+            None => mute_role_id,
+        };
+
+        let role_id = match role_id {
+            Some(r) => r,
+            None => return Err("No mute role specified".into()),
         };
 
         // might be nice to have some sort of embed sent to the user on an unmute / any other punishment removal

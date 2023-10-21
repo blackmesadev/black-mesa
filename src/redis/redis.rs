@@ -1,6 +1,5 @@
 use redis::AsyncCommands;
 use std::env;
-use tracing::{error, warn};
 
 #[derive(Clone, Debug)]
 pub struct Redis {
@@ -32,7 +31,7 @@ impl Redis {
                     let cur_ttl: i64 = match connection.ttl(&key).await {
                         Ok(ttl) => ttl,
                         Err(e) => {
-                            warn!("Error getting ttl: {}", e);
+                            tracing::warn!("Error getting ttl: {}", e);
                             return None;
                         }
                     };
@@ -41,7 +40,7 @@ impl Redis {
                         match connection.expire(&key, exp).await {
                             Ok(()) => return Some(value),
                             Err(e) => {
-                                warn!("Error setting expire: {}", e);
+                                tracing::warn!("Error setting expire: {}", e);
                                 return None;
                             }
                         }
@@ -50,12 +49,12 @@ impl Redis {
                     Some(value)
                 }
                 Err(e) => {
-                    warn!("Error incrementing max messages: {}", e);
+                    tracing::warn!("Error incrementing max messages: {}", e);
                     None
                 }
             },
             Err(e) => {
-                error!("Error getting connection: {}", e);
+                tracing::error!("Error getting connection: {}", e);
                 None
             }
         }
@@ -73,12 +72,12 @@ impl Redis {
             Ok(mut connection) => match connection.set_ex(key, value, exp).await {
                 Ok(value) => Some(value),
                 Err(e) => {
-                    warn!("Error setting max messages: {}", e);
+                    tracing::warn!("Error setting max messages: {}", e);
                     return None;
                 }
             },
             Err(e) => {
-                error!("Error getting connection: {}", e);
+                tracing::error!("Error getting connection: {}", e);
                 return None;
             }
         }
@@ -90,12 +89,12 @@ impl Redis {
             Ok(mut connection) => match connection.set(key, value).await {
                 Ok(value) => Some(value),
                 Err(e) => {
-                    warn!("Error setting memory usage: {}", e);
+                    tracing::warn!("Error setting memory usage: {}", e);
                     return None;
                 }
             },
             Err(e) => {
-                error!("Error getting connection: {}", e);
+                tracing::error!("Error getting connection: {}", e);
                 return None;
             }
         }
@@ -110,5 +109,9 @@ impl Redis {
             }
             Err(e) => Err(e),
         }
+    }
+
+    pub async fn status(&self) -> bool {
+        self.client.get_async_connection().await.is_ok()
     }
 }

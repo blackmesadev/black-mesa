@@ -1,14 +1,5 @@
-use lazy_static::lazy_static;
-use regex::*;
-
-use crate::automod::*;
-use crate::util::*;
-
-lazy_static! {
-    static ref DOMAINS_RE: Regex =
-        Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}").unwrap();
-    static ref IP_RE: Regex = Regex::new(r"^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}").unwrap();
-}
+use crate::automod;
+use crate::util;
 
 pub fn filter_strings(censor_user: &automod::Censor, content: &String) -> (String, bool) {
     if !censor_user.filter_strings.unwrap_or(false) {
@@ -29,7 +20,7 @@ pub fn filter_strings(censor_user: &automod::Censor, content: &String) -> (Strin
 
     match censor_user.blocked_substrings.as_ref() {
         Some(blocked_substrings) => {
-            let nsp_content = clean::remove_spaces(&content);
+            let nsp_content = automod::clean::remove_spaces(&content);
             for string in blocked_substrings {
                 if nsp_content.contains(string) {
                     return (string.to_string(), false);
@@ -107,7 +98,7 @@ pub fn filter_domains(censor_user: &automod::Censor, content: &String) -> (Strin
         return ("".to_string(), true);
     }
 
-    let domains = DOMAINS_RE.find(&content);
+    let domains = util::regex::DOMAINS.find(&content);
     match domains {
         Some(domain) => {
             let domain_whitelist = match censor_user.domain_whitelist.as_ref() {
@@ -128,8 +119,8 @@ pub fn filter_blacklisted_domains(blacklist: &Vec<String>, content: &String) -> 
         return ("".to_string(), true);
     }
 
-    for domain in DOMAINS_RE.find_iter(&content) {
-        if DOMAINS_RE.is_match(&domain.as_str()) {
+    for domain in util::regex::DOMAINS.find_iter(&content) {
+        if util::regex::DOMAINS.is_match(&domain.as_str()) {
             let mut domain = domain.as_str();
             if domain.starts_with("www.") {
                 domain = domain.split("www.").collect::<Vec<&str>>()[1];
@@ -147,7 +138,7 @@ pub fn filter_ips(censor_user: &automod::Censor, content: &String) -> (String, b
         return ("".to_string(), true);
     }
 
-    let ips = IP_RE.find_iter(&content);
+    let ips = util::regex::IP.find_iter(&content);
     for ip in ips {
         let ip_vec = ip.as_str().split(".").collect::<Vec<&str>>();
         if ip_vec.len() != 4 {
@@ -158,7 +149,7 @@ pub fn filter_ips(censor_user: &automod::Censor, content: &String) -> (String, b
             .iter()
             .map(|octet| octet.parse::<u8>().unwrap())
             .collect::<Vec<u8>>();
-        if !ip::ip_full_check(&ip) {
+        if !util::ip::ip_full_check(&ip) {
             return (ip_vec.join(".").as_str().to_string(), false);
         }
     }

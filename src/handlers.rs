@@ -1,26 +1,29 @@
-use std::{error::Error, str::FromStr, sync::Arc, time::SystemTime};
+use std::{error::Error, str::FromStr, sync::Arc};
 
-use tracing::{error, info};
 use twilight_cache_inmemory::InMemoryCache;
 use twilight_gateway::Event;
 use twilight_http::Client as HttpClient;
-use twilight_model::gateway::event::shard::Connected;
+use twilight_model::channel::message::MessageFlags;
 use twilight_model::gateway::payload::incoming::{
-    BanRemove, MemberAdd, MemberUpdate, MessageCreate, MessageDelete, MessageUpdate, Ready,
+    BanAdd, BanRemove, ChannelDelete, InteractionCreate, MemberAdd, MemberRemove, MemberUpdate,
+    MessageCreate, MessageDelete, MessageUpdate, Ready, RoleDelete,
 };
 use twilight_model::guild::audit_log::AuditLogChange;
+use twilight_model::guild::audit_log::AuditLogEventType;
+use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
 use twilight_model::id::Id;
-use twilight_model::{channel::message::AllowedMentions, guild::audit_log::AuditLogEventType};
+use twilight_model::oauth::Application;
+use twilight_util::builder::InteractionResponseDataBuilder;
 
-use crate::{automod::AutomodMessage, mongo::mongo::*, redis::redis::*};
+use crate::{mongo::mongo::*, redis::redis::*};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Handler {
     pub db: Database,
     pub redis: Redis,
     pub rest: Arc<HttpClient>,
-    pub cache: InMemoryCache,
-    pub last_process: SystemTime,
+    pub cache: Arc<InMemoryCache>,
+    pub arc: Option<Arc<Handler>>,
 }
 
 impl Handler {
@@ -34,14 +37,20 @@ impl Handler {
             Event::Ready(ready) => match self.on_ready(shard_id, ready).await {
                 Ok(_) => (),
                 Err(e) => {
-                    error!(target = "on_ready", e);
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "on_ready", e);
+                    });
                 }
             },
 
             Event::MessageCreate(msg) => match self.message_create(shard_id, msg).await {
                 Ok(_) => (),
                 Err(e) => {
-                    error!(target = "message_create", e);
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "message_create", e);
+                    });
                 }
             },
 
@@ -49,7 +58,10 @@ impl Handler {
                 match self.message_update(shard_id, msg_update).await {
                     Ok(_) => (),
                     Err(e) => {
-                        error!(target = "message_update", e);
+                        let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                        span.in_scope(|| {
+                            tracing::error!(target = "message_update", e);
+                        });
                     }
                 }
             }
@@ -58,7 +70,22 @@ impl Handler {
                 match self.message_delete(shard_id, msg_delete).await {
                     Ok(_) => (),
                     Err(e) => {
-                        error!(target = "message_delete", e);
+                        let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                        span.in_scope(|| {
+                            tracing::error!(target = "message_delete", e);
+                        });
+                    }
+                }
+            }
+
+            Event::InteractionCreate(interaction) => {
+                match self.interaction_create(shard_id, interaction).await {
+                    Ok(_) => (),
+                    Err(e) => {
+                        let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                        span.in_scope(|| {
+                            tracing::error!(target = "interaction_create", e);
+                        });
                     }
                 }
             }
@@ -66,30 +93,73 @@ impl Handler {
             Event::BanRemove(unban) => match self.ban_remove(shard_id, unban).await {
                 Ok(_) => (),
                 Err(e) => {
-                    error!(target = "ban_remove", e);
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "ban_remove", e);
+                    });
+                }
+            },
+
+            Event::BanAdd(ban) => match self.ban_add(shard_id, ban).await {
+                Ok(_) => (),
+                Err(e) => {
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "ban_add", e);
+                    });
                 }
             },
 
             Event::MemberAdd(member) => match self.member_add(shard_id, &member).await {
                 Ok(_) => (),
                 Err(e) => {
-                    error!(target = "member_add", e);
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "member_add", e);
+                    });
                 }
             },
 
             Event::MemberUpdate(update) => match self.member_update(shard_id, update).await {
                 Ok(_) => (),
                 Err(e) => {
-                    error!(target = "member_update", e);
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "member_update", e);
+                    });
                 }
             },
 
-            Event::ShardConnected(conn) => match self.shard_connected(shard_id, conn).await {
+            Event::MemberRemove(member) => match self.member_removed(shard_id, member).await {
                 Ok(_) => (),
                 Err(e) => {
-                    error!(target = "shard_connected", e);
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "member_remove", e);
+                    });
                 }
             },
+
+            Event::RoleDelete(role) => match self.role_deleted(shard_id, role).await {
+                Ok(_) => (),
+                Err(e) => {
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "role_delete", e);
+                    });
+                }
+            },
+
+            Event::ChannelDelete(channel) => match self.channel_deleted(shard_id, channel).await {
+                Ok(_) => (),
+                Err(e) => {
+                    let span = tracing::error_span!("handle_event", shard_id = shard_id);
+                    span.in_scope(|| {
+                        tracing::error!(target = "channel_delete", e);
+                    });
+                }
+            },
+
             _ => {}
         }
 
@@ -103,7 +173,12 @@ impl Handler {
         shard_id: u64,
         ready: &Ready,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        info!("{} is connected!", ready.user.name);
+        tracing::info!(
+            "Shard {} connected to gateway with {} guilds.",
+            shard_id,
+            ready.guilds.len()
+        );
+
         Ok(())
     }
 
@@ -113,38 +188,26 @@ impl Handler {
         _shard_id: u64,
         msg: &MessageCreate,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        let conf = match self
+        let conf = self
             .db
             .get_guild(&match &msg.guild_id {
                 Some(id) => id.to_string(),
                 None => return Ok(()),
             })
-            .await
-        {
-            Ok(conf) => match conf {
-                Some(conf) => conf,
-                None => return Ok(()),
-            },
-            Err(_) => return Ok(()),
-        };
+            .await?;
 
-        let automod_msg = AutomodMessage {
-            attachments: Some(msg.attachments.clone()),
-            author: msg.author.clone(),
-            channel_id: msg.channel_id,
-            content: Some(msg.content.clone()),
-            edited_timestamp: msg.edited_timestamp,
-            embeds: Some(msg.embeds.clone()),
-            guild_id: msg.guild_id,
-            id: msg.id,
-            mention_roles: Some(msg.mention_roles.clone()),
-            mentions: Some(msg.mentions.clone()),
-            timestamp: Some(msg.timestamp),
-        };
+        if let Some(conf) = conf {
+            match self.process_cmd(Some(&conf), msg).await {
+                Ok(_) => (),
+                Err(e) => {
+                    tracing::error!(target = "process_cmd", e);
+                }
+            }
 
-        self.automod(&conf, &automod_msg).await?;
-
-        self.process_cmd(&conf, msg).await?;
+            self.automod(&conf, &msg.0).await?;
+        } else {
+            self.process_cmd(None, msg).await?;
+        }
 
         Ok(())
     }
@@ -175,57 +238,21 @@ impl Handler {
             None => return Ok(()),
         };
 
-        let msg = AutomodMessage {
-            attachments: msg_update.attachments.clone(),
-            author: match msg_update.author.clone() {
-                Some(author) => author,
-                None => return Ok(()),
-            },
-            channel_id: msg_update.channel_id,
-            content: msg_update.content.clone(),
-            edited_timestamp: msg_update.edited_timestamp,
-            embeds: msg_update.embeds.clone(),
-            guild_id: msg_update.guild_id,
-            id: msg_update.id,
-            mention_roles: msg_update.mention_roles.clone(),
-            mentions: msg_update.mentions.clone(),
-            timestamp: msg_update.timestamp,
-        };
+        self.automod(&conf, msg_update).await?;
 
-        self.automod(&conf, &msg).await?;
-
-        let old = match self.cache.message(msg_update.id.clone()) {
+        let old = match self.cache.message(msg_update.id) {
             Some(msg) => msg,
             None => {
                 return Ok(());
             }
         };
 
-        let log = match conf
-            .modules
-            .logging
-            .log_message_edit(msg_update, old.content().to_string())
-        {
-            Some(l) => l,
-            None => return Ok(()),
-        };
-
-        let id = match conf.modules.logging.channel_id {
-            Some(id) => id,
-            None => return Ok(()),
-        };
-
-        let channel_id = Id::from_str(&id)?;
-
-        // Seeing as we only get the ID of the author of the message from the cache,
-        // its easier to just mention them and just not ping them.
-        let allowed_ment = AllowedMentions::builder().build();
-
-        self.rest
-            .create_message(channel_id)
-            .content(log.as_str())?
-            .allowed_mentions(Some(&allowed_ment))
-            .await?;
+        if let Some(modules) = conf.modules {
+            if let Some(logging) = modules.logging {
+                self.log_message_edit(&logging, msg_update, old.content().to_string())
+                    .await;
+            }
+        }
 
         Ok(())
     }
@@ -251,6 +278,10 @@ impl Handler {
                 return Ok(());
             }
         };
+
+        if let Err(e) = self.antinuke(&conf, msg_delete).await {
+            tracing::error!("Error in antinuke: {}", e);
+        }
 
         let audit_log = self
             .rest
@@ -281,27 +312,103 @@ impl Handler {
             None => None,
         };
 
-        let log = match conf.modules.logging.log_message_delete(msg, deleted_by) {
-            Some(l) => l,
+        if let Some(modules) = conf.modules {
+            if let Some(logging) = modules.logging {
+                self.log_message_delete(&logging, msg, deleted_by).await;
+            }
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn interaction_create(
+        &self,
+        _shard_id: u64,
+        interaction: &InteractionCreate,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let conf = match self
+            .db
+            .get_guild(&match &interaction.guild_id {
+                Some(id) => id.to_string(),
+                None => return Ok(()),
+            })
+            .await?
+        {
+            Some(conf) => conf,
             None => return Ok(()),
         };
 
-        let id = match conf.modules.logging.channel_id {
-            Some(id) => id,
+        let id = interaction.0.id.to_string();
+
+        let id_parts = id.split("_").collect::<Vec<&str>>();
+
+        let guild_id = match &interaction.guild_id {
+            Some(id) => id.to_string(),
             None => return Ok(()),
         };
 
-        let channel_id = Id::from_str(&id)?;
+        let reason = Some(String::new()); // TODO: get reason for accept/deny
 
-        // Seeing as we only get the ID of the author of the message from the cache,
-        // its easier to just mention them and just not ping them.
-        let allowed_ment = AllowedMentions::builder().build();
+        if let Some(module_part) = id_parts.get(0) {
+            match module_part {
+                &"appeal" => {
+                    if let Some(action) = id_parts.get(1) {
+                        let uuid = id_parts.get(2).unwrap_or(&"");
+                        let mut accepted = false;
+                        match action {
+                            &"accept" => {
+                                accepted = true;
+                                if let Err(e) = self
+                                    .grant_appeal(
+                                        Some(&conf),
+                                        guild_id,
+                                        uuid.to_string(),
+                                        reason,
+                                        true,
+                                    )
+                                    .await
+                                {
+                                    tracing::error!("Error in appeal_accept: {}", e);
+                                    return Ok(());
+                                }
+                            }
+                            &"deny" => {
+                                if let Err(e) = self.deny_appeal(uuid.to_string(), reason).await {
+                                    tracing::error!("Error in appeal_deny: {}", e);
+                                    return Ok(());
+                                }
+                            }
+                            _ => {}
+                        }
 
-        self.rest
-            .create_message(channel_id)
-            .content(log.as_str())?
-            .allowed_mentions(Some(&allowed_ment))
-            .await?;
+                        // TODO: come back to this and do better interaction responses, including error handling
+
+                        let application: Application =
+                            self.rest.current_user_application().await?.model().await?;
+                        let interactions = self.rest.interaction(application.id);
+
+                        let interaction_data = InteractionResponseDataBuilder::new()
+                            .content(format!(
+                                "The appeal has been successfully `{}`.",
+                                if accepted { "accepted" } else { "denied" }
+                            ))
+                            .flags(MessageFlags::EPHEMERAL)
+                            .build();
+
+                        let response = InteractionResponse {
+                            kind: InteractionResponseType::ChannelMessageWithSource,
+                            data: Some(interaction_data),
+                        };
+
+                        interactions
+                            .create_response(interaction.id, &interaction.token, &response)
+                            .await?;
+                    }
+                }
+                &&_ => {}
+            }
+        }
 
         Ok(())
     }
@@ -315,6 +422,24 @@ impl Handler {
         self.db
             .delete_ban(&unban.guild_id.to_string(), &unban.user.id.to_string())
             .await?;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn ban_add(
+        &self,
+        _shard_id: u64,
+        ban: &BanAdd,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let conf = match self.db.get_guild(&ban.guild_id.to_string()).await? {
+            Some(conf) => conf,
+            None => return Ok(()),
+        };
+
+        if let Err(e) = self.antinuke(&conf, ban).await {
+            tracing::error!("Error in antinuke: {}", e);
+        }
+
         Ok(())
     }
 
@@ -353,8 +478,6 @@ impl Handler {
             None => return Ok(()),
         };
 
-        let muted_role = conf.modules.moderation.mute_role;
-
         let audit_log = self
             .rest
             .audit_log(update.guild_id)
@@ -380,10 +503,13 @@ impl Handler {
         }
 
         match entry.changes.get(0) {
-            Some(change) => {
-                match change {
-                    AuditLogChange::RoleRemoved { new, .. } => {
-                        // check if muted_role is in the new roles
+            Some(change) => match change {
+                AuditLogChange::RoleRemoved { new, .. } => {
+                    if let Some(modules) = conf.modules {
+                        let muted_role = match modules.moderation {
+                            Some(moderation) => moderation.mute_role,
+                            None => return Ok(()),
+                        };
                         for role in new {
                             if role.id.to_string() == muted_role {
                                 self.db
@@ -395,20 +521,69 @@ impl Handler {
                             }
                         }
                     }
-                    _ => return Ok(()),
                 }
-            }
+                _ => return Ok(()),
+            },
             None => return Ok(()),
         }
         Ok(())
     }
 
-    async fn shard_connected(
+    #[tracing::instrument(skip(self))]
+    async fn member_removed(
         &self,
-        shard_id: u64,
-        connected: &Connected,
+        _shard_id: u64,
+        member: &MemberRemove,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let conf = match self.db.get_guild(&member.guild_id.to_string()).await? {
+            Some(conf) => conf,
+            None => return Ok(()),
+        };
+
+        if let Err(e) = self.antinuke(&conf, member).await {
+            tracing::error!("Error in antinuke: {}", e);
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn role_deleted(
+        &self,
+        _shard_id: u64,
+        role_delete: &RoleDelete,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
-        tracing::info!("Shard {} connected to gateway", shard_id);
+        let conf = match self.db.get_guild(&role_delete.guild_id.to_string()).await? {
+            Some(conf) => conf,
+            None => return Ok(()),
+        };
+
+        if let Err(e) = self.antinuke(&conf, role_delete).await {
+            tracing::error!("Error in antinuke: {}", e);
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn channel_deleted(
+        &self,
+        _shard_id: u64,
+        channel_deleted: &ChannelDelete,
+    ) -> Result<(), Box<dyn Error + Send + Sync>> {
+        let guild_id = match channel_deleted.guild_id {
+            Some(id) => id,
+            None => return Ok(()),
+        };
+        let conf = match self.db.get_guild(&guild_id.to_string()).await? {
+            Some(conf) => conf,
+            None => return Ok(()),
+        };
+
+        if let Err(e) = self.antinuke(&conf, channel_deleted).await {
+            tracing::error!("Error in antinuke: {}", e);
+        }
+
         Ok(())
     }
 }

@@ -1,8 +1,5 @@
 use std::str::FromStr;
 
-use lazy_static::lazy_static;
-use regex::Regex;
-use tracing::warn;
 use twilight_model::{
     channel::{
         message::{
@@ -11,15 +8,11 @@ use twilight_model::{
         },
         Message,
     },
+    http::attachment::Attachment,
     id::Id,
 };
 
-use crate::{
-    handlers::Handler,
-    mongo::mongo::Config,
-    util::{permissions, snowflakes::snowflake_to_unix},
-    VERSION,
-};
+use crate::{config::Config, handlers::Handler, util, util::permissions, VERSION};
 
 impl Handler {
     pub async fn user_info_cmd(
@@ -34,10 +27,8 @@ impl Handler {
         };
 
         let content = &msg.content;
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
-        }
-        let mut id_list: Vec<String> = RE
+
+        let mut id_list: Vec<String> = util::regex::SNOWFLAKE
             .find_iter(content)
             .map(|m| m.as_str().to_string())
             .collect();
@@ -52,13 +43,13 @@ impl Handler {
                 .await?;
         }
 
-        let mut perm = permissions::PERMISSION_USERINFO;
+        let perm = if id == &author_id {
+            permissions::PERMISSION_USERINFOSELF
+        } else {
+            permissions::PERMISSION_USERINFO
+        };
 
-        if id == &author_id {
-            perm = permissions::PERMISSION_USERINFOSELF;
-        }
-
-        let ok = permissions::check_permission(conf, roles, &author_id, vec![perm]);
+        let ok = permissions::check_permission(conf, roles, msg.author.id, perm);
         if !ok {
             self.rest
                 .create_message(msg.channel_id)
@@ -148,7 +139,10 @@ impl Handler {
             },
             EmbedField {
                 name: "Created".to_string(),
-                value: format!("<t:{}:f>", (snowflake_to_unix(member.user.id) / 1000)),
+                value: format!(
+                    "<t:{}:f>",
+                    (util::snowflakes::snowflake_to_unix(member.user.id) / 1000)
+                ),
                 inline: true,
             },
             EmbedField {
@@ -165,15 +159,15 @@ impl Handler {
 
         let embeds = vec![Embed {
             title: Some(format!(
-                "{}#{:04}'s User Info",
-                &member.user.name, &member.user.discriminator
+                "{}'s User Info",
+                util::format_username(&member.user.name, member.user.discriminator)
             )),
             description: None,
             color: Some(0),
             footer: Some(EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
+                text: format!("Black Mesa v{}", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -201,9 +195,34 @@ impl Handler {
 
     pub async fn guild_info_cmd(
         &self,
-        _conf: &Config,
+        conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let roles = match &msg.member {
+            Some(member) => Some(&member.roles),
+            None => None,
+        };
+
+        let ok = permissions::check_permission(
+            conf,
+            roles,
+            msg.author.id,
+            permissions::PERMISSION_GUILDINFO,
+        );
+        if !ok {
+            self.rest
+                .create_message(msg.channel_id)
+                .content(
+                    format!(
+                        "<:mesaCross:832350526414127195> You do not have permission to `{}`",
+                        permissions::PERMISSION_GUILDINFO
+                    )
+                    .as_str(),
+                )?
+                .await?;
+            return Ok(());
+        }
+
         let guild = self
             .rest
             .guild(match msg.guild_id {
@@ -227,7 +246,10 @@ impl Handler {
             },
             EmbedField {
                 name: "Created".to_string(),
-                value: format!("<t:{}:f>", snowflake_to_unix(guild.id) / 1000),
+                value: format!(
+                    "<t:{}:f>",
+                    util::snowflakes::snowflake_to_unix(guild.id) / 1000
+                ),
                 inline: true,
             },
             EmbedField {
@@ -287,7 +309,7 @@ impl Handler {
             footer: Some(EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
+                text: format!("Black Mesa v{}", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -315,7 +337,6 @@ impl Handler {
 
     pub async fn bot_info(
         &self,
-        _conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let mut fields = vec![];
@@ -324,7 +345,7 @@ impl Handler {
             Some(user) => {
                 fields.push(EmbedField {
                     name: "Bot Name".to_string(),
-                    value: format!("{}#{:04}", user.name.to_string(), user.discriminator),
+                    value: format!("{}", util::format_username(&user.name, user.discriminator)),
                     inline: true,
                 });
                 fields.push(EmbedField {
@@ -334,7 +355,10 @@ impl Handler {
                 });
                 fields.push(EmbedField {
                     name: "Bot Created".to_string(),
-                    value: format!("<t:{}:f>", snowflake_to_unix(user.id) / 1000),
+                    value: format!(
+                        "<t:{}:f>",
+                        util::snowflakes::snowflake_to_unix(user.id) / 1000
+                    ),
                     inline: true,
                 });
 
@@ -393,7 +417,7 @@ impl Handler {
                     match self.redis.get_memory_usage().await {
                         Ok(usage) => usage as f64 / 1024.0 / 1024.0,
                         Err(e) => {
-                            warn!("Failed to get memory usage: {}", e);
+                            tracing::warn!("Failed to get memory usage: {}", e);
                             0.0
                         }
                     }
@@ -409,7 +433,7 @@ impl Handler {
             footer: Some(EmbedFooter {
                 icon_url: None,
                 proxy_icon_url: None,
-                text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
+                text: format!("Black Mesa v{}", VERSION),
             }),
             fields,
             kind: "rich".to_string(),
@@ -425,6 +449,31 @@ impl Handler {
         self.rest
             .create_message(msg.channel_id)
             .embeds(&embeds)?
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn yaml_cmd(
+        &self,
+        conf: &Config,
+        msg: &Message,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let yaml_out = if let Ok(yaml) = conf.to_yaml() {
+            yaml
+        } else {
+            "`Failed to get config as YAML`".to_string()
+        };
+
+        // upload string as a file
+
+        let attachment =
+            Attachment::from_bytes(String::from("config.yaml"), yaml_out.as_bytes().to_vec(), 1);
+
+        self.rest
+            .create_message(msg.channel_id)
+            .content("Here is the current config as YAML")?
+            .attachments(&vec![attachment])?
             .await?;
 
         Ok(())

@@ -1,2 +1,2 @@
 mod commands;
-pub mod misc;
+mod purge;

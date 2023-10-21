@@ -1,15 +1,12 @@
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
-use lazy_static::lazy_static;
 use mongodb::results::UpdateResult;
-use regex::Regex;
-use tracing::warn;
 use twilight_mention::Mention;
 use twilight_model::{
     channel::{
         message::{
             embed::{EmbedField, EmbedFooter},
-            AllowedMentions, Embed,
+            Embed,
         },
         Message,
     },
@@ -17,13 +14,11 @@ use twilight_model::{
 };
 
 use crate::{
+    config::Config,
     handlers::Handler,
-    mongo::mongo::{Config, Punishment},
-    util::{
-        duration::{self, Duration},
-        mentions::mentions_from_id_str_vec,
-        permissions,
-    },
+    moderation::moderation::Punishment,
+    util,
+    util::{duration::Duration, permissions},
     VERSION,
 };
 
@@ -43,10 +38,7 @@ impl Handler {
         };
 
         let content = &msg.content;
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"([0-9]{17,19})").unwrap();
-        }
-        let mut id_list: Vec<String> = RE
+        let mut id_list: Vec<String> = util::regex::SNOWFLAKE
             .find_iter(content)
             .map(|m| m.as_str().to_string())
             .collect();
@@ -61,17 +53,19 @@ impl Handler {
                 .await?;
         }
 
-        let mut perms = vec![permissions::PERMISSION_SEARCH];
+        let mut perms = if id == &author_id {
+            vec![permissions::PERMISSION_SEARCHSELF]
+        } else {
+            vec![permissions::PERMISSION_SEARCH]
+        };
 
-        if id == &author_id {
-            perms = vec![permissions::PERMISSION_SEARCHSELF];
-        } else if deep {
+        if deep {
             perms.push(permissions::PERMISSION_DEEPSEARCH);
         }
 
         let perm_str = perms.join("`, `");
 
-        let ok = permissions::check_permission(conf, roles, &author_id, perms);
+        let ok = permissions::check_permission_many(conf, roles, msg.author.id, perms);
         if !ok {
             self.rest
                 .create_message(msg.channel_id)
@@ -104,13 +98,13 @@ impl Handler {
                     .content("Error getting punishments")?
                     .await?;
                 // Return Ok here because an error here shouldn't cause further issue, this can be manually investigated.
-                warn!("Error getting punishments: {:?}", e);
+                tracing::warn!("Error getting punishments: {:?}", e);
                 return Ok(());
             }
         };
 
         let embed_footer = EmbedFooter {
-            text: format!("Black Mesa v{} by Tyler#0911 written in Rust", VERSION),
+            text: format!("Black Mesa v{}", VERSION),
             icon_url: None,
             proxy_icon_url: None,
         };
@@ -157,8 +151,8 @@ impl Handler {
 
         let embeds = vec![Embed {
             title: Some(format!(
-                "{}#{:04}'s Infraction log.",
-                user.name, user.discriminator
+                "{}'s Infraction log.",
+                util::format_username(&user.name, user.discriminator)
             )),
             description: Some(format!(
                 "{} has {} infractions.",
@@ -192,13 +186,8 @@ impl Handler {
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let content = &msg.content;
-        lazy_static! {
-            static ref RE: Regex =
-                Regex::new(r"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b")
-                    .unwrap();
-        }
 
-        let uuid_list: Vec<String> = RE
+        let uuid_list: Vec<String> = util::regex::UUID
             .find_iter(content)
             .map(|m| m.as_str().to_string())
             .collect();
@@ -323,8 +312,8 @@ impl Handler {
             let ok = permissions::check_permission(
                 conf,
                 roles,
-                &author_id,
-                vec![permissions::PERMISSION_UPDATESELF],
+                msg.author.id,
+                permissions::PERMISSION_UPDATESELF,
             );
             if !ok {
                 self.rest
@@ -343,8 +332,8 @@ impl Handler {
             let ok = permissions::check_permission(
                 conf,
                 roles,
-                &author_id,
-                vec![permissions::PERMISSION_UPDATE],
+                msg.author.id,
+                permissions::PERMISSION_UPDATE,
             );
             if !ok {
                 self.rest
@@ -377,17 +366,46 @@ impl Handler {
                 }
             };
 
-            let original_issuer_level = permissions::get_user_level(
+            let author_roles = match self.cache.member(guild_id_marker, msg.author.id) {
+                Some(member) => member.to_owned().roles().to_vec(),
+                None => {
+                    self.rest
+                        .guild_member(guild_id_marker, msg.author.id)
+                        .await?
+                        .model()
+                        .await?
+                        .roles
+                }
+            };
+
+            let user_groups = match permissions::get_user_groups(
                 conf,
+                original_issuer_id,
                 Some(&original_issuer_roles),
-                &original_issuer_id.to_string(),
-            );
+            ) {
+                Ok(groups) => groups,
+                Err(_) => HashMap::new(),
+            };
 
-            let author_level = permissions::get_user_level(conf, roles, &author_id);
+            let original_issuer_level = permissions::get_user_priority(&user_groups);
 
-            if original_issuer_level >= author_level
-                && !conf.modules.moderation.update_higher_level_action
-            {
+            let author_groups =
+                match permissions::get_user_groups(conf, msg.author.id, Some(&author_roles)) {
+                    Ok(groups) => groups,
+                    Err(_) => HashMap::new(),
+                };
+
+            let author_level = permissions::get_user_priority(&author_groups);
+
+            let update_higher_level_action = match &conf.modules {
+                Some(modules) => match &modules.moderation {
+                    Some(m) => m.update_higher_level_action,
+                    None => false,
+                },
+                None => false,
+            };
+
+            if original_issuer_level >= author_level && !update_higher_level_action {
                 self.rest.create_message(msg.channel_id)
                     .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
                     .await?;
@@ -401,9 +419,8 @@ impl Handler {
             .update_punishment(
                 &punishment.uuid,
                 &guild_id,
-                &punishment.user_id,
-                &punishment.issuer,
                 Some(reason.clone()),
+                None,
                 None,
             )
             .await?;
@@ -439,25 +456,17 @@ impl Handler {
             }
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
-
-        match conf.modules.logging.log_update_action(
-            &msg.author.id.to_string(),
-            punishment,
-            None,
-            Some(&reason),
-        ) {
-            Some(log) => {
-                self.rest
-                    .create_message(match &conf.modules.logging.channel_id {
-                        Some(id) => Id::from_str(id.as_str())?,
-                        None => return Ok(()),
-                    })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .await?;
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                self.log_update_action(
+                    &logging,
+                    &msg.author.id.to_string(),
+                    punishment,
+                    None,
+                    Some(&reason),
+                )
+                .await;
             }
-            None => {}
         }
 
         Ok(())
@@ -469,13 +478,8 @@ impl Handler {
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let content = &msg.content;
-        lazy_static! {
-            static ref RE: Regex =
-                Regex::new(r"\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b")
-                    .unwrap();
-        }
 
-        let uuid_list: Vec<String> = RE
+        let uuid_list: Vec<String> = util::regex::UUID
             .find_iter(content)
             .map(|m| m.as_str().to_string())
             .collect();
@@ -603,8 +607,8 @@ impl Handler {
             let ok = permissions::check_permission(
                 conf,
                 roles,
-                &author_id,
-                vec![permissions::PERMISSION_UPDATESELF],
+                msg.author.id,
+                permissions::PERMISSION_UPDATESELF,
             );
             if !ok {
                 self.rest
@@ -624,8 +628,8 @@ impl Handler {
             let ok = permissions::check_permission(
                 conf,
                 roles,
-                &author_id,
-                vec![permissions::PERMISSION_UPDATE],
+                msg.author.id,
+                permissions::PERMISSION_UPDATE,
             );
             if !ok {
                 self.rest
@@ -658,17 +662,46 @@ impl Handler {
                 }
             };
 
-            let original_issuer_level = permissions::get_user_level(
+            let author_roles = match self.cache.member(guild_id_marker, msg.author.id) {
+                Some(member) => member.to_owned().roles().to_vec(),
+                None => {
+                    self.rest
+                        .guild_member(guild_id_marker, msg.author.id)
+                        .await?
+                        .model()
+                        .await?
+                        .roles
+                }
+            };
+
+            let user_groups = match permissions::get_user_groups(
                 conf,
+                original_issuer_id,
                 Some(&original_issuer_roles),
-                &original_issuer_id.to_string(),
-            );
+            ) {
+                Ok(groups) => groups,
+                Err(_) => HashMap::new(),
+            };
 
-            let author_level = permissions::get_user_level(conf, roles, &author_id);
+            let original_issuer_level = permissions::get_user_priority(&user_groups);
 
-            if original_issuer_level >= author_level
-                && !conf.modules.moderation.update_higher_level_action
-            {
+            let author_groups =
+                match permissions::get_user_groups(conf, msg.author.id, Some(&author_roles)) {
+                    Ok(groups) => groups,
+                    Err(_) => HashMap::new(),
+                };
+
+            let author_level = permissions::get_user_priority(&author_groups);
+
+            let update_higher_level_action = match &conf.modules {
+                Some(modules) => match modules.moderation {
+                    Some(ref mod_conf) => mod_conf.update_higher_level_action,
+                    None => false,
+                },
+                None => false,
+            };
+
+            if original_issuer_level >= author_level && !update_higher_level_action {
                 self.rest.create_message(msg.channel_id)
                     .content("<:mesaCross:832350526414127195> You do not have permission to update this punishment as it is of a user of equal or higher level")?
                     .await?;
@@ -682,10 +715,9 @@ impl Handler {
             .update_punishment(
                 &punishment.uuid,
                 &guild_id,
-                &punishment.user_id,
-                &punishment.issuer,
                 None,
                 duration.to_unix_expiry(),
+                None,
             )
             .await?;
 
@@ -720,25 +752,17 @@ impl Handler {
             }
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
-
-        match conf.modules.logging.log_update_action(
-            &msg.author.id.to_string(),
-            punishment,
-            Some(&duration),
-            None,
-        ) {
-            Some(log) => {
-                self.rest
-                    .create_message(match &conf.modules.logging.channel_id {
-                        Some(id) => Id::from_str(id.as_str())?,
-                        None => return Ok(()),
-                    })
-                    .content(log.as_str())?
-                    .allowed_mentions(Some(&allowed_mentions))
-                    .await?;
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                self.log_update_action(
+                    &logging,
+                    &msg.author.id.to_string(),
+                    punishment,
+                    Some(&duration),
+                    None,
+                )
+                .await;
             }
-            None => {}
         }
 
         Ok(())
@@ -751,7 +775,6 @@ impl Handler {
         conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let author_id = msg.author.id.to_string();
         let roles = match &msg.member {
             Some(member) => Some(&member.roles),
             None => None,
@@ -759,8 +782,8 @@ impl Handler {
         let ok = permissions::check_permission(
             conf,
             roles,
-            &author_id,
-            vec![permissions::PERMISSION_STRIKE],
+            msg.author.id,
+            permissions::PERMISSION_STRIKE,
         );
         if !ok {
             self.rest
@@ -778,21 +801,17 @@ impl Handler {
         }
 
         let mut content = msg.content.clone();
-        lazy_static! {
-            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
-        }
 
-        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
-            let full_str = cap.get(0).unwrap().as_str();
-            let emoji_name = cap.get(1).unwrap().as_str();
-            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
-        });
+        util::regex::EMOJI
+            .captures_iter(&msg.content)
+            .for_each(|cap| {
+                let full_str = cap.get(0).unwrap().as_str();
+                let emoji_name = cap.get(1).unwrap().as_str();
+                content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+            });
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
-        }
         let mut last_id = "";
-        let id_list: Vec<String> = RE
+        let id_list: Vec<String> = util::regex::SNOWFLAKE
             .captures_iter(&content)
             .map(|cap| {
                 last_id = cap.get(0).unwrap().as_str();
@@ -808,16 +827,20 @@ impl Handler {
             return Ok(());
         }
 
-        let mut duration = duration::Duration::new(content.to_string());
+        let mut duration = Duration::new(content.to_string());
 
         // check the string rather than calling .is_permenant() because if the user wishes to strike permanently, they should be able to do so.
         if duration.full_string.is_empty() {
-            duration = duration::Duration::new_no_str(
-                match &conf.modules.moderation.default_strike_duration {
-                    Some(dur) => dur.to_string(),
+            duration = Duration::new_no_str(match &conf.modules {
+                Some(modules) => match &modules.moderation {
+                    Some(m) => match &m.default_strike_duration {
+                        Some(dur) => dur.to_string(),
+                        None => "30d".to_string(),
+                    },
                     None => "30d".to_string(),
                 },
-            );
+                None => "30d".to_string(),
+            });
         }
 
         let mut splitby = last_id;
@@ -839,11 +862,6 @@ impl Handler {
             _ => None,
         };
 
-        // Give response before actually striking becuase discord api is slow as fuck and we dont want people
-        // wondering if the bot is actually doing anything. Plus, even if it did fail, it's not like we would
-        // say anything, possibly change this in the future but for now this is sufficient.
-        // TODO: update message if fail
-
         let duration_str = if duration.is_permenant() {
             "`Never`".to_string()
         } else {
@@ -857,11 +875,11 @@ impl Handler {
         let resp = match reason {
             Some(ref reason) => {
                 format!("<:mesaStrike:869663336843845752> Successfully striked {} expiring {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), duration_str, reason)
+                    util::mentions::mentions_from_id_str_vec(&id_list), duration_str, reason)
             }
             None => format!(
                 "<:mesaStrike:869663336843845752> Successfully striked {} expiring {}",
-                mentions_from_id_str_vec(&id_list),
+                util::mentions::mentions_from_id_str_vec(&id_list),
                 duration_str
             ),
         };
@@ -891,33 +909,25 @@ impl Handler {
                 }
             }
 
-            None => {} // dont care.
+            None => {}
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
-
-        for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_strike(
-                &msg.author.id.to_string(),
-                id,
-                reason,
-                &duration,
-                &match uuids.get(i) {
-                    Some(uuid) => uuid.to_string(),
-                    None => "".to_string(),
-                },
-            ) {
-                Some(log) => {
-                    self.rest
-                        .create_message(match &conf.modules.logging.channel_id {
-                            Some(id) => Id::from_str(id.as_str())?,
-                            None => return Ok(()),
-                        })
-                        .content(log.as_str())?
-                        .allowed_mentions(Some(&allowed_mentions))
-                        .await?;
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                for (i, id) in id_list.iter().enumerate() {
+                    self.log_strike(
+                        logging,
+                        &msg.author.id.to_string(),
+                        id,
+                        reason,
+                        &duration,
+                        &match uuids.get(i) {
+                            Some(uuid) => uuid.to_string(),
+                            None => "".to_string(),
+                        },
+                    )
+                    .await;
                 }
-                None => {}
             }
         }
 
@@ -929,17 +939,12 @@ impl Handler {
         conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let author_id = msg.author.id.to_string();
         let roles = match &msg.member {
             Some(member) => Some(&member.roles),
             None => None,
         };
-        let ok = permissions::check_permission(
-            conf,
-            roles,
-            &author_id,
-            vec![permissions::PERMISSION_KICK],
-        );
+        let ok =
+            permissions::check_permission(conf, roles, msg.author.id, permissions::PERMISSION_KICK);
         if !ok {
             self.rest
                 .create_message(msg.channel_id)
@@ -956,21 +961,17 @@ impl Handler {
         }
 
         let mut content = msg.content.clone();
-        lazy_static! {
-            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
-        }
 
-        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
-            let full_str = cap.get(0).unwrap().as_str();
-            let emoji_name = cap.get(1).unwrap().as_str();
-            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
-        });
+        util::regex::EMOJI
+            .captures_iter(&msg.content)
+            .for_each(|cap| {
+                let full_str = cap.get(0).unwrap().as_str();
+                let emoji_name = cap.get(1).unwrap().as_str();
+                content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+            });
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
-        }
         let mut last_id = "";
-        let id_list: Vec<String> = RE
+        let id_list: Vec<String> = util::regex::SNOWFLAKE
             .captures_iter(&content)
             .map(|cap| {
                 last_id = cap.get(0).unwrap().as_str();
@@ -1008,13 +1009,13 @@ impl Handler {
             Some(ref reason) => {
                 format!(
                     "<:mesaKick:869665034312253460> Successfully kicked {} for reason `{}`",
-                    mentions_from_id_str_vec(&id_list),
+                    util::mentions::mentions_from_id_str_vec(&id_list),
                     reason
                 )
             }
             None => format!(
                 "<:mesaKick:869665034312253460> Successfully kicked {}",
-                mentions_from_id_str_vec(&id_list)
+                util::mentions::mentions_from_id_str_vec(&id_list)
             ),
         };
         self.rest
@@ -1026,6 +1027,13 @@ impl Handler {
 
         let reason = reason.as_ref();
 
+        let appealable = (*conf)
+            .modules
+            .as_ref()
+            .and_then(|modules| modules.appeals.as_ref())
+            .map(|appeals| appeals.enabled)
+            .unwrap_or(false);
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -1035,38 +1043,192 @@ impl Handler {
                             id,
                             &msg.author.id.to_string(),
                             reason,
+                            None,
+                            appealable,
                         )
                         .await?;
                     uuids.push(punishment.uuid);
                 }
             }
 
-            None => {} // dont care.
+            None => {}
+        }
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                for (i, id) in id_list.iter().enumerate() {
+                    self.log_kick(
+                        logging,
+                        &msg.author.id.to_string(),
+                        id,
+                        reason.clone(),
+                        &match uuids.get(i) {
+                            Some(uuid) => uuid.to_string(),
+                            None => "".to_string(),
+                        },
+                    )
+                    .await;
+                }
+            }
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
+        Ok(())
+    }
 
-        for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_kick(
-                &msg.author.id.to_string(),
-                id,
-                reason.clone(),
-                &match uuids.get(i) {
-                    Some(uuid) => uuid.to_string(),
-                    None => "".to_string(),
-                },
-            ) {
-                Some(log) => {
-                    self.rest
-                        .create_message(match &conf.modules.logging.channel_id {
-                            Some(id) => Id::from_str(id.as_str())?,
-                            None => return Ok(()),
-                        })
-                        .content(log.as_str())?
-                        .allowed_mentions(Some(&allowed_mentions))
-                        .await?;
+    pub async fn softban_user_cmd(
+        &self,
+        conf: &Config,
+        msg: &Message,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let roles = match &msg.member {
+            Some(member) => Some(&member.roles),
+            None => None,
+        };
+        let ok = permissions::check_permission(
+            conf,
+            roles,
+            msg.author.id,
+            permissions::PERMISSION_SOFTBAN,
+        );
+        if !ok {
+            self.rest
+                .create_message(msg.channel_id)
+                .content(
+                    format!(
+                        "<:mesaCross:832350526414127195> You do not have permission to `{}`",
+                        permissions::PERMISSION_SOFTBAN
+                    )
+                    .as_str(),
+                )?
+                .await?;
+
+            return Ok(());
+        }
+
+        let mut content = msg.content.clone();
+
+        util::regex::EMOJI
+            .captures_iter(&msg.content)
+            .for_each(|cap| {
+                let full_str = cap.get(0).unwrap().as_str();
+                let emoji_name = cap.get(1).unwrap().as_str();
+                content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+            });
+
+        let mut last_id = "";
+        let id_list: Vec<String> = util::regex::SNOWFLAKE
+            .captures_iter(&content)
+            .map(|cap| {
+                last_id = cap.get(0).unwrap().as_str();
+                cap.get(1).unwrap().as_str().to_string()
+            })
+            .collect();
+
+        if id_list.len() == 0 {
+            self.rest.create_message(msg.channel_id)
+                .content("<:mesaCommand:832350527131746344> `softban <target:user[]> [delete:duration] [reason:string...]`")?
+                .await?;
+
+            return Ok(());
+        }
+
+        let duration = Duration::new(content.to_string());
+        if duration.to_seconds() > 604800 {
+            self.rest
+                .create_message(msg.channel_id)
+                .content("<:mesaCross:832350526414127195> Duration must be less than 7 days")?
+                .await?;
+
+            return Ok(());
+        }
+
+        let mut splitby = last_id;
+
+        if !duration.full_string.is_empty() {
+            splitby = &duration.full_string;
+        }
+
+        let reason = match content.to_string().split(splitby).collect::<Vec<&str>>() {
+            mut vec if vec.len() > 1 => {
+                vec.remove(0);
+                let r = vec.join("").trim().to_string();
+                if r.is_empty() {
+                    None
+                } else {
+                    Some(r)
                 }
-                None => {}
+            }
+            _ => None,
+        };
+
+        let duration_str = format!(
+            "{} ({})",
+            duration.to_discord_timestamp(),
+            duration.to_discord_relative_timestamp()
+        );
+
+        let resp = match reason {
+            Some(ref reason) => {
+                format!("<:mesaBan:869663336625733634> Successfully softbanned {} deleting `{}` worth of messages for reason `{}`", 
+                    util::mentions::mentions_from_id_str_vec(&id_list), duration_str, reason)
+            }
+            None => format!(
+                "<:mesaBan:869663336625733634> Successfully softbanned {} deleting `{}` worth of messages",
+                util::mentions::mentions_from_id_str_vec(&id_list),
+                duration_str
+            ),
+        };
+        self.rest
+            .create_message(msg.channel_id)
+            .content(resp.as_str())?
+            .await?;
+
+        let mut uuids: Vec<String> = Vec::new();
+
+        let reason = reason.as_ref();
+
+        let appealable = (*conf)
+            .modules
+            .as_ref()
+            .and_then(|modules| modules.appeals.as_ref())
+            .map(|appeals| appeals.enabled)
+            .unwrap_or(false);
+
+        match msg.guild_id {
+            Some(guild_id) => {
+                for id in &id_list {
+                    let punishment = self
+                        .softban_user(
+                            &guild_id.to_string(),
+                            id,
+                            &msg.author.id.to_string(),
+                            &duration,
+                            reason,
+                            appealable,
+                        )
+                        .await?;
+                    uuids.push(punishment.uuid);
+                }
+            }
+
+            None => {}
+        }
+
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                for (i, id) in id_list.iter().enumerate() {
+                    self.log_ban(
+                        logging,
+                        &msg.author.id.to_string(),
+                        id,
+                        reason,
+                        &duration,
+                        &match uuids.get(i) {
+                            Some(uuid) => uuid.to_string(),
+                            None => "".to_string(),
+                        },
+                    )
+                    .await;
+                }
             }
         }
 
@@ -1078,17 +1240,12 @@ impl Handler {
         conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let author_id = msg.author.id.to_string();
         let roles = match &msg.member {
             Some(member) => Some(&member.roles),
             None => None,
         };
-        let ok = permissions::check_permission(
-            conf,
-            roles,
-            &author_id,
-            vec![permissions::PERMISSION_BAN],
-        );
+        let ok =
+            permissions::check_permission(conf, roles, msg.author.id, permissions::PERMISSION_BAN);
         if !ok {
             self.rest
                 .create_message(msg.channel_id)
@@ -1105,21 +1262,17 @@ impl Handler {
         }
 
         let mut content = msg.content.clone();
-        lazy_static! {
-            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
-        }
 
-        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
-            let full_str = cap.get(0).unwrap().as_str();
-            let emoji_name = cap.get(1).unwrap().as_str();
-            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
-        });
+        util::regex::EMOJI
+            .captures_iter(&msg.content)
+            .for_each(|cap| {
+                let full_str = cap.get(0).unwrap().as_str();
+                let emoji_name = cap.get(1).unwrap().as_str();
+                content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+            });
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
-        }
         let mut last_id = "";
-        let id_list: Vec<String> = RE
+        let id_list: Vec<String> = util::regex::SNOWFLAKE
             .captures_iter(&content)
             .map(|cap| {
                 last_id = cap.get(0).unwrap().as_str();
@@ -1135,7 +1288,7 @@ impl Handler {
             return Ok(());
         }
 
-        let duration = duration::Duration::new(content.to_string());
+        let duration = Duration::new(content.to_string());
 
         let mut splitby = last_id;
 
@@ -1169,11 +1322,11 @@ impl Handler {
         let resp = match reason {
             Some(ref reason) => {
                 format!("<:mesaBan:869663336625733634> Successfully banned {} expiring {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), duration_str, reason)
+                    util::mentions::mentions_from_id_str_vec(&id_list), duration_str, reason)
             }
             None => format!(
                 "<:mesaBan:869663336625733634> Successfully banned {} expiring {}",
-                mentions_from_id_str_vec(&id_list),
+                util::mentions::mentions_from_id_str_vec(&id_list),
                 duration_str
             ),
         };
@@ -1186,6 +1339,13 @@ impl Handler {
 
         let reason = reason.as_ref();
 
+        let appealable = (*conf)
+            .modules
+            .as_ref()
+            .and_then(|modules| modules.appeals.as_ref())
+            .map(|appeals| appeals.enabled)
+            .unwrap_or(false);
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -1196,39 +1356,33 @@ impl Handler {
                             &msg.author.id.to_string(),
                             &duration,
                             reason,
+                            None,
+                            appealable,
                         )
                         .await?;
                     uuids.push(punishment.uuid);
                 }
             }
 
-            None => {} // dont care.
+            None => {}
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
-
-        for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_ban(
-                &msg.author.id.to_string(),
-                id,
-                reason,
-                &duration,
-                &match uuids.get(i) {
-                    Some(uuid) => uuid.to_string(),
-                    None => "".to_string(),
-                },
-            ) {
-                Some(log) => {
-                    self.rest
-                        .create_message(match &conf.modules.logging.channel_id {
-                            Some(id) => Id::from_str(id.as_str())?,
-                            None => return Ok(()),
-                        })
-                        .content(log.as_str())?
-                        .allowed_mentions(Some(&allowed_mentions))
-                        .await?;
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                for (i, id) in id_list.iter().enumerate() {
+                    self.log_ban(
+                        logging,
+                        &msg.author.id.to_string(),
+                        id,
+                        reason,
+                        &duration,
+                        &match uuids.get(i) {
+                            Some(uuid) => uuid.to_string(),
+                            None => "".to_string(),
+                        },
+                    )
+                    .await;
                 }
-                None => {}
             }
         }
 
@@ -1240,7 +1394,6 @@ impl Handler {
         conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let author_id = msg.author.id.to_string();
         let roles = match &msg.member {
             Some(member) => Some(&member.roles),
             None => None,
@@ -1248,8 +1401,8 @@ impl Handler {
         let ok = permissions::check_permission(
             conf,
             roles,
-            &author_id,
-            vec![permissions::PERMISSION_UNBAN],
+            msg.author.id,
+            permissions::PERMISSION_UNBAN,
         );
         if !ok {
             self.rest
@@ -1266,21 +1419,17 @@ impl Handler {
         }
 
         let mut content = msg.content.clone();
-        lazy_static! {
-            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
-        }
 
-        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
-            let full_str = cap.get(0).unwrap().as_str();
-            let emoji_name = cap.get(1).unwrap().as_str();
-            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
-        });
+        util::regex::EMOJI
+            .captures_iter(&msg.content)
+            .for_each(|cap| {
+                let full_str = cap.get(0).unwrap().as_str();
+                let emoji_name = cap.get(1).unwrap().as_str();
+                content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+            });
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
-        }
         let mut last_id = "";
-        let id_list: Vec<String> = RE
+        let id_list: Vec<String> = util::regex::SNOWFLAKE
             .captures_iter(&content)
             .map(|cap| {
                 last_id = cap.get(0).unwrap().as_str();
@@ -1318,13 +1467,13 @@ impl Handler {
             Some(ref reason) => {
                 format!(
                     "<:mesaUnban:869663336697069619> Successfully unbanned {} for reason `{}`",
-                    mentions_from_id_str_vec(&id_list),
+                    util::mentions::mentions_from_id_str_vec(&id_list),
                     reason
                 )
             }
             None => format!(
                 "<:mesaUnban:869663336697069619> Successfully unbanned {}",
-                mentions_from_id_str_vec(&id_list)
+                util::mentions::mentions_from_id_str_vec(&id_list)
             ),
         };
         self.rest
@@ -1347,28 +1496,15 @@ impl Handler {
                 }
             }
 
-            None => {} // dont care.
+            None => {}
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
-
-        for id in id_list {
-            match conf
-                .modules
-                .logging
-                .log_unban(&msg.author.id.to_string(), &id, reason)
-            {
-                Some(log) => {
-                    self.rest
-                        .create_message(match &conf.modules.logging.channel_id {
-                            Some(id) => Id::from_str(id.as_str())?,
-                            None => return Ok(()),
-                        })
-                        .content(log.as_str())?
-                        .allowed_mentions(Some(&allowed_mentions))
-                        .await?;
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                for id in id_list {
+                    self.log_unban(logging, &msg.author.id.to_string(), &id, reason)
+                        .await;
                 }
-                None => {}
             }
         }
 
@@ -1380,17 +1516,12 @@ impl Handler {
         conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let author_id = msg.author.id.to_string();
         let roles = match &msg.member {
             Some(member) => Some(&member.roles),
             None => None,
         };
-        let ok = permissions::check_permission(
-            conf,
-            roles,
-            &author_id,
-            vec![permissions::PERMISSION_MUTE],
-        );
+        let ok =
+            permissions::check_permission(conf, roles, msg.author.id, permissions::PERMISSION_MUTE);
         if !ok {
             self.rest
                 .create_message(msg.channel_id)
@@ -1407,21 +1538,17 @@ impl Handler {
         }
 
         let mut content = msg.content.clone();
-        lazy_static! {
-            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
-        }
 
-        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
-            let full_str = cap.get(0).unwrap().as_str();
-            let emoji_name = cap.get(1).unwrap().as_str();
-            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
-        });
+        util::regex::EMOJI
+            .captures_iter(&msg.content)
+            .for_each(|cap| {
+                let full_str = cap.get(0).unwrap().as_str();
+                let emoji_name = cap.get(1).unwrap().as_str();
+                content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+            });
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
-        }
         let mut last_id = "";
-        let id_list: Vec<String> = RE
+        let id_list: Vec<String> = util::regex::SNOWFLAKE
             .captures_iter(&content)
             .map(|cap| {
                 last_id = cap.get(0).unwrap().as_str();
@@ -1437,7 +1564,7 @@ impl Handler {
             return Ok(());
         }
 
-        let duration = duration::Duration::new(content.to_string());
+        let duration = Duration::new(content.to_string());
 
         let mut splitby = last_id;
 
@@ -1471,11 +1598,11 @@ impl Handler {
         let resp = match reason {
             Some(ref reason) => {
                 format!("<:mesaMemberMute:869663336814497832> Successfully muted {} expiring {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), duration_str, reason)
+                    util::mentions::mentions_from_id_str_vec(&id_list), duration_str, reason)
             }
             None => format!(
                 "<:mesaMemberMute:869663336814497832> Successfully muted {} expiring {}",
-                mentions_from_id_str_vec(&id_list),
+                util::mentions::mentions_from_id_str_vec(&id_list),
                 duration_str
             ),
         };
@@ -1488,6 +1615,13 @@ impl Handler {
 
         let reason = reason.as_ref();
 
+        let appealable = (*conf)
+            .modules
+            .as_ref()
+            .and_then(|modules| modules.appeals.as_ref())
+            .map(|appeals| appeals.enabled)
+            .unwrap_or(false);
+
         match msg.guild_id {
             Some(guild_id) => {
                 for id in &id_list {
@@ -1499,6 +1633,8 @@ impl Handler {
                             &msg.author.id.to_string(),
                             &duration,
                             reason,
+                            None,
+                            appealable,
                         )
                         .await?;
 
@@ -1506,33 +1642,25 @@ impl Handler {
                 }
             }
 
-            None => {} // dont care.
+            None => {}
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
-
-        for (i, id) in id_list.iter().enumerate() {
-            match conf.modules.logging.log_mute(
-                &msg.author.id.to_string(),
-                id,
-                reason,
-                &duration,
-                &match uuids.get(i) {
-                    Some(uuid) => uuid.to_string(),
-                    None => "".to_string(),
-                },
-            ) {
-                Some(log) => {
-                    self.rest
-                        .create_message(match &conf.modules.logging.channel_id {
-                            Some(id) => Id::from_str(id.as_str())?,
-                            None => return Ok(()),
-                        })
-                        .content(log.as_str())?
-                        .allowed_mentions(Some(&allowed_mentions))
-                        .await?;
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                for (i, id) in id_list.iter().enumerate() {
+                    self.log_mute(
+                        logging,
+                        &msg.author.id.to_string(),
+                        id,
+                        reason,
+                        &duration,
+                        &match uuids.get(i) {
+                            Some(uuid) => uuid.to_string(),
+                            None => "".to_string(),
+                        },
+                    )
+                    .await;
                 }
-                None => {}
             }
         }
 
@@ -1544,7 +1672,6 @@ impl Handler {
         conf: &Config,
         msg: &Message,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let author_id = msg.author.id.to_string();
         let roles = match &msg.member {
             Some(member) => Some(&member.roles),
             None => None,
@@ -1552,8 +1679,8 @@ impl Handler {
         let ok = permissions::check_permission(
             conf,
             roles,
-            &author_id,
-            vec![permissions::PERMISSION_UNMUTE],
+            msg.author.id,
+            permissions::PERMISSION_UNMUTE,
         );
         if !ok {
             self.rest
@@ -1571,21 +1698,17 @@ impl Handler {
         }
 
         let mut content = msg.content.clone();
-        lazy_static! {
-            static ref EMOJI_RE: Regex = Regex::new(r"<a?:([a-zA-Z0-9_]+):[0-9]{17,19}>").unwrap();
-        }
 
-        EMOJI_RE.captures_iter(&msg.content).for_each(|cap| {
-            let full_str = cap.get(0).unwrap().as_str();
-            let emoji_name = cap.get(1).unwrap().as_str();
-            content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
-        });
+        util::regex::EMOJI
+            .captures_iter(&msg.content)
+            .for_each(|cap| {
+                let full_str = cap.get(0).unwrap().as_str();
+                let emoji_name = cap.get(1).unwrap().as_str();
+                content = content.replace(full_str, format!(":{}:", emoji_name).as_str());
+            });
 
-        lazy_static! {
-            static ref RE: Regex = Regex::new(r"(?:<@!?)?([0-9]{17,19})>?").unwrap();
-        }
         let mut last_id = "";
-        let id_list: Vec<String> = RE
+        let id_list: Vec<String> = util::regex::SNOWFLAKE
             .captures_iter(&content)
             .map(|cap| {
                 last_id = cap.get(0).unwrap().as_str();
@@ -1622,11 +1745,11 @@ impl Handler {
         let resp = match reason {
             Some(ref reason) => {
                 format!("<:mesaMemberUnmute:869663336583802982> Successfully unmuted {} for reason `{}`", 
-                    mentions_from_id_str_vec(&id_list), reason)
+                    util::mentions::mentions_from_id_str_vec(&id_list), reason)
             }
             None => format!(
                 "<:mesaMemberUnmute:869663336583802982> Successfully unmuted {}",
-                mentions_from_id_str_vec(&id_list)
+                util::mentions::mentions_from_id_str_vec(&id_list)
             ),
         };
         self.rest
@@ -1651,28 +1774,15 @@ impl Handler {
                 }
             }
 
-            None => {} // dont care.
+            None => {}
         }
 
-        let allowed_mentions = AllowedMentions::builder().build();
-
-        for id in id_list {
-            match conf
-                .modules
-                .logging
-                .log_unmute(&msg.author.id.to_string(), &id, reason)
-            {
-                Some(log) => {
-                    self.rest
-                        .create_message(match &conf.modules.logging.channel_id {
-                            Some(id) => Id::from_str(id.as_str())?,
-                            None => return Ok(()),
-                        })
-                        .content(log.as_str())?
-                        .allowed_mentions(Some(&allowed_mentions))
-                        .await?;
+        if let Some(modules) = &conf.modules {
+            if let Some(logging) = &modules.logging {
+                for id in id_list {
+                    self.log_unmute(logging, &msg.author.id.to_string(), &id, reason)
+                        .await;
                 }
-                None => {}
             }
         }
 

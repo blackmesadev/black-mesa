@@ -1,16 +1,12 @@
-use std::convert::TryInto;
-
-use lazy_static::lazy_static;
-use regex::Regex;
-use tracing::error;
-
 use crate::redis::redis::*;
 use crate::{automod::automod::Spam, util};
 
-use super::AutomodMessage;
+use std::convert::TryInto;
+
+use super::MessageTrait;
 
 impl Redis {
-    pub async fn filter_messages(&self, spam_user: &Spam, msg: &AutomodMessage) -> bool {
+    pub async fn filter_messages<T: MessageTrait>(&self, spam_user: &Spam, msg: &T) -> bool {
         let max = match spam_user.max_messages {
             Some(max) => {
                 if max == 0 {
@@ -28,13 +24,13 @@ impl Redis {
             None => return true,
         };
 
-        let guild_id = match msg.guild_id {
+        let guild_id = match msg.guild_id() {
             Some(id) => id.get(),
             None => return true,
         };
 
         match self
-            .incr_max_messages(guild_id, msg.author.id.get(), exp, max)
+            .incr_max_messages(guild_id, msg.author().id.get(), exp, max)
             .await
         {
             Some(count) => {
@@ -49,14 +45,14 @@ impl Redis {
                     return true;
                 }
                 match self
-                    .set_max_messages(guild_id, msg.author.id.get(), 1, exp)
+                    .set_max_messages(guild_id, msg.author().id.get(), 1, exp)
                     .await
                 {
                     Some(_) => {
                         return true;
                     }
                     None => {
-                        error!("Error setting max messages");
+                        tracing::error!("Error setting max messages");
                         return true;
                     }
                 }
@@ -65,73 +61,45 @@ impl Redis {
     }
 }
 
-pub fn filter_mentions(spam_user: &Spam, msg: &AutomodMessage) -> bool {
+pub fn filter_mentions<T: MessageTrait>(spam_user: &Spam, msg: &T) -> bool {
     let max = spam_user
         .max_mentions
         .unwrap_or(Spam::default().max_mentions.unwrap_or(0));
     if max == 0 {
         return true;
     }
-    !(match &msg.mention_roles {
-        Some(roles) => roles.len(),
-        None => 0,
-    } as i64
-        + match &msg.mentions {
-            Some(mentions) => mentions.len(),
-            None => 0,
-        } as i64
-        > max)
+    !((msg.mention_roles().len() as i64 + msg.mentions().len() as i64) > max)
 }
 
-pub fn filter_links(spam_user: &Spam, msg: &AutomodMessage) -> bool {
-    lazy_static! {
-        static ref DOMAINS_RE: Regex =
-            Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}").unwrap();
-    }
+pub fn filter_links<T: MessageTrait>(spam_user: &Spam, msg: &T) -> bool {
     let max = spam_user
         .max_links
         .unwrap_or(Spam::default().max_links.unwrap_or(0));
     if max == 0 {
         return true;
     }
-    !(DOMAINS_RE
-        .find_iter(match msg.content {
-            Some(ref content) => content,
-            None => return true,
-        })
-        .count() as i64
-        > max)
+    !(util::regex::DOMAINS.find_iter(msg.content()).count() as i64 > max)
 }
-pub fn filter_attachments(spam_user: &Spam, msg: &AutomodMessage) -> bool {
+pub fn filter_attachments<T: MessageTrait>(spam_user: &Spam, msg: &T) -> bool {
     let max = spam_user
         .max_attachments
         .unwrap_or(Spam::default().max_attachments.unwrap_or(0));
     if max == 0 {
         return true;
     }
-    !(match &msg.attachments {
-        Some(attachments) => attachments.len(),
-        None => 0,
-    } as i64
-        > max)
+    !(msg.attachments().len() as i64 > max)
 }
-pub fn filter_emojis(spam_user: &Spam, msg: &AutomodMessage) -> bool {
+pub fn filter_emojis<T: MessageTrait>(spam_user: &Spam, msg: &T) -> bool {
     let max = spam_user
         .max_emojis
         .unwrap_or(Spam::default().max_emojis.unwrap_or(0));
     if max == 0 {
         return true;
     }
-    lazy_static! {
-        static ref EMOJI_RE: Regex = Regex::new(r"<(a|):[A-z0-9_~]+:[0-9]{18}>").unwrap();
-    }
 
-    let msg_content = match msg.content {
-        Some(ref content) => content,
-        None => return true,
-    };
+    let msg_content = msg.content();
 
-    let emoji_count = EMOJI_RE.find_iter(msg_content).count() as i64;
+    let emoji_count = util::regex::EMOJI.find_iter(msg_content).count() as i64;
 
     if emoji_count > max {
         return false;
@@ -139,14 +107,13 @@ pub fn filter_emojis(spam_user: &Spam, msg: &AutomodMessage) -> bool {
 
     !(emoji_count + util::unicode::unicode_emojis_num(msg_content) > max)
 }
-pub fn filter_newlines(spam_user: &Spam, msg: &AutomodMessage) -> bool {
-    let newlines = match msg.content {
-        Some(ref content) => content.as_bytes(),
-        None => return true,
-    }
-    .iter()
-    .filter(|&&c| c == b'\n')
-    .count() as i64;
+pub fn filter_newlines<T: MessageTrait>(spam_user: &Spam, msg: &T) -> bool {
+    let newlines = msg
+        .content()
+        .as_bytes()
+        .iter()
+        .filter(|&&c| c == b'\n')
+        .count() as i64;
 
     let max = spam_user
         .max_newlines
@@ -158,21 +125,17 @@ pub fn filter_newlines(spam_user: &Spam, msg: &AutomodMessage) -> bool {
     !(newlines > max)
 }
 
-pub fn filter_max_length(spam_user: &Spam, msg: &AutomodMessage) -> bool {
+pub fn filter_max_length<T: MessageTrait>(spam_user: &Spam, msg: &T) -> bool {
     let max = spam_user
         .max_characters
         .unwrap_or(Spam::default().max_characters.unwrap_or(0));
     if max == 0 {
         return true;
     }
-    !(match msg.content {
-        Some(ref content) => content.len(),
-        None => 0,
-    } as i64
-        > max)
+    !(msg.content().len() as i64 > max)
 }
 
-pub fn filter_uppercase(spam_user: &Spam, msg: &AutomodMessage) -> bool {
+pub fn filter_uppercase<T: MessageTrait>(spam_user: &Spam, msg: &T) -> bool {
     let max = spam_user
         .max_uppercase_percent
         .unwrap_or(Spam::default().max_uppercase_percent.unwrap_or(0.0));
@@ -180,10 +143,7 @@ pub fn filter_uppercase(spam_user: &Spam, msg: &AutomodMessage) -> bool {
         return true;
     }
 
-    let msg_content = match msg.content {
-        Some(ref content) => content,
-        None => return true,
-    };
+    let msg_content = msg.content();
 
     let mut uppercase_count = 0;
     for c in msg_content.chars() {
