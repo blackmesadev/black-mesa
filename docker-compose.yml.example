@@ -1,0 +1,58 @@
+services:    
+  black-mesa:
+    build:
+      context: .
+      dockerfile: bot.Dockerfile
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mesa:J3dWWhicudH3CBwiak3rpb36G8T4Wf@mongodb:27017
+      - REDIS_URI=redis://:NacuuDtz8Ed3nZrEV7K3MhXWmw9Z@redis:6379
+      - OPENOBSERVE_ENDPOINT=http://openobserve:5080/api/black-mesa/v1/traces
+      - OPENOBSERVE_EMAIL=mesa@blackmesa.bot
+      - OPENOBSERVE_PASSWORD=eYn3BCfLNrUQ7S55FcDcRZYptQ
+  mesa-api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mesa:J3dWWhicudH3CBwiak3rpb36G8T4Wf@mongodb:27017
+      - REDIS_URI=redis://:NacuuDtz8Ed3nZrEV7K3MhXWmw9Z@redis:6379
+      - OPENOBSERVE_ENDPOINT=http://openobserve:5080/api/mesa-api/v1/traces
+      - OPENOBSERVE_EMAIL=mesa@blackmesa.bot
+      - OPENOBSERVE_PASSWORD=eYn3BCfLNrUQ7S55FcDcRZYptQ
+  mongodb:
+    image: mongo:latest
+    volumes:
+      - ./data/db:/data/db
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mesa
+      MONGO_INITDB_ROOT_PASSWORD: J3dWWhicudH3CBwiak3rpb36G8T4Wf
+
+  redis:
+    image: redis:latest
+    volumes:
+      - ./data/redis:/data
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass NacuuDtz8Ed3nZrEV7K3MhXWmw9Z
+  
+  openobserve:
+    image: openobserve/openobserve:latest
+    ports:
+      - "5080:5080"
+    environment:
+      - ZO_ROOT_USER_EMAIL=mesa@blackmesa.bot
+      - ZO_ROOT_USER_PASSWORD=eYn3BCfLNrUQ7S55FcDcRZYptQ

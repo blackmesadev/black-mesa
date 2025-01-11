@@ -1,0 +1,23 @@
+[package]
+name = "bm-lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = {version = "0.24", features = ["native-tls"]}
+futures-util = "0.3"
+reqwest = {version = "0.12", features = ["json"]}
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+bitflags = {version = "2.6", features = ["serde"]}
+async-trait = "0.1"
+dashmap = "6.1"
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+smol_str = { version = "0.3", features = ["serde"] }
+redis = { version = "0.27", features = ["tokio-comp"] }
+mongodb = { version = "3.1" }
+bson = { version = "2.13", features = ["chrono"] }
+futures = "0.3"
