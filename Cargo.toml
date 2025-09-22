@@ -1,24 +1,28 @@
-[workspace]
-members = [
-    "black-mesa",
-    "mesa-api",
-    "bm-lib"
-]
-resolver = "2"
-
-[workspace.package]
+[package]
 name = "black-mesa"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
-authors = ["Tyler Thompson <yoitscore@gmail.com>"]
+authors = ["Tyler Thompson <me@dhopcs.org>"]
+description = "Black Mesa is a Discord Moderation bot designed with Performance, Reliability and Customisation in mind."
+license = "GPL-3.0-or-later"
 
-[workspace.dependencies]
-bm-lib = { path = "bm-lib" }
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+dotenv = "0.15"
+opentelemetry = { version = "0.30" }
+opentelemetry-otlp = { version = "0.30", features = ["http-proto", "reqwest-client"] }
+opentelemetry_sdk = { version = "0.30", features = ["rt-tokio"] }
+tracing-opentelemetry = "0.31"
+base64 = "0.22"
+rustc_version = "0.4"
+chrono = "0.4"
+url = "2.5"
+lazy_static = "1.5"
+config = "0.15"
+reqwest = "0.12"
 
-[profile.dev]
-debug = 0
+bm-lib = { path = "../lib" }
 
-#[profile.release]
-#lto = true
-#opt-level = 3
-#codegen-units = 1
+#bm-lib = { git = "https://github.com/blackmesadev/lib.git" }
