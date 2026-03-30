@@ -1,71 +1,80 @@
-use std::collections::HashMap;
+use opentelemetry::{
+    global, propagation::TextMapCompositePropagator, trace::TracerProvider as _, KeyValue,
+};
+use opentelemetry_otlp::{SpanExporter, WithTonicConfig};
+use opentelemetry_sdk::{
+    propagation::{BaggagePropagator, TraceContextPropagator},
+    trace::{BatchConfigBuilder, BatchSpanProcessor, TracerProvider as SdkTracerProvider},
+    Resource,
+};
+use tonic::metadata::MetadataMap;
+use tracing_opentelemetry::OpenTelemetryLayer;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-use base64::Engine;
-use opentelemetry::trace::TracerProvider;
-use opentelemetry_otlp::{Protocol, WithExportConfig, WithHttpConfig};
-use opentelemetry_sdk::Resource;
-use tracing_subscriber::{filter::FilterFn, layer::SubscriberExt, util::SubscriberInitExt, Layer};
-
-use crate::SERVICE_NAME;
-
-pub fn init_telemetry(
-    endpoint: &str,
-    auth: Option<String>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let mut headers = HashMap::with_capacity(1);
-    if let Some(auth) = auth {
-        headers.insert(
-            String::from("Authorization"),
-            format!(
-                "Basic {}",
-                base64::engine::general_purpose::STANDARD.encode(auth)
-            ),
+/// Initialise tracing with an OTLP exporter pointed at Tempo (or any
+/// OTLP-compatible backend).  Returns the provider so callers can drive a
+/// clean `shutdown()` on exit.
+pub fn init(
+    service_name: &'static str,
+    otlp_endpoint: &str,
+    otlp_auth: Option<&str>,
+    otlp_organization: Option<&str>,
+) -> SdkTracerProvider {
+    let mut metadata = MetadataMap::new();
+    if let Some(auth) = otlp_auth {
+        metadata.insert(
+            "authorization",
+            auth.parse().expect("invalid auth header value"),
+        );
+    }
+    if let Some(org) = otlp_organization {
+        metadata.insert(
+            "organization",
+            org.parse().expect("invalid organization header value"),
         );
     }
 
-    let exporter = opentelemetry_otlp::SpanExporter::builder()
-        .with_http()
-        .with_http_client(reqwest::Client::new())
-        .with_protocol(Protocol::HttpBinary)
-        .with_headers(headers)
-        .with_endpoint(endpoint)
-        .build()?;
+    let channel = tonic::transport::Channel::from_shared(otlp_endpoint.to_string())
+        .expect("invalid OTLP endpoint URI")
+        .connect_lazy();
 
-    let provider = opentelemetry_sdk::trace::SdkTracerProvider::builder()
-        .with_resource(Resource::builder()
-            .with_attributes(vec![opentelemetry::KeyValue::new(
-                "service.name",
-                SERVICE_NAME,
-            )])
-            .build())
-        .with_simple_exporter(exporter)
+    let exporter = SpanExporter::builder()
+        .with_tonic()
+        .with_channel(channel)
+        .with_metadata(metadata)
+        .build()
+        .expect("Failed to build OTLP span exporter");
+
+    let resource = Resource::new([KeyValue::new("service.name", service_name)]);
+
+    let processor = BatchSpanProcessor::builder(exporter, opentelemetry_sdk::runtime::Tokio)
+        .with_batch_config(
+            BatchConfigBuilder::default()
+                .with_scheduled_delay(std::time::Duration::from_secs(1))
+                .build(),
+        )
         .build();
 
-    let tracer = provider.tracer(SERVICE_NAME);
-    opentelemetry::global::set_tracer_provider(provider);
+    let provider = SdkTracerProvider::builder()
+        .with_span_processor(processor)
+        .with_resource(resource)
+        .build();
 
-    const FILTERED_TARGETS: &[&str] = &["hyper", "tungstenite", "reqwest", "tokio_tungstenite"];
+    let tracer = provider.tracer(service_name);
 
-    let filter = FilterFn::new(|metadata| {
-        let target = metadata.target();
-        !FILTERED_TARGETS
-            .iter()
-            .any(|&prefix| target.starts_with(prefix))
-    });
-
-    let telemetry = tracing_opentelemetry::layer()
-        .with_tracer(tracer)
-        .with_filter(filter.clone());
-
-    let fmt = tracing_subscriber::fmt::layer()
-        .with_target(false)
-        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::CLOSE)
-        .with_filter(filter);
+    global::set_text_map_propagator(TextMapCompositePropagator::new(vec![
+        Box::new(TraceContextPropagator::new()),
+        Box::new(BaggagePropagator::new()),
+    ]));
 
     tracing_subscriber::registry()
-        .with(telemetry)
-        .with(fmt)
+        .with(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| EnvFilter::new("info,h2=off,hyper=off,tower=off")),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .with(OpenTelemetryLayer::new(tracer))
         .init();
 
-    Ok(())
+    provider
 }

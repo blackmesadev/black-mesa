@@ -1,3 +1,4 @@
+mod audio;
 mod config;
 mod groups;
 mod misc;

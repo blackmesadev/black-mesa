@@ -125,16 +125,16 @@ impl EventHandler {
 
     #[instrument(skip(self, config, ctx))]
     async fn list_groups_subcommand(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        let groups = config.permission_groups.as_ref().map_or_else(
-            String::new,
-            |groups| {
+        let groups = config
+            .permission_groups
+            .as_ref()
+            .map_or_else(String::new, |groups| {
                 groups
                     .iter()
                     .map(|group| group.name.as_str())
                     .collect::<Vec<_>>()
                     .join(", ")
-            },
-        );
+            });
 
         self.rest
             .create_message(
@@ -332,16 +332,18 @@ impl EventHandler {
             get_raw_arg!(self, config, ctx, args, 0, schema::PERMISSION_GROUP).to_string();
 
         let users = match self.get_users_in_group(config, &group_name).await? {
-            Some(users) => users
-                .iter()
-                .map(|id| format!("<@{}>", id))
-                .fold(String::new(), |mut acc, s| {
-                    if !acc.is_empty() {
-                        acc.push_str(", ");
-                    }
-                    acc.push_str(&s);
-                    acc
-                }),
+            Some(users) => {
+                users
+                    .iter()
+                    .map(|id| format!("<@{}>", id))
+                    .fold(String::new(), |mut acc, s| {
+                        if !acc.is_empty() {
+                            acc.push_str(", ");
+                        }
+                        acc.push_str(&s);
+                        acc
+                    })
+            }
             None => {
                 self.rest
                     .create_message(
@@ -381,32 +383,33 @@ impl EventHandler {
         let group_name =
             get_raw_arg!(self, config, ctx, args, 0, schema::PERMISSION_GROUP).to_string();
 
-        let roles = match self.list_roles_in_group(config, &group_name).await? {
-            Some(roles) => roles
-                .iter()
-                .map(|id| format!("<@&{}>", id))
-                .fold(String::new(), |mut acc, s| {
-                    if !acc.is_empty() {
-                        acc.push_str(", ");
-                    }
-                    acc.push_str(&s);
-                    acc
-                }),
-            None => {
-                self.rest
-                    .create_message(
-                        ctx.channel_id,
-                        format!(
-                            "{} No roles present in group `{}`",
-                            Emoji::Cross,
-                            group_name
+        let roles =
+            match self.list_roles_in_group(config, &group_name).await? {
+                Some(roles) => roles.iter().map(|id| format!("<@&{}>", id)).fold(
+                    String::new(),
+                    |mut acc, s| {
+                        if !acc.is_empty() {
+                            acc.push_str(", ");
+                        }
+                        acc.push_str(&s);
+                        acc
+                    },
+                ),
+                None => {
+                    self.rest
+                        .create_message(
+                            ctx.channel_id,
+                            format!(
+                                "{} No roles present in group `{}`",
+                                Emoji::Cross,
+                                group_name
+                            )
+                            .as_str(),
                         )
-                        .as_str(),
-                    )
-                    .await?;
-                return Ok(());
-            }
-        };
+                        .await?;
+                    return Ok(());
+                }
+            };
 
         let embed = EmbedBuilder::new()
             .title(format!("Roles in Group `{}`", group_name))
@@ -449,16 +452,16 @@ impl EventHandler {
             }
         };
 
-        let permissions_str = permissions
-            .iter()
-            .map(|perm| format!("`{}`", perm))
-            .fold(String::new(), |mut acc, s| {
+        let permissions_str = permissions.iter().map(|perm| format!("`{}`", perm)).fold(
+            String::new(),
+            |mut acc, s| {
                 if !acc.is_empty() {
                     acc.push_str(", ");
                 }
                 acc.push_str(&s);
                 acc
-            });
+            },
+        );
 
         self.grant_permissions(config, ctx.guild_id, &group_name, permissions)
             .await?;
@@ -505,16 +508,16 @@ impl EventHandler {
             }
         };
 
-        let permissions_str = permissions
-            .iter()
-            .map(|perm| format!("`{}`", perm))
-            .fold(String::new(), |mut acc, s| {
+        let permissions_str = permissions.iter().map(|perm| format!("`{}`", perm)).fold(
+            String::new(),
+            |mut acc, s| {
                 if !acc.is_empty() {
                     acc.push_str(", ");
                 }
                 acc.push_str(&s);
                 acc
-            });
+            },
+        );
 
         self.revoke_permissions(config, ctx.guild_id, &group_name, permissions)
             .await?;

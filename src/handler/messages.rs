@@ -11,20 +11,28 @@ use crate::{handler::EventHandler, AUTHOR_COLON_THREE, SERVICE_NAME};
 use super::ZWSP;
 
 impl EventHandler {
+    /// Send error message to channel (reserved for critical error handling)
+    #[allow(dead_code)]
     pub async fn send_error(&self, channel_id: &Id, error: DiscordError) -> DiscordResult<()> {
+        tracing::error!("Infrastructure error: {:?}", error);
+
+        // For user-facing errors (connection/voice), surface the actual message.
+        let description = match &error {
+            DiscordError::ConnectionFailed(msg) | DiscordError::Voice(msg) => msg.clone(),
+            _ => "An error occurred while processing your command. Please try again later."
+                .to_string(),
+        };
+
         let embed = EmbedBuilder::new()
             .title("Error")
-            .description("An error occurred while processing your command")
+            .description(&description)
             .color(0xFF0000)
             .footer(format!("{SERVICE_NAME} by {AUTHOR_COLON_THREE}"), None)
-            .field("Error", error.to_string().as_str(), false)
-            .field("Please report this to the developers", ZWSP, false)
             .build();
 
         self.rest
             .create_message_with_embed(&channel_id, &vec![embed])
             .await?;
-
         Ok(())
     }
 
@@ -73,9 +81,8 @@ impl EventHandler {
         let embed = embed.build();
 
         self.rest
-            .create_message_with_embed(&channel_id, &vec![embed])
+            .create_message_with_embed(channel_id, &vec![embed])
             .await?;
-
         Ok(())
     }
 
@@ -124,10 +131,10 @@ impl EventHandler {
         self.rest
             .create_message_no_ping(&channel_id, &content)
             .await?;
-
         Ok(())
     }
 
+    #[instrument(skip(self, infractions), fields(channel_id = %channel_id, count = infractions.len()))]
     pub async fn send_infraction_channel(
         &self,
         channel_id: &Id,
@@ -145,25 +152,20 @@ impl EventHandler {
 
     #[instrument(skip(self, infraction), fields(user_id = infraction.user_id.get()))]
     pub async fn send_infraction_dm(&self, infraction: &Infraction) -> DiscordResult<()> {
-        let channel_id = match self.get_user_dm_channel(&infraction.user_id).await {
-            Ok(channel_id) => channel_id,
-            Err(e) => {
-                tracing::warn!("Failed to get DM channel for user: {}", e);
-                return Ok(());
-            }
+        let Ok(channel_id) = self.get_user_dm_channel(&infraction.user_id).await else {
+            return Ok(()); // Can't send DM
         };
 
-        let guild_name = match self.get_guild(&infraction.guild_id).await {
-            Ok(guild) => guild.name,
-            Err(e) => {
-                tracing::warn!("Failed to get guild for infraction DM: {}", e);
-                infraction
-                    .guild_id
-                    .to_string()
-                    .parse()
-                    .map_err(|_| DiscordError::Other("Failed to parse guild ID".to_string()))?
-            }
-        };
+        let guild_name =
+            match self.get_guild(&infraction.guild_id).await {
+                Ok(guild) => guild.name,
+                Err(e) => {
+                    tracing::warn!("Failed to get guild for infraction DM: {}", e);
+                    infraction.guild_id.to_string().parse().map_err(|_| {
+                        DiscordError::ParseError("Failed to parse guild ID".to_string())
+                    })?
+                }
+            };
 
         let mut embed = EmbedBuilder::new()
             .title(

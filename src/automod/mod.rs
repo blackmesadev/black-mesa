@@ -27,18 +27,16 @@ impl AutomodResult {
 impl EventHandler {
     #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id, message_id = %ctx.message.id, channel_id = %ctx.channel_id))]
     pub async fn handle_automod(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        let automod = match &config.automod {
-            Some(automod) => automod,
-            None => return Ok(()),
+        let Some(automod) = &config.automod else {
+            return Ok(());
         };
 
         if !automod.enabled {
             return Ok(());
         }
 
-        let global = match &automod.global {
-            Some(global) => global,
-            None => return Ok(()),
+        let Some(global) = &automod.global else {
+            return Ok(());
         };
 
         if global.enabled {
@@ -49,9 +47,8 @@ impl EventHandler {
             }
         }
 
-        let channel = match automod.channels.get(&ctx.channel_id) {
-            Some(channels) => channels,
-            None => return Ok(()),
+        let Some(channel) = automod.channels.get(&ctx.channel_id) else {
+            return Ok(());
         };
 
         if channel.enabled {

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use bm_lib::{
-    discord::{DiscordResult, Id},
+    discord::{DiscordError, DiscordResult, Id},
     model::{Infraction, Uuid},
     util::duration_to_unix_timestamp,
 };
@@ -205,12 +205,9 @@ impl EventHandler {
         moderator_id: &Id,
         reason: Option<Cow<'_, str>>,
     ) -> DiscordResult<Option<Infraction>> {
-        let infraction = self.db.delete_infraction(guild_id, warn_id).await?;
-
-        if let Some(infraction) = &infraction {
-            self.send_infraction_remove_dm(&infraction).await?;
-        }
-
-        Ok(infraction)
+        self.db
+            .delete_infraction(guild_id, warn_id)
+            .await
+            .map_err(DiscordError::from)
     }
 }

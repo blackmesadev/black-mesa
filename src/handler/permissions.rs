@@ -24,7 +24,11 @@ impl EventHandler {
         if config.inherit_discord_perms {
             if let Ok(guild) = self.get_guild(ctx.guild_id).await {
                 let roles = &guild.roles;
-                let present = &ctx.message.member.as_ref().unwrap().roles;
+                let Some(member) = ctx.message.member.as_ref() else {
+                    tracing::warn!("Message member is None in check_permission");
+                    return Ok(false);
+                };
+                let present = &member.roles;
 
                 let perms = PermissionSet::from_discord_permissions(roles, present);
 
@@ -57,41 +61,33 @@ impl EventHandler {
             return Ok(false);
         }
 
-        let highest_user_role = match guild
+        let Some(member) = ctx.message.member.as_ref() else {
+            tracing::warn!("Message member is None in check_can_target");
+            return Ok(false);
+        };
+
+        let Some(role) = guild
             .roles
             .iter()
-            .filter(|role| {
-                ctx.message
-                    .member
-                    .as_ref()
-                    .unwrap()
-                    .roles
-                    .contains(&role.id)
-            })
+            .filter(|role| member.roles.contains(&role.id))
             .max_by_key(|role| role.position)
-        {
-            Some(role) => role,
-            None => return Ok(false),
+        else {
+            return Ok(false);
         };
 
-        let target_member = match self.get_member(ctx.guild_id, target_id).await {
-            Ok(member) => member,
-            Err(e) => {
-                tracing::warn!(error = ?e, "Failed to get member");
-                return Ok(false);
-            }
+        let Ok(target_member) = self.get_member(ctx.guild_id, target_id).await else {
+            return Ok(false); // Can't verify, assume can't target
         };
 
-        let target_highest_role = match guild
+        let Some(target_role) = guild
             .roles
             .iter()
             .filter(|role| target_member.roles.contains(&role.id))
             .max_by_key(|role| role.position)
-        {
-            Some(role) => role,
-            None => return Ok(true), // No roles, so no permissions
+        else {
+            return Ok(true); // No roles, can target
         };
 
-        Ok(highest_user_role.position > target_highest_role.position)
+        Ok(role.position > target_role.position)
     }
 }

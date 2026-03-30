@@ -22,11 +22,14 @@ impl EventHandler {
         }
 
         match command {
+            // Utility commands
             "ping" => self.ping_command(ctx).await,
 
             "botinfo" => self.botinfo_command(ctx).await,
             "userinfo" => self.userinfo_command(ctx, args).await,
+            "help" => self.help_command(ctx).await,
 
+            // Configuration commands
             "resetconfig" => self.resetconfig_command(config, ctx).await,
             "setprefix" => self.setprefix_command(config, ctx, args).await,
             "setconfig" => self.setconfig_command(config, ctx, args).await,
@@ -35,6 +38,7 @@ impl EventHandler {
             "aliases" => self.list_aliases_command(config, ctx).await,
             "group" => self.group_command(config, ctx, args).await,
 
+            // Moderation commands
             "kick" => self.kick_command(config, ctx, args).await,
             "ban" => self.ban_command(config, ctx, args).await,
             "unban" => self.unban_command(config, ctx, args).await,
@@ -44,6 +48,31 @@ impl EventHandler {
             "pardon" => self.pardon_command(config, ctx, args).await,
 
             "lookup" => self.lookup_user_command(config, ctx, args).await,
+
+            // Audio debug commands
+            "audiohealth" => self.audiohealth_command(config, ctx).await,
+            "audioready" => self.audioready_command(config, ctx).await,
+            "playercreate" => self.playercreate_command(config, ctx, args).await,
+            "players" => self.players_command(config, ctx).await,
+            "playerget" => self.playerget_command(config, ctx, args).await,
+            "playerstatus" => self.playerstatus_command(config, ctx, args).await,
+            "playerdestroy" => self.playerdestroy_command(config, ctx, args).await,
+            "playerconnect" => self.playerconnect_command(config, ctx, args).await,
+
+            // Music commands
+            "enqueue" => self.enqueue_command(config, ctx, args).await,
+            "queue" => self.queue_command(config, ctx, args).await,
+            "clearqueue" => self.clearqueue_command(config, ctx, args).await,
+            "playlistsave" => self.playlistsave_command(config, ctx, args).await,
+            "playlistenqueue" => self.playlistenqueue_command(config, ctx, args).await,
+            "play" => self.play_command(config, ctx, args).await,
+            "pause" => self.pause_command(config, ctx, args).await,
+            "resume" => self.resume_command(config, ctx, args).await,
+            "skip" => self.skip_command(config, ctx, args).await,
+            "stop" => self.stop_command(config, ctx, args).await,
+            "seek" => self.seek_command(config, ctx, args).await,
+            "volume" => self.volume_command(config, ctx, args).await,
+            "current" => self.current_command(config, ctx, args).await,
 
             _ => {
                 tracing::debug!("Unknown command: {}", command);

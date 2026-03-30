@@ -31,7 +31,6 @@ impl EventHandler {
         self.rest
             .create_message_with_embed(ctx.channel_id, &vec![embed])
             .await?;
-
         Ok(())
     }
 
@@ -47,10 +46,10 @@ impl EventHandler {
                 ),
             )
             .await?;
-
         Ok(())
     }
 
+    #[instrument(skip(self, config, ctx, args))]
     pub async fn missing_parameters(
         &self,
         config: &Config,
@@ -84,7 +83,6 @@ impl EventHandler {
         self.rest
             .create_message_with_embed(ctx.channel_id, &vec![embed])
             .await?;
-
         Ok(())
     }
 }

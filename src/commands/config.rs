@@ -59,10 +59,7 @@ impl EventHandler {
     #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn resetconfig_command(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
         check_permission!(self, config, ctx, Permission::ConfigEdit);
-
-        self.reset_config(ctx.guild_id).await?;
-
-        Ok(())
+        self.reset_config(ctx.guild_id).await
     }
 
     #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
@@ -74,13 +71,10 @@ impl EventHandler {
     ) -> DiscordResult<()> {
         check_permission!(self, config, ctx, Permission::ConfigEdit);
 
-        let prefix = match args.get(0) {
-            Some(Arg::Text(prefix)) => prefix,
-            None | Some(_) => {
-                self.missing_parameters(config, ctx, args, schema::PREFIX)
-                    .await?;
-                return Ok(());
-            }
+        let Some(Arg::Text(prefix)) = args.get(0) else {
+            self.missing_parameters(config, ctx, args, schema::PREFIX)
+                .await?;
+            return Ok(());
         };
 
         config.prefix = prefix.to_string();
@@ -148,13 +142,12 @@ impl EventHandler {
             value
         );
 
-        self.rest
-            .create_message(&ctx.channel_id, &msg)
-            .await?;
+        self.rest.create_message(&ctx.channel_id, &msg).await?;
 
         Ok(())
     }
 
+    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn add_alias_command(
         &self,
         config: &mut Config,
@@ -182,13 +175,12 @@ impl EventHandler {
             command
         );
 
-        self.rest
-            .create_message(&ctx.channel_id, &msg)
-            .await?;
+        self.rest.create_message(&ctx.channel_id, &msg).await?;
 
         Ok(())
     }
 
+    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn remove_alias_command(
         &self,
         config: &mut Config,
@@ -227,9 +219,7 @@ impl EventHandler {
             alias
         );
 
-        self.rest
-            .create_message(&ctx.channel_id, &msg)
-            .await?;
+        self.rest.create_message(&ctx.channel_id, &msg).await?;
 
         Ok(())
     }
@@ -238,17 +228,14 @@ impl EventHandler {
     pub async fn list_aliases_command(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
         check_permission!(self, config, ctx, Permission::ConfigView);
 
-        let aliases = match &config.command_aliases {
-            Some(aliases) => aliases,
-            None => {
+        let Some(aliases) = &config.command_aliases else {
             self.rest
                 .create_message(
                     &ctx.channel_id,
                     &format!("{} No aliases found", Emoji::Cross),
                 )
                 .await?;
-                return Ok(());
-            }
+            return Ok(());
         };
 
         let mut msg = format!("{} Found {} Aliases:\n", Emoji::Check, aliases.len());
@@ -256,9 +243,7 @@ impl EventHandler {
             msg.push_str(&format!("`{}` -> `{}`\n", alias, command));
         }
 
-        self.rest
-            .create_message(&ctx.channel_id, &msg)
-            .await?;
+        self.rest.create_message(&ctx.channel_id, &msg).await?;
 
         Ok(())
     }

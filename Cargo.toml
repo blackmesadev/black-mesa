@@ -1,6 +1,6 @@
 [package]
 name = "black-mesa"
-version = "0.6.0"
+version = "0.7.0"
 edition = "2021"
 authors = ["Tyler Thompson <me@dhopcs.org>"]
 description = "Black Mesa is a Discord Moderation bot designed with Performance, Reliability and Customisation in mind."
@@ -9,20 +9,28 @@ license = "GPL-3.0-or-later"
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
-tracing-subscriber = "0.3"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-opentelemetry = "0.28"
+opentelemetry = "0.27"
+opentelemetry_sdk = { version = "0.27", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.27", features = ["grpc-tonic"] }
+tonic = { version = "0.12", features = ["transport"] }
 dotenv = "0.15"
-opentelemetry = { version = "0.30" }
-opentelemetry-otlp = { version = "0.30", features = ["http-proto", "reqwest-client"] }
-opentelemetry_sdk = { version = "0.30", features = ["rt-tokio"] }
-tracing-opentelemetry = "0.31"
 base64 = "0.22"
 rustc_version = "0.4"
 chrono = "0.4"
 url = "2.5"
 lazy_static = "1.5"
 config = "0.15"
-reqwest = "0.12"
+reqwest = { version = "0.13", features = ["json"] }
+reqwest-middleware = "0.5"
+reqwest-tracing = { version = "0.7", features = ["opentelemetry_0_27"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
-bm-lib = { path = "../lib" }
+#bm-lib = { path = "../lib" }
+bm-lib = { git = "https://github.com/blackmesadev/lib.git" }
 
-#bm-lib = { git = "https://github.com/blackmesadev/lib.git" }
+[build-dependencies]
+rustc_version = "0.4"
+

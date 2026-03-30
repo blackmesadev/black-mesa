@@ -41,14 +41,26 @@ impl EventHandler {
 
         for target in targets {
             let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            let infraction = self
+            match self
                 .kick_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
-                .await?;
-            infractions.push(infraction);
+                .await
+            {
+                Ok(infraction) => infractions.push(infraction),
+                Err(e) => {
+                    tracing::error!("Failed to kick user: {}", e);
+                    self.send_error(&ctx.channel_id, e).await?;
+                    return Ok(());
+                }
+            }
         }
 
-        self.send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
-            .await?;
+        if let Err(e) = self
+            .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
+            .await
+        {
+            tracing::error!("Failed to send infraction channel message: {}", e);
+            self.send_error(&ctx.channel_id, e).await?;
+        }
 
         Ok(())
     }
@@ -79,20 +91,26 @@ impl EventHandler {
 
         for target in targets {
             let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            let infraction = self
-                .ban_user(
-                    ctx.guild_id,
-                    &target,
-                    &ctx.user.id,
-                    duration,
-                    reason_ref,
-                )
-                .await?;
-            infractions.push(infraction);
+            match self
+                .ban_user(ctx.guild_id, &target, &ctx.user.id, duration, reason_ref)
+                .await
+            {
+                Ok(infraction) => infractions.push(infraction),
+                Err(e) => {
+                    tracing::error!("Failed to ban user: {}", e);
+                    self.send_error(&ctx.channel_id, e).await?;
+                    return Ok(());
+                }
+            }
         }
 
-        self.send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
-            .await?;
+        if let Err(e) = self
+            .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
+            .await
+        {
+            tracing::error!("Failed to send infraction channel message: {}", e);
+            self.send_error(&ctx.channel_id, e).await?;
+        }
 
         Ok(())
     }
@@ -106,12 +124,8 @@ impl EventHandler {
     ) -> DiscordResult<()> {
         check_permission!(self, config, ctx, Permission::ModerationMute);
 
-        let mute_role = match config.mute_role.as_ref() {
-            Some(role) => role,
-            None => {
-                tracing::info!("No mute role set");
-                return Ok(());
-            }
+        let Some(mute_role) = config.mute_role.as_ref() else {
+            return Ok(()); // No mute role configured
         };
 
         let targets = args.get_targets();
@@ -131,7 +145,7 @@ impl EventHandler {
 
         for target in targets {
             let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            let infraction = self
+            match self
                 .mute_user(
                     ctx.guild_id,
                     &target,
@@ -140,16 +154,29 @@ impl EventHandler {
                     duration,
                     reason_ref,
                 )
-                .await?;
-            infractions.push(infraction);
+                .await
+            {
+                Ok(infraction) => infractions.push(infraction),
+                Err(e) => {
+                    tracing::error!("Failed to mute user: {}", e);
+                    self.send_error(&ctx.channel_id, e).await?;
+                    return Ok(());
+                }
+            }
         }
 
-        self.send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
-            .await?;
+        if let Err(e) = self
+            .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
+            .await
+        {
+            tracing::error!("Failed to send infraction channel message: {}", e);
+            self.send_error(&ctx.channel_id, e).await?;
+        }
 
         Ok(())
     }
 
+    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn warn_command(
         &self,
         config: &Config,
@@ -180,7 +207,7 @@ impl EventHandler {
 
         for target in targets {
             let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            let infraction = self
+            match self
                 .warn_user(
                     ctx.guild_id,
                     &target,
@@ -188,12 +215,24 @@ impl EventHandler {
                     Some(duration),
                     reason_ref,
                 )
-                .await?;
-            infractions.push(infraction);
+                .await
+            {
+                Ok(infraction) => infractions.push(infraction),
+                Err(e) => {
+                    tracing::error!("Failed to warn user: {}", e);
+                    self.send_error(&ctx.channel_id, e).await?;
+                    return Ok(());
+                }
+            }
         }
 
-        self.send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
-            .await?;
+        if let Err(e) = self
+            .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
+            .await
+        {
+            tracing::error!("Failed to send infraction channel message: {}", e);
+            self.send_error(&ctx.channel_id, e).await?;
+        }
 
         Ok(())
     }
@@ -219,8 +258,14 @@ impl EventHandler {
 
         for target in targets {
             let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            self.unban_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
-                .await?;
+            if let Err(e) = self
+                .unban_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
+                .await
+            {
+                tracing::error!("Failed to unban user: {}", e);
+                self.send_error(&ctx.channel_id, e).await?;
+                return Ok(());
+            }
         }
 
         Ok(())
@@ -247,8 +292,14 @@ impl EventHandler {
 
         for target in targets {
             let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            self.unmute_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
-                .await?;
+            if let Err(e) = self
+                .unmute_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
+                .await
+            {
+                tracing::error!("Failed to unmute user: {}", e);
+                self.send_error(&ctx.channel_id, e).await?;
+                return Ok(());
+            }
         }
 
         Ok(())
@@ -291,18 +342,27 @@ impl EventHandler {
         let mut infractions = Vec::with_capacity(targets.len());
 
         for target in targets {
-            if let Some(infraction) = self
-                .pardon(ctx.guild_id, &target, &ctx.user.id, None)
-                .await?
-            {
-                infractions.push(infraction);
+            match self.pardon(ctx.guild_id, &target, &ctx.user.id, None).await {
+                Ok(Some(infraction)) => {
+                    // Send DM notification
+                    if let Err(e) = self.send_infraction_remove_dm(&infraction).await {
+                        tracing::warn!("Failed to send DM for pardoned infraction: {}", e);
+                    }
+                    infractions.push(infraction);
+                }
+                Ok(None) => {}
+                Err(e) => {
+                    tracing::error!("Failed to pardon infraction: {}", e);
+                    self.send_error(&ctx.channel_id, e).await?;
+                    return Ok(());
+                }
             }
         }
 
         if infractions.is_empty() {
             embed = embed.field("No infractions found", ZWSP, false);
         } else {
-            for infraction in infractions {
+            for infraction in &infractions {
                 let dur_str = match infraction.expires_at {
                     Some(expires) => format!("<t:{}:R>", expires),
                     None => "`Never`".to_string(),
@@ -335,9 +395,30 @@ impl EventHandler {
 
         let embed = embed.build();
 
-        self.rest
+        if let Err(e) = self
+            .rest
             .create_message_with_embed(ctx.channel_id, &vec![embed])
-            .await?;
+            .await
+        {
+            tracing::error!("Failed to send pardon message: {}", e);
+            self.send_error(&ctx.channel_id, e).await?;
+            return Ok(());
+        }
+
+        // Send channel notifications for each pardoned infraction
+        for infraction in &infractions {
+            if config.prefer_embeds {
+                if let Err(e) = self
+                    .send_infraction_remove_channel(ctx.channel_id, infraction)
+                    .await
+                {
+                    tracing::warn!(
+                        "Failed to send channel notification for pardoned infraction: {}",
+                        e
+                    );
+                }
+            }
+        }
 
         Ok(())
     }
@@ -411,12 +492,7 @@ impl EventHandler {
                                             )
                                         }
                                     } else {
-                                        format!(
-                                            "{}{}{}",
-                                            &word[..1],
-                                            "*".repeat(14),
-                                            &word[15..16]
-                                        )
+                                        format!("{}{}{}", &word[..1], "*".repeat(14), &word[15..16])
                                     }
                                 })
                                 .unwrap_or_else(|| String::from("No word provided"))
