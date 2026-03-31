@@ -110,36 +110,32 @@ impl EventHandler {
                     .map(|p| Pattern::from_str(p))
                     .collect();
 
-                // Check patterns against content - optimized for common case
-                let mut matched_word = None;
-
-                // First try checking full content for patterns
-                for (i, pattern) in patterns.iter().enumerate() {
-                    if pattern.matches(&content) {
-                        // Found a match, now find which word specifically matched
-                        let words: Vec<&str> = content.split_whitespace().collect();
-                        for word in &words {
-                            if pattern.matches(word) {
-                                matched_word = Some(word.to_string());
-                                break;
+                let matched_word = patterns.iter().enumerate().find_map(|(i, pattern)| {
+                    content
+                        .split_whitespace()
+                        .find(|word| pattern.matches(word))
+                        .map(|w| w.to_string())
+                        .or_else(|| {
+                            // pattern matched multi-word content (e.g. phrase pattern)
+                            if pattern.matches(&content) {
+                                Some(censor.filters[i].clone())
+                            } else {
+                                None
                             }
-                        }
-                        // If no single word matched, but pattern matched full content,
-                        // return the filter itself
-                        if matched_word.is_none() {
-                            matched_word = Some(censor.filters[i].clone());
-                        }
-                        break;
-                    }
-                }
+                        })
+                });
 
                 matched_word
             }
 
             CensorType::Link => {
-                // Optimized URL parsing - avoid unnecessary allocations
                 content.split_whitespace().find_map(|s| {
-                    url::Url::parse(s).ok().and_then(|url| {
+                    let candidate = if s.contains("://") {
+                        s.to_string()
+                    } else {
+                        format!("https://{s}")
+                    };
+                    url::Url::parse(&candidate).ok().and_then(|url| {
                         url.host_str().and_then(|domain| {
                             if censor.filters.iter().any(|filter| filter == domain) {
                                 Some(domain.to_string())
@@ -152,9 +148,13 @@ impl EventHandler {
             }
 
             CensorType::Invite => {
-                // Optimized Discord invite parsing
                 content.split_whitespace().find_map(|s| {
-                    url::Url::parse(s).ok().and_then(|url| {
+                    let candidate = if s.contains("://") {
+                        s.to_string()
+                    } else {
+                        format!("https://{s}")
+                    };
+                    url::Url::parse(&candidate).ok().and_then(|url| {
                         if url.host_str() == Some("discord.gg") {
                             url.path_segments()
                                 .and_then(|segments| segments.last())

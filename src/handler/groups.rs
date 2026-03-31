@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use bm_lib::{
     discord::{DiscordResult, Id},
-    model::{Config, Group},
-    permissions::{Permission, PermissionSet},
+    model::{Config, PermissionGroup},
+    permissions::Permission,
 };
 use tracing::instrument;
 
@@ -16,7 +16,7 @@ impl EventHandler {
         guild_id: &Id,
         name: &str,
     ) -> DiscordResult<&'a Config> {
-        let group = Group::new(name);
+        let group = PermissionGroup::new(name);
 
         if let Some(groups) = config.permission_groups.as_mut() {
             groups.push(group);
@@ -55,9 +55,9 @@ impl EventHandler {
     ) -> DiscordResult<&'a Config> {
         if let Some(groups) = config.permission_groups.as_mut() {
             if let Some(group) = groups.iter_mut().find(|group| group.name == group_name) {
-                group
-                    .permissions
-                    .extend(PermissionSet::from_vec(permissions));
+                for p in &permissions {
+                    group.permissions |= *p;
+                }
             }
         }
 
@@ -76,9 +76,9 @@ impl EventHandler {
     ) -> DiscordResult<&'a Config> {
         if let Some(groups) = config.permission_groups.as_mut() {
             if let Some(group) = groups.iter_mut().find(|group| group.name == group_name) {
-                group
-                    .permissions
-                    .retain(|perm| !permissions.contains(&perm));
+                for p in &permissions {
+                    group.permissions.remove(*p);
+                }
             }
         }
 
@@ -194,7 +194,11 @@ impl EventHandler {
     }
 
     #[instrument(skip(self))]
-    pub async fn get_user_groups<'a>(&self, config: &'a Config, user_id: &Id) -> Vec<&'a Group> {
+    pub async fn get_user_groups<'a>(
+        &self,
+        config: &'a Config,
+        user_id: &Id,
+    ) -> Vec<&'a PermissionGroup> {
         let mut user_groups = Vec::new();
 
         if let Some(groups) = &config.permission_groups {

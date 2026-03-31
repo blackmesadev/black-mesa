@@ -7,7 +7,7 @@ use bm_lib::{
     },
     emojis::Emoji,
     model::Config,
-    permissions::{Permission, PermissionSet},
+    permissions::Permission,
     util,
 };
 
@@ -20,16 +20,46 @@ const HELP_STRING: &str = "Help can be found via the documentation at ";
 
 impl EventHandler {
     #[instrument(skip(self, config, ctx))]
-    pub async fn setup_command(
+    pub async fn reset_command(
         &self,
         config: &Config,
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigEdit);
+        // Check if they are the owner first - emergency override in case of misconfiguration
+        let guild = self.get_guild(ctx.guild_id).await?;
+        if Some(ctx.user.id) != guild.owner_id {
+            // Check permissions if not owner
+            check_permission!(self, config, ctx, Permission::CONFIG_EDIT);
+        }
+
+        let confirmed = matches!(args.get(0), Some(Arg::Text(s)) if *s == "confirm");
+        let correct_guild = matches!(args.get(1), Some(Arg::Id(id)) if *id == *ctx.guild_id);
+
+        if !confirmed || !correct_guild {
+            self.rest
+                .create_message(
+                    &ctx.channel_id,
+                    &format!(
+                        "⚠️ This will reset **all** server configuration to defaults. To confirm, run: `{}reset confirm {}`",
+                        config.prefix,
+                        ctx.guild_id.get()
+                    ),
+                )
+                .await?;
+            return Ok(());
+        }
+
+        self.reset_config(ctx.guild_id).await?;
 
         self.rest
-            .create_message(&ctx.channel_id, "Setup is currently not implemented")
+            .create_message(
+                &ctx.channel_id,
+                &format!(
+                    "{} Server configuration has been reset to defaults.",
+                    Emoji::Check
+                ),
+            )
             .await?;
 
         Ok(())
@@ -42,7 +72,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigView);
+        check_permission!(self, config, ctx, Permission::CONFIG_VIEW);
 
         let guild = match self.get_guild(ctx.guild_id).await {
             Ok(g) => g,
@@ -95,21 +125,9 @@ impl EventHandler {
             None => (ctx.user.id, member_roles.clone()),
         };
 
-        let mut perms = PermissionSet::new();
-        perms.extend(PermissionSet::from_discord_permissions(
-            &guild.roles,
-            &roles,
-        ));
-
-        if let Some(groups) = &config.permission_groups {
-            for group in groups {
-                if group.users.contains(&lookup_id)
-                    || group.roles.iter().any(|role| roles.contains(role))
-                {
-                    perms.extend(group.permissions.clone());
-                }
-            }
-        }
+        let perms = self
+            .resolve_member_permissions(config, ctx.guild_id, lookup_id, &roles)
+            .await?;
 
         let all_perms = Permission::all_permissions_vec();
         let total_pages = (all_perms.len() + 24) / 25;
@@ -124,7 +142,7 @@ impl EventHandler {
                 .description(format!("Permissions for `{}`", lookup_id.get()));
 
             for perm in chunk {
-                let status = if perms.has_permission(perm) {
+                let status = if perms.has_permission(*perm) {
                     "✅"
                 } else {
                     "❌"
@@ -139,7 +157,7 @@ impl EventHandler {
 
             if let Err(e) = self
                 .rest
-                .create_message_with_embed(&ctx.channel_id, &vec![embed])
+                .create_message_with_embed(&ctx.channel_id, &[embed])
                 .await
             {
                 tracing::error!("Failed to send permissions embed: {}", e);
@@ -200,7 +218,7 @@ impl EventHandler {
         tracing::debug!("botinfo_command: about to call REST API");
         let result = self
             .rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await;
         tracing::debug!(
             "botinfo_command: REST API call completed, result={:?}",
@@ -299,7 +317,7 @@ impl EventHandler {
         let embed = embed.build();
 
         self.rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await?;
 
         Ok(())

@@ -25,15 +25,11 @@ impl AutomodResult {
 }
 
 impl EventHandler {
-    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id, message_id = %ctx.message.id, channel_id = %ctx.channel_id))]
+    #[instrument(skip(self, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id, message_id = %ctx.message.id, channel_id = %ctx.channel_id))]
     pub async fn handle_automod(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
         let Some(automod) = &config.automod else {
             return Ok(());
         };
-
-        if !automod.enabled {
-            return Ok(());
-        }
 
         let Some(global) = &automod.global else {
             return Ok(());
@@ -152,7 +148,7 @@ impl EventHandler {
                 .color(0xff0000)
                 .build();
             self.rest
-                .create_message_with_embed_and_forget(&log_channel, &vec![embed])
+                .create_message_with_embed_and_forget(&log_channel, &[embed])
                 .await;
         }
         Ok(())

@@ -423,10 +423,10 @@ impl EventHandler {
             }
         };
 
-        if let Err(e) = self.handle_automod(&config, ctx).await {
-            tracing::error!("Automod processing failed: {}", e);
-            // Don't send error for automod failures - let them pass silently
-            // as automod is a background process
+        if config.automod_enabled {
+            if let Err(e) = self.handle_automod(&config, ctx).await {
+                tracing::error!("Automod processing failed: {}", e);
+            }
         }
 
         let bot_mention = self.bot_mention.get().map(|s| s.as_str()).unwrap_or("");

@@ -202,7 +202,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(channel_id, &vec![embed])
+            .create_message_with_embed(channel_id, &[embed])
             .await?;
         Ok(())
     }
@@ -257,7 +257,7 @@ impl EventHandler {
 
         let embed = embed.build();
         self.rest
-            .create_message_with_embed(channel_id, &vec![embed])
+            .create_message_with_embed(channel_id, &[embed])
             .await?;
         Ok(())
     }
@@ -355,7 +355,7 @@ impl EventHandler {
         permission: Permission,
         endpoint: &str,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, permission.clone());
+        check_permission!(self, config, ctx, permission);
 
         let Some(player_id) = self.resolve_player_id(config, ctx, args, 0).await? else {
             return Ok(());
@@ -385,236 +385,13 @@ impl EventHandler {
     }
 
     #[instrument(skip(self, config, ctx, args), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn playercreate_command(
-        &self,
-        config: &Config,
-        ctx: &Ctx<'_>,
-        args: &Args<'_>,
-    ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
-
-        if args.is_empty() {
-            if let Err(e) = self.ensure_player(ctx).await {
-                self.send_error(ctx.channel_id, e).await.ok();
-                return Ok(());
-            }
-
-            return self
-                .send_audio_embed(
-                    ctx.channel_id,
-                    Emoji::Check,
-                    "Ready to Play",
-                    "Connected and ready in your voice channel.",
-                )
-                .await;
-        }
-
-        let Some(payload) = self.parse_connection_request(ctx, args, 0).await else {
-            self.missing_parameters(config, ctx, args, schema::AUDIO_CONNECTION)
-                .await?;
-            return Ok(());
-        };
-
-        let response = audio_call!(self, ctx, self.mesastream.create_player(&payload).await);
-        self.send_snapshot_embed(
-            ctx.channel_id,
-            Emoji::VoiceJoin,
-            "Player Connected",
-            &response,
-            None,
-        )
-        .await
-    }
-
-    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn players_command(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
-
-        let players = audio_call!(self, ctx, self.mesastream.list_players().await);
-
-        if players.is_empty() {
-            return self
-                .send_audio_embed(
-                    ctx.channel_id,
-                    Emoji::Cross,
-                    "Players",
-                    "No active sessions right now.",
-                )
-                .await;
-        }
-
-        let summary = players
-            .iter()
-            .take(10)
-            .enumerate()
-            .map(|(index, s)| {
-                let status = format!("{:?}", s.status).to_lowercase().replace('_', " ");
-                let now = s
-                    .current_track
-                    .as_ref()
-                    .map(Self::format_track)
-                    .unwrap_or_else(|| "Nothing playing".to_string());
-                format!(
-                    "{}. {} • {} in queue\n{}",
-                    index + 1,
-                    status,
-                    s.queue.len(),
-                    now,
-                )
-            })
-            .collect::<Vec<_>>()
-            .join("\n\n");
-
-        self.send_audio_embed(
-            ctx.channel_id,
-            Emoji::Check,
-            "Active Sessions",
-            &format!("{} active session(s)\n\n{}", players.len(), summary),
-        )
-        .await
-    }
-
-    #[instrument(skip(self, config, ctx, args), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn playerstatus_command(
-        &self,
-        config: &Config,
-        ctx: &Ctx<'_>,
-        args: &Args<'_>,
-    ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
-
-        let Some(player_id) = self.resolve_player_id(config, ctx, args, 0).await? else {
-            return Ok(());
-        };
-
-        let snapshot = audio_call!(self, ctx, self.mesastream.get_status(&player_id).await);
-        self.send_snapshot_embed(
-            ctx.channel_id,
-            Emoji::Check,
-            "Playback Status",
-            &snapshot,
-            None,
-        )
-        .await
-    }
-
-    #[instrument(skip(self, config, ctx, args), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn playerget_command(
-        &self,
-        config: &Config,
-        ctx: &Ctx<'_>,
-        args: &Args<'_>,
-    ) -> DiscordResult<()> {
-        self.playerstatus_command(config, ctx, args).await
-    }
-
-    #[instrument(skip(self, config, ctx, args), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn playerdestroy_command(
-        &self,
-        config: &Config,
-        ctx: &Ctx<'_>,
-        args: &Args<'_>,
-    ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicClear);
-
-        let Some(player_id) = self.resolve_player_id(config, ctx, args, 0).await? else {
-            return Ok(());
-        };
-
-        match self.mesastream.delete_player(&player_id).await {
-            Ok(_) => {}
-            Err(MesastreamError::Api { status: 404, .. }) => {
-                tracing::debug!(
-                    guild_id = %ctx.guild_id,
-                    player_id = %player_id,
-                    "player not found during destroy; continuing with voice leave"
-                );
-            }
-            Err(e) => {
-                self.send_audio_error(ctx.channel_id, e).await.ok();
-                return Ok(());
-            }
-        }
-
-        if let Err(e) = self.voice_leave(ctx.guild_id).await {
-            tracing::warn!(error = ?e, guild_id = %ctx.guild_id, "voice_leave failed after playerdestroy");
-        }
-        self.send_audio_embed(
-            ctx.channel_id,
-            Emoji::VoiceLeave,
-            "Disconnected",
-            "Left voice and closed the current audio session.",
-        )
-        .await
-    }
-
-    #[instrument(skip(self, config, ctx, args), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn playerconnect_command(
-        &self,
-        config: &Config,
-        ctx: &Ctx<'_>,
-        args: &Args<'_>,
-    ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
-
-        let Some(payload) = self.parse_connection_request(ctx, args, 0).await else {
-            self.missing_parameters(config, ctx, args, schema::AUDIO_PLAYER_CONNECTION)
-                .await?;
-            return Ok(());
-        };
-
-        let player_id = payload.player_id;
-        let response = audio_call!(
-            self,
-            ctx,
-            self.mesastream
-                .update_connection(&player_id, &payload)
-                .await
-        );
-        self.send_snapshot_embed(
-            ctx.channel_id,
-            Emoji::VoiceMove,
-            "Voice Connection Updated",
-            &response,
-            None,
-        )
-        .await
-    }
-
-    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn audiohealth_command(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
-        let response = audio_call!(self, ctx, self.mesastream.health().await);
-        self.send_audio_embed(
-            ctx.channel_id,
-            Emoji::Check,
-            "Audio Service Health",
-            &format!("Current service status: {}", response.status),
-        )
-        .await
-    }
-
-    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
-    pub async fn audioready_command(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
-        let response = audio_call!(self, ctx, self.mesastream.ready().await);
-        self.send_audio_embed(
-            ctx.channel_id,
-            Emoji::Check,
-            "Audio Service Readiness",
-            &format!("Ready state: {}", response.status),
-        )
-        .await
-    }
-
-    #[instrument(skip(self, config, ctx, args), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn play_command(
         &self,
         config: &Config,
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
+        check_permission!(self, config, ctx, Permission::MUSIC_PLAY);
 
         let player_id = match self.ensure_player(ctx).await {
             Ok(id) => id,
@@ -680,7 +457,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        self.player_action(config, ctx, args, Permission::MusicPause, "pause")
+        self.player_action(config, ctx, args, Permission::MUSIC_PAUSE, "pause")
             .await
     }
 
@@ -691,7 +468,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        self.player_action(config, ctx, args, Permission::MusicResume, "resume")
+        self.player_action(config, ctx, args, Permission::MUSIC_RESUME, "resume")
             .await
     }
 
@@ -702,7 +479,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        self.player_action(config, ctx, args, Permission::MusicSkip, "skip")
+        self.player_action(config, ctx, args, Permission::MUSIC_SKIP, "skip")
             .await
     }
 
@@ -713,7 +490,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        self.player_action(config, ctx, args, Permission::MusicStop, "stop")
+        self.player_action(config, ctx, args, Permission::MUSIC_STOP, "stop")
             .await
     }
 
@@ -724,7 +501,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
+        check_permission!(self, config, ctx, Permission::MUSIC_PLAY);
 
         let Some(position_ms) = (match args.get(0) {
             Some(Arg::Number(n)) => Some(*n as u64),
@@ -761,7 +538,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicVolume);
+        check_permission!(self, config, ctx, Permission::MUSIC_VOLUME);
 
         let Some(raw) = args.get_raw(0) else {
             self.missing_parameters(config, ctx, args, schema::AUDIO_VOLUME)
@@ -807,7 +584,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
+        check_permission!(self, config, ctx, Permission::MUSIC_PLAY);
 
         let Some(player_id) = self.resolve_player_id(config, ctx, args, 0).await? else {
             return Ok(());
@@ -849,7 +626,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
+        check_permission!(self, config, ctx, Permission::MUSIC_PLAY);
 
         let Some(url) = args.get_raw(0) else {
             self.missing_parameters(config, ctx, args, schema::AUDIO_ENQUEUE)
@@ -897,7 +674,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
+        check_permission!(self, config, ctx, Permission::MUSIC_PLAY);
 
         let Some(player_id) = self.resolve_player_id(config, ctx, args, 0).await? else {
             return Ok(());
@@ -945,7 +722,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicClear);
+        check_permission!(self, config, ctx, Permission::MUSIC_CLEAR);
 
         let Some(player_id) = self.resolve_player_id(config, ctx, args, 0).await? else {
             return Ok(());
@@ -969,7 +746,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
+        check_permission!(self, config, ctx, Permission::MUSIC_PLAY);
 
         let Some(name) = args.get_raw(0) else {
             self.missing_parameters(config, ctx, args, schema::AUDIO_PLAYLIST)
@@ -1002,7 +779,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::MusicPlay);
+        check_permission!(self, config, ctx, Permission::MUSIC_PLAY);
 
         let Some(name) = args.get_raw(0) else {
             self.missing_parameters(config, ctx, args, schema::AUDIO_PLAYLIST)

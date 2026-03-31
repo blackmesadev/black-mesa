@@ -208,6 +208,7 @@ dependencies = [
  "chrono",
  "config",
  "dotenv",
+ "futures",
  "lazy_static",
  "opentelemetry",
  "opentelemetry-otlp",

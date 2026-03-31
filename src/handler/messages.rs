@@ -31,7 +31,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(&channel_id, &vec![embed])
+            .create_message_with_embed(&channel_id, &[embed])
             .await?;
         Ok(())
     }
@@ -67,7 +67,7 @@ impl EventHandler {
                 .map(|s| s.chars().take(61).collect::<String>())
                 .unwrap_or_else(|| String::from("No reason provided"));
 
-            if reason.len() == 61 {
+            if reason.chars().count() == 61 {
                 reason.push_str("...");
             }
 
@@ -81,7 +81,7 @@ impl EventHandler {
         let embed = embed.build();
 
         self.rest
-            .create_message_with_embed(channel_id, &vec![embed])
+            .create_message_with_embed(channel_id, &[embed])
             .await?;
         Ok(())
     }
@@ -170,7 +170,7 @@ impl EventHandler {
         let mut embed = EmbedBuilder::new()
             .title(
                 format!(
-                    "You have recieved a {} from {}",
+                    "You have received a {} from {}",
                     infraction.infraction_type.to_noun(),
                     guild_name
                 )
@@ -207,7 +207,7 @@ impl EventHandler {
         let embed = embed.build();
 
         self.rest
-            .create_message_with_embed_and_forget(&channel_id, &vec![embed])
+            .create_message_with_embed_and_forget(&channel_id, &[embed])
             .await;
         Ok(())
     }
@@ -250,7 +250,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(&channel_id, &vec![embed])
+            .create_message_with_embed(&channel_id, &[embed])
             .await?;
 
         Ok(())
@@ -290,7 +290,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(&channel_id, &vec![embed])
+            .create_message_with_embed(&channel_id, &[embed])
             .await?;
 
         Ok(())
@@ -311,7 +311,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(&channel_id, &vec![embed])
+            .create_message_with_embed(&channel_id, &[embed])
             .await?;
 
         Ok(())
@@ -347,7 +347,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(&channel_id, &vec![embed])
+            .create_message_with_embed(&channel_id, &[embed])
             .await?;
 
         Ok(())

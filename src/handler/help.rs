@@ -29,7 +29,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await?;
         Ok(())
     }
@@ -81,7 +81,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await?;
         Ok(())
     }

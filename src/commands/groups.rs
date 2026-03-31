@@ -24,7 +24,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &mut Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigEdit);
+        check_permission!(self, config, ctx, Permission::CONFIG_EDIT);
 
         let subcommand = match args.pop_subcommand() {
             Some(subcommand) => subcommand,
@@ -181,7 +181,7 @@ impl EventHandler {
                 .build();
 
             self.rest
-                .create_message_with_embed(ctx.channel_id, &vec![embed])
+                .create_message_with_embed(ctx.channel_id, &[embed])
                 .await?;
         } else {
             self.rest
@@ -368,7 +368,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await?;
         Ok(())
     }
@@ -419,7 +419,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await?;
         Ok(())
     }

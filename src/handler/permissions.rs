@@ -1,12 +1,46 @@
+use std::collections::HashSet;
+
 use super::EventHandler;
 use bm_lib::{
     discord::{commands::Ctx, DiscordResult, Id},
     model::Config,
-    permissions::{Permission, PermissionSet},
+    permissions::Permission,
 };
 use tracing::instrument;
 
 impl EventHandler {
+    /// Compute the effective [`Permission`] for a guild member.
+    ///
+    /// Fetches the guild from cache/API to resolve Discord role permissions
+    /// (when `config.inherit_discord_perms` is enabled) and combines them with
+    /// any Black Mesa permission groups the member belongs to, either directly
+    /// by user ID or via their Discord roles.
+    pub async fn resolve_member_permissions(
+        &self,
+        config: &Config,
+        guild_id: &Id,
+        user_id: Id,
+        member_roles: &HashSet<Id>,
+    ) -> DiscordResult<Permission> {
+        let mut perms = if config.inherit_discord_perms {
+            let guild = self.get_guild(guild_id).await?;
+            Permission::from_discord_permissions(&guild.roles, member_roles)
+        } else {
+            Permission::empty()
+        };
+
+        if let Some(groups) = &config.permission_groups {
+            for group in groups {
+                if group.users.contains(&user_id)
+                    || group.roles.iter().any(|role| member_roles.contains(role))
+                {
+                    perms |= group.permissions;
+                }
+            }
+        }
+
+        Ok(perms)
+    }
     #[instrument(
         skip(self, config, ctx),
         fields(
@@ -21,36 +55,15 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         perm: Permission,
     ) -> DiscordResult<bool> {
-        if config.inherit_discord_perms {
-            if let Ok(guild) = self.get_guild(ctx.guild_id).await {
-                let roles = &guild.roles;
-                let Some(member) = ctx.message.member.as_ref() else {
-                    tracing::warn!("Message member is None in check_permission");
-                    return Ok(false);
-                };
-                let present = &member.roles;
+        let Some(member) = ctx.message.member.as_ref() else {
+            tracing::warn!("Message member is None in check_permission");
+            return Ok(false);
+        };
 
-                let perms = PermissionSet::from_discord_permissions(roles, present);
-
-                if perms.has_permission(&perm) {
-                    return Ok(true);
-                }
-            }
-        }
-
-        if let Some(groups) = &config.permission_groups {
-            if groups
-                .iter()
-                .any(|group| group.users.contains(&ctx.user.id))
-                && groups
-                    .iter()
-                    .any(|group| group.permissions.has_permission(&perm))
-            {
-                return Ok(true);
-            }
-        }
-
-        Ok(false)
+        let perms = self
+            .resolve_member_permissions(config, ctx.guild_id, ctx.user.id, &member.roles)
+            .await?;
+        Ok(perms.has_permission(perm))
     }
 
     #[instrument(skip(self, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]

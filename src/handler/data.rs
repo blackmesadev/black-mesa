@@ -36,8 +36,18 @@ fn roles_cache_key(guild_id: &Id, user_id: &Id) -> String {
 }
 
 #[inline]
+fn member_guilds_cache_key(user_id: &Id) -> String {
+    format!("member_guilds:{}", user_id)
+}
+
+#[inline]
 fn dm_channel_cache_key(user_id: &Id) -> String {
     format!("dm_channel:{}", user_id)
+}
+
+#[inline]
+fn automod_cache_key(guild_id: &Id) -> String {
+    format!("automod:{}", guild_id)
 }
 
 #[inline]
@@ -114,9 +124,11 @@ impl EventHandler {
     pub async fn clear_cache(&self, guild_id: &Id) -> DiscordResult<()> {
         let guild_key = guild_cache_key(guild_id);
         let config_key = guild_id;
+        let automod_key = automod_cache_key(guild_id);
 
         self.cache.delete(&guild_key).await?;
         self.cache.delete(config_key).await?;
+        self.cache.delete(&automod_key).await?;
         Ok(())
     }
 
@@ -184,6 +196,18 @@ impl EventHandler {
     ) -> DiscordResult<()> {
         let key = roles_cache_key(guild_id, user_id);
         self.cache.set(&key, roles, None).await?;
+
+        // Maintain a reverse index: which guilds is this user a member of?
+        // This lets the API do a single O(1) lookup instead of scanning the keyspace.
+        let index_key = member_guilds_cache_key(user_id);
+        let mut guild_set: HashSet<Id> = self
+            .cache
+            .get::<String, HashSet<Id>>(&index_key)
+            .await?
+            .unwrap_or_default();
+        guild_set.insert(*guild_id);
+        self.cache.set(&index_key, &guild_set, None).await?;
+
         Ok(())
     }
 

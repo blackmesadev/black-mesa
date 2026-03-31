@@ -1,3 +1,4 @@
+use futures::future::try_join_all;
 use tracing::instrument;
 
 use crate::{
@@ -23,7 +24,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ModerationKick);
+        check_permission!(self, config, ctx, Permission::MODERATION_KICK);
 
         let targets = args.get_targets();
 
@@ -37,22 +38,18 @@ impl EventHandler {
 
         let reason = args.get_first_text();
 
-        let mut infractions = Vec::with_capacity(targets.len());
-
-        for target in targets {
-            let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            match self
-                .kick_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
-                .await
-            {
-                Ok(infraction) => infractions.push(infraction),
-                Err(e) => {
-                    tracing::error!("Failed to kick user: {}", e);
-                    self.send_error(&ctx.channel_id, e).await?;
-                    return Ok(());
-                }
+        let infractions = match try_join_all(targets.iter().map(|target| {
+            self.kick_user(ctx.guild_id, target, &ctx.user.id, reason.map(std::borrow::Cow::Borrowed))
+        }))
+        .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Failed to kick user: {}", e);
+                self.send_error(&ctx.channel_id, e).await?;
+                return Ok(());
             }
-        }
+        };
 
         if let Err(e) = self
             .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
@@ -72,7 +69,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ModerationBan);
+        check_permission!(self, config, ctx, Permission::MODERATION_BAN);
 
         let targets = args.get_targets();
 
@@ -87,22 +84,18 @@ impl EventHandler {
         let duration = args.get_first_duration();
         let reason = args.get_first_text();
 
-        let mut infractions = Vec::with_capacity(targets.len());
-
-        for target in targets {
-            let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            match self
-                .ban_user(ctx.guild_id, &target, &ctx.user.id, duration, reason_ref)
-                .await
-            {
-                Ok(infraction) => infractions.push(infraction),
-                Err(e) => {
-                    tracing::error!("Failed to ban user: {}", e);
-                    self.send_error(&ctx.channel_id, e).await?;
-                    return Ok(());
-                }
+        let infractions = match try_join_all(targets.iter().map(|target| {
+            self.ban_user(ctx.guild_id, target, &ctx.user.id, duration, reason.map(std::borrow::Cow::Borrowed))
+        }))
+        .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Failed to ban user: {}", e);
+                self.send_error(&ctx.channel_id, e).await?;
+                return Ok(());
             }
-        }
+        };
 
         if let Err(e) = self
             .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
@@ -122,7 +115,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ModerationMute);
+        check_permission!(self, config, ctx, Permission::MODERATION_MUTE);
 
         let Some(mute_role) = config.mute_role.as_ref() else {
             return Ok(()); // No mute role configured
@@ -141,29 +134,25 @@ impl EventHandler {
         let duration = args.get_first_duration();
         let reason = args.get_first_text();
 
-        let mut infractions = Vec::with_capacity(targets.len());
-
-        for target in targets {
-            let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            match self
-                .mute_user(
-                    ctx.guild_id,
-                    &target,
-                    &ctx.user.id,
-                    mute_role,
-                    duration,
-                    reason_ref,
-                )
-                .await
-            {
-                Ok(infraction) => infractions.push(infraction),
-                Err(e) => {
-                    tracing::error!("Failed to mute user: {}", e);
-                    self.send_error(&ctx.channel_id, e).await?;
-                    return Ok(());
-                }
+        let infractions = match try_join_all(targets.iter().map(|target| {
+            self.mute_user(
+                ctx.guild_id,
+                target,
+                &ctx.user.id,
+                mute_role,
+                duration,
+                reason.map(std::borrow::Cow::Borrowed),
+            )
+        }))
+        .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Failed to mute user: {}", e);
+                self.send_error(&ctx.channel_id, e).await?;
+                return Ok(());
             }
-        }
+        };
 
         if let Err(e) = self
             .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
@@ -183,7 +172,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ModerationWarn);
+        check_permission!(self, config, ctx, Permission::MODERATION_WARN);
 
         let targets = args.get_targets();
 
@@ -203,28 +192,24 @@ impl EventHandler {
 
         let reason = args.get_first_text();
 
-        let mut infractions = Vec::with_capacity(targets.len());
-
-        for target in targets {
-            let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            match self
-                .warn_user(
-                    ctx.guild_id,
-                    &target,
-                    &ctx.user.id,
-                    Some(duration),
-                    reason_ref,
-                )
-                .await
-            {
-                Ok(infraction) => infractions.push(infraction),
-                Err(e) => {
-                    tracing::error!("Failed to warn user: {}", e);
-                    self.send_error(&ctx.channel_id, e).await?;
-                    return Ok(());
-                }
+        let infractions = match try_join_all(targets.iter().map(|target| {
+            self.warn_user(
+                ctx.guild_id,
+                target,
+                &ctx.user.id,
+                Some(duration),
+                reason.map(std::borrow::Cow::Borrowed),
+            )
+        }))
+        .await
+        {
+            Ok(v) => v,
+            Err(e) => {
+                tracing::error!("Failed to warn user: {}", e);
+                self.send_error(&ctx.channel_id, e).await?;
+                return Ok(());
             }
-        }
+        };
 
         if let Err(e) = self
             .send_infraction_channel(ctx.channel_id, &infractions, config.prefer_embeds)
@@ -244,7 +229,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ModerationUnban);
+        check_permission!(self, config, ctx, Permission::MODERATION_UNBAN);
 
         let targets = args.get_targets();
 
@@ -256,17 +241,27 @@ impl EventHandler {
 
         let reason = args.get_first_text();
 
-        for target in targets {
-            let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            if let Err(e) = self
-                .unban_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
-                .await
-            {
-                tracing::error!("Failed to unban user: {}", e);
-                self.send_error(&ctx.channel_id, e).await?;
-                return Ok(());
-            }
+        if let Err(e) = try_join_all(targets.iter().map(|target| {
+            self.unban_user(ctx.guild_id, target, &ctx.user.id, reason.map(std::borrow::Cow::Borrowed))
+        }))
+        .await
+        {
+            tracing::error!("Failed to unban user: {}", e);
+            self.send_error(&ctx.channel_id, e).await?;
+            return Ok(());
         }
+
+        let mentions = targets
+            .iter()
+            .map(|id| format!("<@{}>", id))
+            .collect::<Vec<_>>()
+            .join(", ");
+        self.rest
+            .create_message_no_ping(
+                &ctx.channel_id,
+                &format!("{} Successfully unbanned {}", bm_lib::emojis::Emoji::Check, mentions),
+            )
+            .await?;
 
         Ok(())
     }
@@ -278,7 +273,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ModerationUnmute);
+        check_permission!(self, config, ctx, Permission::MODERATION_UNMUTE);
 
         let targets = args.get_targets();
 
@@ -290,17 +285,27 @@ impl EventHandler {
 
         let reason = args.get_first_text();
 
-        for target in targets {
-            let reason_ref = reason.map(std::borrow::Cow::Borrowed);
-            if let Err(e) = self
-                .unmute_user(ctx.guild_id, &target, &ctx.user.id, reason_ref)
-                .await
-            {
-                tracing::error!("Failed to unmute user: {}", e);
-                self.send_error(&ctx.channel_id, e).await?;
-                return Ok(());
-            }
+        if let Err(e) = try_join_all(targets.iter().map(|target| {
+            self.unmute_user(ctx.guild_id, target, &ctx.user.id, reason.map(std::borrow::Cow::Borrowed))
+        }))
+        .await
+        {
+            tracing::error!("Failed to unmute user: {}", e);
+            self.send_error(&ctx.channel_id, e).await?;
+            return Ok(());
         }
+
+        let mentions = targets
+            .iter()
+            .map(|id| format!("<@{}>", id))
+            .collect::<Vec<_>>()
+            .join(", ");
+        self.rest
+            .create_message_no_ping(
+                &ctx.channel_id,
+                &format!("{} Successfully unmuted {}", bm_lib::emojis::Emoji::Check, mentions),
+            )
+            .await?;
 
         Ok(())
     }
@@ -311,7 +316,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ModerationPardon);
+        check_permission!(self, config, ctx, Permission::MODERATION_PARDON);
 
         let targets: Vec<Uuid> = match args
             .raw_args()
@@ -397,7 +402,7 @@ impl EventHandler {
 
         if let Err(e) = self
             .rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await
         {
             tracing::error!("Failed to send pardon message: {}", e);
@@ -432,10 +437,10 @@ impl EventHandler {
         let mut targets = args.get_targets();
 
         if targets.is_empty() {
-            check_permission!(self, config, ctx, Permission::UtilitySelfLookup);
+            check_permission!(self, config, ctx, Permission::UTILITY_SELFLOOKUP);
             targets.push(ctx.user.id);
         } else {
-            check_permission!(self, config, ctx, Permission::ModerationLookup);
+            check_permission!(self, config, ctx, Permission::MODERATION_LOOKUP);
         }
 
         let infractions = self
@@ -526,7 +531,7 @@ impl EventHandler {
         let embed = embed.build();
 
         self.rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await?;
 
         Ok(())

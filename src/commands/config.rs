@@ -58,7 +58,7 @@ macro_rules! set_duration_config {
 impl EventHandler {
     #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn resetconfig_command(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigEdit);
+        check_permission!(self, config, ctx, Permission::CONFIG_EDIT);
         self.reset_config(ctx.guild_id).await
     }
 
@@ -69,7 +69,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigEdit);
+        check_permission!(self, config, ctx, Permission::CONFIG_EDIT);
 
         let Some(Arg::Text(prefix)) = args.get(0) else {
             self.missing_parameters(config, ctx, args, schema::PREFIX)
@@ -89,7 +89,7 @@ impl EventHandler {
             .build();
 
         self.rest
-            .create_message_with_embed(ctx.channel_id, &vec![embed])
+            .create_message_with_embed(ctx.channel_id, &[embed])
             .await?;
 
         Ok(())
@@ -102,7 +102,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigEdit);
+        check_permission!(self, config, ctx, Permission::CONFIG_EDIT);
 
         let key = get_raw_arg!(self, &config, ctx, args, 0, schema::SET_CONFIG);
         let value = get_raw_arg!(self, &config, ctx, args, 1, schema::SET_CONFIG);
@@ -154,7 +154,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigEdit);
+        check_permission!(self, config, ctx, Permission::CONFIG_EDIT);
 
         let alias = get_raw_arg!(self, &config, ctx, args, 0, schema::ADD_ALIAS);
         let command = get_raw_arg!(self, &config, ctx, args, 1, schema::ADD_ALIAS);
@@ -187,7 +187,7 @@ impl EventHandler {
         ctx: &Ctx<'_>,
         args: &Args<'_>,
     ) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigEdit);
+        check_permission!(self, config, ctx, Permission::CONFIG_EDIT);
 
         let alias = get_raw_arg!(self, &config, ctx, args, 0, schema::REMOVE_ALIAS);
 
@@ -226,7 +226,7 @@ impl EventHandler {
 
     #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn list_aliases_command(&self, config: &Config, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        check_permission!(self, config, ctx, Permission::ConfigView);
+        check_permission!(self, config, ctx, Permission::CONFIG_VIEW);
 
         let Some(aliases) = &config.command_aliases else {
             self.rest
@@ -250,6 +250,7 @@ impl EventHandler {
 
     #[instrument(skip(self, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn clear_cache_command(&self, ctx: &Ctx<'_>) -> DiscordResult<()> {
+        // No permission check as this command is only available to the bot owner
         self.clear_cache(ctx.guild_id).await?;
 
         self.rest

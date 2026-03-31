@@ -15,17 +15,10 @@ impl Worker {
     pub async fn start_expiry(&self) {
         tracing::info!("Starting expiry worker");
         loop {
+            if let Err(e) = expiry_job(Arc::clone(&self.rest), Arc::clone(&self.db)).await {
+                tracing::error!("Error in expiry job: {:?}", e);
+            }
             tokio::time::sleep(std::time::Duration::from_secs(self.interval)).await;
-            let rest = Arc::clone(&self.rest);
-            let db = Arc::clone(&self.db);
-            tokio::spawn(async move {
-                match expiry_job(rest, db).await {
-                    Ok(_) => {}
-                    Err(e) => {
-                        tracing::error!("Error in expiry job: {:?}", e);
-                    }
-                }
-            });
         }
     }
 }
@@ -36,32 +29,50 @@ async fn expiry_job(rest: Arc<DiscordRestClient>, db: Arc<Database>) -> DiscordR
 
     for infraction in infractions {
         if let Some(role_id) = infraction.mute_role_id {
-            rest.remove_role(
-                &infraction.guild_id,
-                &infraction.user_id,
-                &role_id,
-                Some(Cow::Borrowed(REASON)),
-            )
-            .await?;
-            tracing::info!(
-                "Removed mute role for user {} in guild {}",
-                infraction.user_id,
-                infraction.guild_id
-            );
+            if let Err(e) = rest
+                .remove_role(
+                    &infraction.guild_id,
+                    &infraction.user_id,
+                    &role_id,
+                    Some(Cow::Borrowed(REASON)),
+                )
+                .await
+            {
+                tracing::warn!(
+                    infraction_id = %infraction.uuid,
+                    error = ?e,
+                    "remove_role failed, deactivating infraction anyway"
+                );
+            } else {
+                tracing::info!(
+                    "Removed mute role for user {} in guild {}",
+                    infraction.user_id,
+                    infraction.guild_id
+                );
+            }
         }
 
         if infraction.infraction_type == InfractionType::Ban {
-            rest.unban_member(
-                &infraction.guild_id,
-                &infraction.user_id,
-                Some(Cow::Borrowed(REASON)),
-            )
-            .await?;
-            tracing::info!(
-                "Unbanned user {} in guild {}",
-                infraction.user_id,
-                infraction.guild_id
-            );
+            if let Err(e) = rest
+                .unban_member(
+                    &infraction.guild_id,
+                    &infraction.user_id,
+                    Some(Cow::Borrowed(REASON)),
+                )
+                .await
+            {
+                tracing::warn!(
+                    infraction_id = %infraction.uuid,
+                    error = ?e,
+                    "unban_member failed, deactivating infraction anyway"
+                );
+            } else {
+                tracing::info!(
+                    "Unbanned user {} in guild {}",
+                    infraction.user_id,
+                    infraction.guild_id
+                );
+            }
         }
 
         db.deactivate_infraction(&infraction.uuid).await?;

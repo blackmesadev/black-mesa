@@ -17,8 +17,9 @@ impl EventHandler {
         args: &mut Args<'_>,
     ) -> DiscordResult<()> {
         if ctx.user.id == GOAT_ID {
-            self.handle_privileged_command(config, ctx, command, args)
-                .await?;
+            return self
+                .handle_privileged_command(config, ctx, command, args)
+                .await;
         }
 
         match command {
@@ -31,6 +32,7 @@ impl EventHandler {
 
             // Configuration commands
             "resetconfig" => self.resetconfig_command(config, ctx).await,
+            "reset" => self.reset_command(config, ctx, args).await,
             "setprefix" => self.setprefix_command(config, ctx, args).await,
             "setconfig" => self.setconfig_command(config, ctx, args).await,
             "addalias" => self.add_alias_command(config, ctx, args).await,
@@ -48,16 +50,6 @@ impl EventHandler {
             "pardon" => self.pardon_command(config, ctx, args).await,
 
             "lookup" => self.lookup_user_command(config, ctx, args).await,
-
-            // Audio debug commands
-            "audiohealth" => self.audiohealth_command(config, ctx).await,
-            "audioready" => self.audioready_command(config, ctx).await,
-            "playercreate" => self.playercreate_command(config, ctx, args).await,
-            "players" => self.players_command(config, ctx).await,
-            "playerget" => self.playerget_command(config, ctx, args).await,
-            "playerstatus" => self.playerstatus_command(config, ctx, args).await,
-            "playerdestroy" => self.playerdestroy_command(config, ctx, args).await,
-            "playerconnect" => self.playerconnect_command(config, ctx, args).await,
 
             // Music commands
             "enqueue" => self.enqueue_command(config, ctx, args).await,
