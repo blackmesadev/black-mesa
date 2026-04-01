@@ -17,9 +17,9 @@ impl EventHandler {
         args: &mut Args<'_>,
     ) -> DiscordResult<()> {
         if ctx.user.id == GOAT_ID {
-            return self
+            self
                 .handle_privileged_command(config, ctx, command, args)
-                .await;
+                .await?;
         }
 
         match command {
@@ -73,7 +73,7 @@ impl EventHandler {
         }
     }
 
-    #[instrument(skip(self, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id, message_id = %ctx.message.id, channel_id = %ctx.channel_id))]
+    #[instrument(skip(self, config, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id, message_id = %ctx.message.id, channel_id = %ctx.channel_id))]
     async fn handle_privileged_command(
         &self,
         config: &Config,
