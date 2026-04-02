@@ -17,8 +17,7 @@ impl EventHandler {
         args: &mut Args<'_>,
     ) -> DiscordResult<()> {
         if ctx.user.id == GOAT_ID {
-            self
-                .handle_privileged_command(config, ctx, command, args)
+            self.handle_privileged_command(config, ctx, command, args)
                 .await?;
         }
 

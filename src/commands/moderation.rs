@@ -39,7 +39,12 @@ impl EventHandler {
         let reason = args.get_first_text();
 
         let infractions = match try_join_all(targets.iter().map(|target| {
-            self.kick_user(ctx.guild_id, target, &ctx.user.id, reason.map(std::borrow::Cow::Borrowed))
+            self.kick_user(
+                ctx.guild_id,
+                target,
+                &ctx.user.id,
+                reason.map(std::borrow::Cow::Borrowed),
+            )
         }))
         .await
         {
@@ -85,7 +90,13 @@ impl EventHandler {
         let reason = args.get_first_text();
 
         let infractions = match try_join_all(targets.iter().map(|target| {
-            self.ban_user(ctx.guild_id, target, &ctx.user.id, duration, reason.map(std::borrow::Cow::Borrowed))
+            self.ban_user(
+                ctx.guild_id,
+                target,
+                &ctx.user.id,
+                duration,
+                reason.map(std::borrow::Cow::Borrowed),
+            )
         }))
         .await
         {
@@ -242,7 +253,12 @@ impl EventHandler {
         let reason = args.get_first_text();
 
         if let Err(e) = try_join_all(targets.iter().map(|target| {
-            self.unban_user(ctx.guild_id, target, &ctx.user.id, reason.map(std::borrow::Cow::Borrowed))
+            self.unban_user(
+                ctx.guild_id,
+                target,
+                &ctx.user.id,
+                reason.map(std::borrow::Cow::Borrowed),
+            )
         }))
         .await
         {
@@ -259,7 +275,11 @@ impl EventHandler {
         self.rest
             .create_message_no_ping(
                 &ctx.channel_id,
-                &format!("{} Successfully unbanned {}", bm_lib::emojis::Emoji::Check, mentions),
+                &format!(
+                    "{} Successfully unbanned {}",
+                    bm_lib::emojis::Emoji::Check,
+                    mentions
+                ),
             )
             .await?;
 
@@ -286,7 +306,12 @@ impl EventHandler {
         let reason = args.get_first_text();
 
         if let Err(e) = try_join_all(targets.iter().map(|target| {
-            self.unmute_user(ctx.guild_id, target, &ctx.user.id, reason.map(std::borrow::Cow::Borrowed))
+            self.unmute_user(
+                ctx.guild_id,
+                target,
+                &ctx.user.id,
+                reason.map(std::borrow::Cow::Borrowed),
+            )
         }))
         .await
         {
@@ -303,7 +328,11 @@ impl EventHandler {
         self.rest
             .create_message_no_ping(
                 &ctx.channel_id,
-                &format!("{} Successfully unmuted {}", bm_lib::emojis::Emoji::Check, mentions),
+                &format!(
+                    "{} Successfully unmuted {}",
+                    bm_lib::emojis::Emoji::Check,
+                    mentions
+                ),
             )
             .await?;
 

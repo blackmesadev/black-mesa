@@ -4,8 +4,8 @@ use tracing::{field, Instrument, Span};
 
 use bm_lib::discord::{
     commands::{Args, Ctx},
-    DiscordError, DiscordResult, DiscordWebsocket, Event, Guild, GuildMemberUpdate, Id, Message,
-    Ready, ResumeState, ShardConfig,
+    DiscordError, DiscordResult, DiscordWebsocket, Event, Guild, GuildMemberRemove,
+    GuildMember, Id, Message, Ready, ResumeState, ShardConfig,
 };
 use tracing::instrument;
 
@@ -61,8 +61,16 @@ impl EventHandler {
             Event::GuildUpdate(guild) => {
                 tracing::info_span!(parent: None, "GuildUpdate", guild_id = %guild.id)
             }
+            Event::GuildMemberAdd(u) => tracing::info_span!(
+                "GuildMemberAdd",
+                guild_id = %u.guild_id, user_id = %u.user.id
+            ),
             Event::GuildMemberUpdate(u) => tracing::info_span!(
-                parent: None, "GuildMemberUpdate",
+                "GuildMemberUpdate",
+                guild_id = %u.guild_id, user_id = %u.user.id
+            ),
+            Event::GuildMemberRemove(u) => tracing::info_span!(
+                "GuildMemberRemove",
                 guild_id = %u.guild_id, user_id = %u.user.id
             ),
             Event::VoiceStateUpdate(vs) => {
@@ -93,7 +101,9 @@ impl EventHandler {
                 Event::MessageCreate(message) => self.on_message_create(message).await?,
                 Event::GuildCreate(guild) => self.on_guild_create(guild).await?,
                 Event::GuildUpdate(guild) => self.on_guild_update(guild).await?,
-                Event::GuildMemberUpdate(u) => self.on_member_update(u).await?,
+                Event::GuildMemberAdd(member) => self.on_member_update(member).await?,
+                Event::GuildMemberUpdate(member) => self.on_member_update(member).await?,
+                Event::GuildMemberRemove(member) => self.on_member_remove(member).await?,
                 Event::VoiceStateUpdate(vs) => self.on_voice_state_update(vs).await?,
                 Event::VoiceServerUpdate(vs) => self.on_voice_server_update(vs).await?,
                 Event::MessageUpdate(_) => {} // Not handled yet
@@ -189,21 +199,9 @@ impl EventHandler {
                             }
                             _ => {
                                 let handler = Arc::clone(&self);
-                                let event_name = event.event_name();
                                 tokio::spawn(async move {
-                                    let handle = tokio::spawn(async move {
-                                        if let Err(e) = handler.handle_event(&event).await {
-                                            tracing::error!(error = ?e, "event handler failed");
-                                        }
-                                    });
-                                    if let Err(e) = handle.await {
-                                        if e.is_panic() {
-                                            tracing::error!(
-                                                event_type = %event_name,
-                                                "Event handler panicked: {:?}",
-                                                e
-                                            );
-                                        }
+                                    if let Err(e) = handler.handle_event(&event).await {
+                                        tracing::error!(error = ?e, "event handler failed");
                                     }
                                 });
                             }
@@ -311,6 +309,10 @@ impl EventHandler {
             }
         };
 
+        if let Err(e) = self.update_member_guilds_cache(&guild_id, &author.id).await {
+            tracing::warn!(error = ?e, "Failed to update member guilds cache");
+        }
+
         if let Err(e) = self.set_user(&author.id, author).await {
             tracing::warn!("Failed to cache user: {}", e);
             // Continue anyway - caching failure shouldn't block command processing
@@ -402,13 +404,36 @@ impl EventHandler {
     }
 
     #[tracing::instrument(skip(self, member_update), fields(guild_id = %member_update.guild_id))]
-    async fn on_member_update(&self, member_update: &GuildMemberUpdate) -> DiscordResult<()> {
+    async fn on_member_update(&self, member_update: &GuildMember) -> DiscordResult<()> {
         self.set_member_roles(
             &member_update.guild_id,
             &member_update.user.id,
             &member_update.roles,
         )
-        .await
+        .await?;
+
+        // Update member guilds reverse index - member is still in this guild
+        if let Err(e) = self
+            .update_member_guilds_cache(&member_update.guild_id, &member_update.user.id)
+            .await
+        {
+            tracing::warn!(error = ?e, "Failed to update member guilds cache");
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, member_remove), fields(guild_id = %member_remove.guild_id, user_id = %member_remove.user.id))]
+    async fn on_member_remove(&self, member_remove: &GuildMemberRemove) -> DiscordResult<()> {
+        // Remove this guild from the user's member guilds cache
+        if let Err(e) = self
+            .remove_from_member_guilds_cache(&member_remove.guild_id, &member_remove.user.id)
+            .await
+        {
+            tracing::warn!(error = ?e, "Failed to remove from member guilds cache");
+        }
+
+        Ok(())
     }
 
     /// Processes a message, running automod checks and dispatching commands.

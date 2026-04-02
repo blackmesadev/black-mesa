@@ -128,49 +128,45 @@ impl EventHandler {
                 matched_word
             }
 
-            CensorType::Link => {
-                content.split_whitespace().find_map(|s| {
-                    let candidate = if s.contains("://") {
-                        s.to_string()
-                    } else {
-                        format!("https://{s}")
-                    };
-                    url::Url::parse(&candidate).ok().and_then(|url| {
-                        url.host_str().and_then(|domain| {
-                            if censor.filters.iter().any(|filter| filter == domain) {
-                                Some(domain.to_string())
-                            } else {
-                                None
-                            }
-                        })
-                    })
-                })
-            }
-
-            CensorType::Invite => {
-                content.split_whitespace().find_map(|s| {
-                    let candidate = if s.contains("://") {
-                        s.to_string()
-                    } else {
-                        format!("https://{s}")
-                    };
-                    url::Url::parse(&candidate).ok().and_then(|url| {
-                        if url.host_str() == Some("discord.gg") {
-                            url.path_segments()
-                                .and_then(|segments| segments.last())
-                                .and_then(|invite| {
-                                    if censor.filters.iter().any(|filter| filter == invite) {
-                                        Some(invite.to_string())
-                                    } else {
-                                        None
-                                    }
-                                })
+            CensorType::Link => content.split_whitespace().find_map(|s| {
+                let candidate = if s.contains("://") {
+                    s.to_string()
+                } else {
+                    format!("https://{s}")
+                };
+                url::Url::parse(&candidate).ok().and_then(|url| {
+                    url.host_str().and_then(|domain| {
+                        if censor.filters.iter().any(|filter| filter == domain) {
+                            Some(domain.to_string())
                         } else {
                             None
                         }
                     })
                 })
-            }
+            }),
+
+            CensorType::Invite => content.split_whitespace().find_map(|s| {
+                let candidate = if s.contains("://") {
+                    s.to_string()
+                } else {
+                    format!("https://{s}")
+                };
+                url::Url::parse(&candidate).ok().and_then(|url| {
+                    if url.host_str() == Some("discord.gg") {
+                        url.path_segments()
+                            .and_then(|segments| segments.last())
+                            .and_then(|invite| {
+                                if censor.filters.iter().any(|filter| filter == invite) {
+                                    Some(invite.to_string())
+                                } else {
+                                    None
+                                }
+                            })
+                    } else {
+                        None
+                    }
+                })
+            }),
         };
 
         if (censor.whitelist && found_filter.is_none())

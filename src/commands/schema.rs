@@ -9,8 +9,6 @@ pub const REMOVE_ALIAS: &str = "<alias:command>";
 pub const SET_CONFIG: &str = "<key:text> <value:text>";
 
 pub const AUDIO_PLAYER_ID: &str = "<player_id:channel_id>";
-pub const AUDIO_CONNECTION: &str = "<channel:id> <session_id:text> <token:text> <endpoint:text> [udp_server_addr:text] [udp_ssrc:number] [udp_key_hex:text]";
-pub const AUDIO_PLAYER_CONNECTION: &str = "<channel:id> <session_id:text> <token:text> <endpoint:text> [udp_server_addr:text] [udp_ssrc:number] [udp_key_hex:text]";
 pub const AUDIO_ENQUEUE: &str = "<url:text> [player_id:channel_id]";
 pub const AUDIO_PLAYLIST: &str = "<name:text> [player_id:channel_id]";
 pub const AUDIO_SEEK: &str = "<position_ms:number> [player_id:channel_id]";

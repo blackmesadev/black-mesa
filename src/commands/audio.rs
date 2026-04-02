@@ -113,41 +113,6 @@ impl EventHandler {
         Ok(None)
     }
 
-    async fn parse_connection_request(
-        &self,
-        ctx: &Ctx<'_>,
-        args: &Args<'_>,
-        start: usize,
-    ) -> Option<CreatePlayerRequest> {
-        let (channel_id, offset) = match args.get(start).and_then(|a| a.as_id()) {
-            Some(channel_id) => (channel_id, 1usize),
-            None => {
-                let inferred = self
-                    .get_voice_state_channel(ctx.guild_id, &ctx.user.id)
-                    .await
-                    .ok()
-                    .flatten()?;
-                (inferred, 0usize)
-            }
-        };
-
-        let session_id = args.get_raw(start + offset)?.to_string();
-        let token = args.get_raw(start + offset + 1)?.to_string();
-        let endpoint = args.get_raw(start + offset + 2)?.to_string();
-        let gateway_url = format!("wss://{}/?v=8&encoding=json", endpoint);
-
-        Some(CreatePlayerRequest {
-            guild_id: *ctx.guild_id,
-            player_id: *ctx.guild_id,
-            channel_id,
-            user_id: ctx.user.id,
-            session_id,
-            token,
-            endpoint,
-            gateway_url,
-        })
-    }
-
     fn display_track_title(track: &Track) -> String {
         let raw_title = track.metadata.title.trim();
         if raw_title.is_empty()

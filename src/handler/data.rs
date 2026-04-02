@@ -197,16 +197,39 @@ impl EventHandler {
         let key = roles_cache_key(guild_id, user_id);
         self.cache.set(&key, roles, None).await?;
 
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub async fn update_member_guilds_cache(
+        &self,
+        guild_id: &Id,
+        user_id: &Id,
+    ) -> DiscordResult<()> {
         // Maintain a reverse index: which guilds is this user a member of?
-        // This lets the API do a single O(1) lookup instead of scanning the keyspace.
+        // This uses Redis SADD for a single atomic operation instead of get+update+set.
         let index_key = member_guilds_cache_key(user_id);
-        let mut guild_set: HashSet<Id> = self
-            .cache
-            .get::<String, HashSet<Id>>(&index_key)
-            .await?
-            .unwrap_or_default();
-        guild_set.insert(*guild_id);
-        self.cache.set(&index_key, &guild_set, None).await?;
+        tracing::debug!(key = %index_key, guild_id = %guild_id, user_id = %user_id, "About to SADD");
+        self.cache.sadd(&index_key, guild_id).await?;
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub async fn remove_from_member_guilds_cache(
+        &self,
+        guild_id: &Id,
+        user_id: &Id,
+    ) -> DiscordResult<()> {
+        // Remove guild from user's set using Redis SREM (single atomic operation).
+        // Clean up the key if the set becomes empty.
+        let index_key = member_guilds_cache_key(user_id);
+        self.cache.srem(&index_key, guild_id).await?;
+
+        // Check if set is now empty and delete if so
+        let count = self.cache.scard(&index_key).await?;
+        if count == 0 {
+            self.cache.delete(&index_key).await?;
+        }
 
         Ok(())
     }

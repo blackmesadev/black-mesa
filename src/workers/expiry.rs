@@ -5,7 +5,6 @@ use bm_lib::{
     discord::{DiscordRestClient, DiscordResult},
     model::InfractionType,
 };
-use tracing::instrument;
 
 use super::Worker;
 
@@ -23,7 +22,6 @@ impl Worker {
     }
 }
 
-#[instrument(skip(rest, db))]
 async fn expiry_job(rest: Arc<DiscordRestClient>, db: Arc<Database>) -> DiscordResult<()> {
     let infractions = db.get_expired_infractions().await?;
 
