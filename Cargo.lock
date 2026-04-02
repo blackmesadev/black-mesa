@@ -239,6 +239,7 @@ dependencies = [
 [[package]]
 name = "bm-lib"
 version = "0.1.0"
+source = "git+https://github.com/blackmesadev/lib.git#92a45e7fd00b563c5cbd54a0ede9dbc30babcc7a"
 dependencies = [
  "async-trait",
  "bitflags",
