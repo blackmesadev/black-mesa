@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./lib /app/lib
+# COPY ./lib /app/lib
+
 COPY ./black-mesa/Cargo.toml ./black-mesa/Cargo.lock ./black-mesa/build.rs ./
 COPY ./black-mesa/src/main.rs ./src/main.rs
 
