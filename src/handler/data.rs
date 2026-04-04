@@ -1,7 +1,7 @@
 use std::{collections::HashSet, time::Duration};
 
 use bm_lib::{
-    discord::{DiscordError, DiscordResult, Guild, Id, Member, User},
+    discord::{Channel, DiscordError, DiscordResult, Guild, Id, Member, User},
     model::{Config, Infraction},
 };
 use tracing::instrument;
@@ -18,6 +18,11 @@ const GUILD_COUNT_KEY: &str = "guild_count";
 #[inline]
 fn guild_cache_key(guild_id: &Id) -> String {
     format!("guild:{}", guild_id)
+}
+
+#[inline]
+fn channels_cache_key(guild_id: &Id) -> String {
+    format!("channels:{}", guild_id)
 }
 
 #[inline]
@@ -150,6 +155,30 @@ impl EventHandler {
     pub async fn set_guild(&self, guild: &Guild) -> DiscordResult<()> {
         let key = guild_cache_key(&guild.id);
         self.cache.set(&key, guild, None).await?;
+
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    pub async fn get_channels(&self, guild_id: &Id) -> DiscordResult<Vec<Channel>> {
+        let key = channels_cache_key(guild_id);
+        if let Some(channels) = self.cache.get::<String, Vec<Channel>>(&key).await? {
+            return Ok(channels);
+        }
+
+        let channels = self
+            .api_with_timeout(self.rest.get_guild_channels(guild_id))
+            .await?;
+
+        self.cache.set(&key, &channels, None).await?;
+
+        Ok(channels)
+    }
+
+    #[instrument(skip(self, channels), fields(guild_id = %guild_id))]
+    pub async fn set_channels(&self, guild_id: &Id, channels: &Vec<Channel>) -> DiscordResult<()> {
+        let key = channels_cache_key(guild_id);
+        self.cache.set(&key, channels, None).await?;
 
         Ok(())
     }

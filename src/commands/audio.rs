@@ -254,7 +254,7 @@ impl EventHandler {
 
         match self.mesastream.get_player(ctx.guild_id).await {
             Ok(_) => {
-                // Player exists — check if the bot is still in a voice channel.
+                // Player exists - check if the bot is still in a voice channel.
                 // If it was kicked/disconnected, rejoin and refresh mesastream's
                 // connection so subsequent play/resume calls use fresh credentials.
                 let bot_id = self
@@ -268,7 +268,7 @@ impl EventHandler {
                     .is_some();
 
                 if !bot_in_vc {
-                    tracing::info!(guild_id = %ctx.guild_id, "bot not in VC but player exists — rejoining");
+                    tracing::info!(guild_id = %ctx.guild_id, "bot not in VC but player exists - rejoining");
                     let details = self.voice_join(ctx.guild_id, &ctx.user.id).await?;
                     let payload = details.into_bridge_payload();
                     self.mesastream
@@ -380,7 +380,7 @@ impl EventHandler {
         let response = match self.mesastream.play(&player_id).await {
             Ok(snapshot) => snapshot,
             Err(e) if is_stale_session_error(&e) => {
-                // Voice session is stale — rejoin to get fresh credentials and retry.
+                // Voice session is stale - rejoin to get fresh credentials and retry.
                 tracing::info!(player_id = %player_id, "play returned stale session error, rejoining voice");
                 let details = match self.voice_join(ctx.guild_id, &ctx.user.id).await {
                     Ok(d) => d,

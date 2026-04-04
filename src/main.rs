@@ -2,6 +2,7 @@ mod automod;
 mod commands;
 mod config;
 mod handler;
+mod logging;
 mod telemetry;
 mod workers;
 

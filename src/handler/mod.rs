@@ -3,7 +3,7 @@ pub mod groups;
 pub mod handler;
 pub mod help;
 pub mod macros;
-pub mod mesastream_events;
+pub mod mesastream;
 pub mod messages;
 pub mod moderation;
 pub mod permissions;

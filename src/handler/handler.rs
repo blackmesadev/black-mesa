@@ -4,9 +4,11 @@ use tracing::{field, Instrument, Span};
 
 use bm_lib::discord::{
     commands::{Args, Ctx},
-    DiscordError, DiscordResult, DiscordWebsocket, Event, Guild, GuildMemberRemove,
-    GuildMember, Id, Message, Ready, ResumeState, ShardConfig,
+    Channel, DiscordError, DiscordResult, DiscordWebsocket, Event, Guild, GuildBanEvent,
+    GuildMember, GuildMemberRemove, GuildRoleDeleteEvent, GuildRoleEvent, Id, InviteCreateEvent,
+    InviteDeleteEvent, Message, MessageDelete, Ready, ResumeState, ShardConfig,
 };
+use bm_lib::model::logging::{DiscordLogEvent, LogEventType};
 use tracing::instrument;
 
 use super::EventHandler;
@@ -88,6 +90,50 @@ impl EventHandler {
                 parent: None, "MessageUpdate",
                 message_id = %message.id, channel_id = %message.channel_id
             ),
+            Event::MessageDelete(d) => tracing::info_span!(
+                parent: None, "MessageDelete",
+                message_id = %d.id, channel_id = %d.channel_id
+            ),
+            Event::ChannelCreate(ch) => tracing::info_span!(
+                parent: None, "ChannelCreate",
+                channel_id = %ch.id, guild_id = ?ch.guild_id
+            ),
+            Event::ChannelUpdate(ch) => tracing::info_span!(
+                parent: None, "ChannelUpdate",
+                channel_id = %ch.id, guild_id = ?ch.guild_id
+            ),
+            Event::ChannelDelete(ch) => tracing::info_span!(
+                parent: None, "ChannelDelete",
+                channel_id = %ch.id, guild_id = ?ch.guild_id
+            ),
+            Event::GuildRoleCreate(r) => tracing::info_span!(
+                parent: None, "GuildRoleCreate",
+                guild_id = %r.guild_id, role_id = %r.role.id
+            ),
+            Event::GuildRoleUpdate(r) => tracing::info_span!(
+                parent: None, "GuildRoleUpdate",
+                guild_id = %r.guild_id, role_id = %r.role.id
+            ),
+            Event::GuildRoleDelete(r) => tracing::info_span!(
+                parent: None, "GuildRoleDelete",
+                guild_id = %r.guild_id, role_id = %r.role_id
+            ),
+            Event::GuildBanAdd(b) => tracing::info_span!(
+                parent: None, "GuildBanAdd",
+                guild_id = %b.guild_id, user_id = %b.user.id
+            ),
+            Event::GuildBanRemove(b) => tracing::info_span!(
+                parent: None, "GuildBanRemove",
+                guild_id = %b.guild_id, user_id = %b.user.id
+            ),
+            Event::InviteCreate(inv) => tracing::info_span!(
+                parent: None, "InviteCreate",
+                guild_id = ?inv.guild_id, code = %inv.code
+            ),
+            Event::InviteDelete(inv) => tracing::info_span!(
+                parent: None, "InviteDelete",
+                guild_id = ?inv.guild_id, code = %inv.code
+            ),
         }
     }
 
@@ -101,12 +147,37 @@ impl EventHandler {
                 Event::MessageCreate(message) => self.on_message_create(message).await?,
                 Event::GuildCreate(guild) => self.on_guild_create(guild).await?,
                 Event::GuildUpdate(guild) => self.on_guild_update(guild).await?,
-                Event::GuildMemberAdd(member) => self.on_member_update(member).await?,
+                Event::GuildMemberAdd(member) => {
+                    self.on_member_update(member).await?;
+                    // Log member add event
+                    let mut vars = std::collections::HashMap::new();
+                    vars.insert("user_id".into(), member.user.id.to_string());
+                    vars.insert("username".into(), member.user.username.to_string());
+                    vars.insert("guild_id".into(), member.guild_id.to_string());
+                    let _ = self
+                        .log_event(
+                            &member.guild_id,
+                            &LogEventType::Discord(DiscordLogEvent::GuildMemberAdd),
+                            vars,
+                        )
+                        .await;
+                }
                 Event::GuildMemberUpdate(member) => self.on_member_update(member).await?,
                 Event::GuildMemberRemove(member) => self.on_member_remove(member).await?,
                 Event::VoiceStateUpdate(vs) => self.on_voice_state_update(vs).await?,
                 Event::VoiceServerUpdate(vs) => self.on_voice_server_update(vs).await?,
                 Event::MessageUpdate(_) => {} // Not handled yet
+                Event::MessageDelete(d) => self.on_message_delete(d).await?,
+                Event::ChannelCreate(ch) => self.on_channel_create(ch).await?,
+                Event::ChannelUpdate(ch) => self.on_channel_update(ch).await?,
+                Event::ChannelDelete(ch) => self.on_channel_delete(ch).await?,
+                Event::GuildRoleCreate(r) => self.on_guild_role_create(r).await?,
+                Event::GuildRoleUpdate(r) => self.on_guild_role_update(r).await?,
+                Event::GuildRoleDelete(r) => self.on_guild_role_delete(r).await?,
+                Event::GuildBanAdd(b) => self.on_guild_ban_add(b).await?,
+                Event::GuildBanRemove(b) => self.on_guild_ban_remove(b).await?,
+                Event::InviteCreate(inv) => self.on_invite_create(inv).await?,
+                Event::InviteDelete(inv) => self.on_invite_delete(inv).await?,
             }
             Ok(())
         }
@@ -209,7 +280,7 @@ impl EventHandler {
                     }
                     Ok(None) => {
                         tracing::warn!("event channel closed (RX task exited), reconnecting");
-                        // Try to resume — preserve voice sessions
+                        // Try to resume - preserve voice sessions
                         resume_state = ws.resume_state();
                         break;
                     }
@@ -382,7 +453,7 @@ impl EventHandler {
                     tracing::info!(
                         guild_id = %guild.id,
                         channel_id = %channel_id,
-                        "bot in voice channel on GUILD_CREATE — re-joining to refresh voice credentials"
+                        "bot in voice channel on GUILD_CREATE - re-joining to refresh voice credentials"
                     );
                     if let Err(e) = self.send_voice_update(&guild.id, Some(&channel_id)).await {
                         tracing::warn!(
@@ -395,12 +466,30 @@ impl EventHandler {
             }
         }
         self.set_guild(guild).await?;
+
+        // Populate channels cache
+        self.get_channels(&guild.id).await?;
+
         self.increment_guild_count().await
     }
 
     #[tracing::instrument(skip(self, guild), fields(guild_id = %guild.id, member_count = guild.approximate_member_count.unwrap_or(0)))]
     async fn on_guild_update(&self, guild: &Guild) -> DiscordResult<()> {
-        self.set_guild(guild).await
+        self.set_guild(guild).await?;
+
+        // Log guild update event
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("guild_id".into(), guild.id.to_string());
+        vars.insert("guild_name".into(), guild.name.to_string());
+        let _ = self
+            .log_event(
+                &guild.id,
+                &LogEventType::Discord(DiscordLogEvent::GuildUpdate),
+                vars,
+            )
+            .await;
+
+        Ok(())
     }
 
     #[tracing::instrument(skip(self, member_update), fields(guild_id = %member_update.guild_id))]
@@ -420,6 +509,28 @@ impl EventHandler {
             tracing::warn!(error = ?e, "Failed to update member guilds cache");
         }
 
+        // Log guild member update event
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("user_id".into(), member_update.user.id.to_string());
+        vars.insert("username".into(), member_update.user.username.to_string());
+        vars.insert("guild_id".into(), member_update.guild_id.to_string());
+        vars.insert(
+            "roles".into(),
+            member_update
+                .roles
+                .iter()
+                .map(|r| r.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
+        let _ = self
+            .log_event(
+                &member_update.guild_id,
+                &LogEventType::Discord(DiscordLogEvent::GuildMemberUpdate),
+                vars,
+            )
+            .await;
+
         Ok(())
     }
 
@@ -432,6 +543,261 @@ impl EventHandler {
         {
             tracing::warn!(error = ?e, "Failed to remove from member guilds cache");
         }
+
+        // Log member remove event
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("user_id".into(), member_remove.user.id.to_string());
+        vars.insert("username".into(), member_remove.user.username.to_string());
+        vars.insert("guild_id".into(), member_remove.guild_id.to_string());
+        let _ = self
+            .log_event(
+                &member_remove.guild_id,
+                &LogEventType::Discord(DiscordLogEvent::GuildMemberRemove),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, channel), fields(channel_id = %channel.id, guild_id = ?channel.guild_id))]
+    async fn on_channel_create(&self, channel: &Channel) -> DiscordResult<()> {
+        let Some(guild_id) = channel.guild_id else {
+            return Ok(()); // Ignore DM channels
+        };
+
+        // Update channels cache
+        if let Ok(mut channels) = self.get_channels(&guild_id).await {
+            channels.push((*channel).clone());
+            self.set_channels(&guild_id, &channels).await?;
+        }
+
+        // Log channel create event
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("channel_id".into(), channel.id.to_string());
+        vars.insert("channel_name".into(), channel.name.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        let _ = self
+            .log_event(
+                &guild_id,
+                &LogEventType::Discord(DiscordLogEvent::ChannelCreate),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, channel), fields(channel_id = %channel.id, guild_id = ?channel.guild_id))]
+    async fn on_channel_update(&self, channel: &Channel) -> DiscordResult<()> {
+        let Some(guild_id) = channel.guild_id else {
+            return Ok(()); // Ignore DM channels
+        };
+
+        // Update channels cache
+        if let Ok(mut channels) = self.get_channels(&guild_id).await {
+            if let Some(existing) = channels.iter_mut().find(|c| c.id == channel.id) {
+                *existing = (*channel).clone();
+                self.set_channels(&guild_id, &channels).await?;
+            }
+        }
+
+        // Log channel update event
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("channel_id".into(), channel.id.to_string());
+        vars.insert("channel_name".into(), channel.name.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        let _ = self
+            .log_event(
+                &guild_id,
+                &LogEventType::Discord(DiscordLogEvent::ChannelUpdate),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, channel), fields(channel_id = %channel.id, guild_id = ?channel.guild_id))]
+    async fn on_channel_delete(&self, channel: &Channel) -> DiscordResult<()> {
+        let Some(guild_id) = channel.guild_id else {
+            return Ok(()); // Ignore DM channels
+        };
+
+        // Update channels cache
+        if let Ok(mut channels) = self.get_channels(&guild_id).await {
+            channels.retain(|c| c.id != channel.id);
+            self.set_channels(&guild_id, &channels).await?;
+        }
+
+        // Log channel delete event
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("channel_id".into(), channel.id.to_string());
+        vars.insert("channel_name".into(), channel.name.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        let _ = self
+            .log_event(
+                &guild_id,
+                &LogEventType::Discord(DiscordLogEvent::ChannelDelete),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, message_delete), fields(message_id = %message_delete.id, channel_id = %message_delete.channel_id, guild_id = ?message_delete.guild_id))]
+    async fn on_message_delete(&self, message_delete: &MessageDelete) -> DiscordResult<()> {
+        let Some(guild_id) = message_delete.guild_id else {
+            return Ok(()); // Ignore DM messages
+        };
+
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("message_id".into(), message_delete.id.to_string());
+        vars.insert("channel_id".into(), message_delete.channel_id.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        let _ = self
+            .log_event(
+                &guild_id,
+                &LogEventType::Discord(DiscordLogEvent::MessageDelete),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, role_event), fields(guild_id = %role_event.guild_id, role_id = %role_event.role.id))]
+    async fn on_guild_role_create(&self, role_event: &GuildRoleEvent) -> DiscordResult<()> {
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("role_id".into(), role_event.role.id.to_string());
+        vars.insert("role_name".into(), role_event.role.name.to_string());
+        vars.insert("guild_id".into(), role_event.guild_id.to_string());
+        let _ = self
+            .log_event(
+                &role_event.guild_id,
+                &LogEventType::Discord(DiscordLogEvent::RoleCreate),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, role_event), fields(guild_id = %role_event.guild_id, role_id = %role_event.role.id))]
+    async fn on_guild_role_update(&self, role_event: &GuildRoleEvent) -> DiscordResult<()> {
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("role_id".into(), role_event.role.id.to_string());
+        vars.insert("role_name".into(), role_event.role.name.to_string());
+        vars.insert("guild_id".into(), role_event.guild_id.to_string());
+        let _ = self
+            .log_event(
+                &role_event.guild_id,
+                &LogEventType::Discord(DiscordLogEvent::RoleUpdate),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, role_delete), fields(guild_id = %role_delete.guild_id, role_id = %role_delete.role_id))]
+    async fn on_guild_role_delete(&self, role_delete: &GuildRoleDeleteEvent) -> DiscordResult<()> {
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("role_id".into(), role_delete.role_id.to_string());
+        vars.insert("role_name".into(), String::new()); // name unavailable in delete event
+        vars.insert("guild_id".into(), role_delete.guild_id.to_string());
+        let _ = self
+            .log_event(
+                &role_delete.guild_id,
+                &LogEventType::Discord(DiscordLogEvent::RoleDelete),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, ban_event), fields(guild_id = %ban_event.guild_id, user_id = %ban_event.user.id))]
+    async fn on_guild_ban_add(&self, ban_event: &GuildBanEvent) -> DiscordResult<()> {
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("user_id".into(), ban_event.user.id.to_string());
+        vars.insert("username".into(), ban_event.user.username.to_string());
+        vars.insert("guild_id".into(), ban_event.guild_id.to_string());
+        let _ = self
+            .log_event(
+                &ban_event.guild_id,
+                &LogEventType::Discord(DiscordLogEvent::GuildBanAdd),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, ban_event), fields(guild_id = %ban_event.guild_id, user_id = %ban_event.user.id))]
+    async fn on_guild_ban_remove(&self, ban_event: &GuildBanEvent) -> DiscordResult<()> {
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("user_id".into(), ban_event.user.id.to_string());
+        vars.insert("username".into(), ban_event.user.username.to_string());
+        vars.insert("guild_id".into(), ban_event.guild_id.to_string());
+        let _ = self
+            .log_event(
+                &ban_event.guild_id,
+                &LogEventType::Discord(DiscordLogEvent::GuildBanRemove),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, invite), fields(guild_id = ?invite.guild_id, code = %invite.code))]
+    async fn on_invite_create(&self, invite: &InviteCreateEvent) -> DiscordResult<()> {
+        let Some(guild_id) = invite.guild_id else {
+            return Ok(()); // Ignore DM invites
+        };
+
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("channel_id".into(), invite.channel_id.to_string());
+        vars.insert("code".into(), invite.code.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        vars.insert(
+            "inviter_id".into(),
+            invite
+                .inviter
+                .as_ref()
+                .map(|u| u.id.to_string())
+                .unwrap_or_default(),
+        );
+        let _ = self
+            .log_event(
+                &guild_id,
+                &LogEventType::Discord(DiscordLogEvent::InviteCreate),
+                vars,
+            )
+            .await;
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self, invite), fields(guild_id = ?invite.guild_id, code = %invite.code))]
+    async fn on_invite_delete(&self, invite: &InviteDeleteEvent) -> DiscordResult<()> {
+        let Some(guild_id) = invite.guild_id else {
+            return Ok(()); // Ignore DM invites
+        };
+
+        let mut vars = std::collections::HashMap::new();
+        vars.insert("channel_id".into(), invite.channel_id.to_string());
+        vars.insert("code".into(), invite.code.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        let _ = self
+            .log_event(
+                &guild_id,
+                &LogEventType::Discord(DiscordLogEvent::InviteDelete),
+                vars,
+            )
+            .await;
 
         Ok(())
     }

@@ -1,8 +1,8 @@
-//! Handles real-time events from the mesastream WebSocket stream.
-//!
-//! The primary use case is detecting mesastream restarts (`Connected` event)
-//! and automatically recreating players for every guild where the bot is
-//! currently in a voice channel.
+// Handles real-time events from the mesastream WebSocket stream.
+//
+// The primary use case is detecting mesastream restarts (`Connected` event)
+// and automatically recreating players for every guild where the bot is
+// currently in a voice channel.
 
 use bm_lib::{
     discord::{Id, VoiceConnectionDetails},
@@ -82,7 +82,7 @@ impl EventHandler {
 
     #[instrument(skip(self))]
     async fn on_connected(&self) {
-        info!("mesastream ws: connected — reconciling voice players");
+        info!("mesastream ws: connected - reconciling voice players");
         self.reconcile_all_voice_players().await;
     }
 
@@ -103,10 +103,10 @@ impl EventHandler {
     #[instrument(skip(self), fields(guild_id = %guild_id, player_id = %player_id))]
     async fn on_player_destroyed(&self, guild_id: Id, player_id: Id, was_stopped: bool) {
         if was_stopped {
-            // Explicit stop — leave the voice channel and clear credentials.
+            // Explicit stop - leave the voice channel and clear credentials.
             info!(
                 was_stopped,
-                "mesastream player stopped — leaving voice channel"
+                "mesastream player stopped - leaving voice channel"
             );
 
             // Invalidate cached voice server credentials so the next
@@ -121,14 +121,14 @@ impl EventHandler {
                 warn!(error = %e, "failed to leave voice channel after player destroy");
             }
         } else {
-            // Auto-destroy (queue drained) — stay in the voice channel so
+            // Auto-destroy (queue drained) - stay in the voice channel so
             // the user can immediately `!play` another song without the bot
             // having to rejoin.  Keeping the voice connection alive also
             // avoids unnecessary gateway op-4 churn that can interfere with
             // other guilds' voice state when multiple players are active.
             info!(
                 was_stopped,
-                "mesastream player auto-destroyed (queue empty) — staying in voice channel"
+                "mesastream player auto-destroyed (queue empty) - staying in voice channel"
             );
         }
     }
@@ -150,12 +150,12 @@ impl EventHandler {
 
     #[instrument(skip(self))]
     async fn on_goodbye(&self) {
-        info!("mesastream ws: server shutting down — will reconnect automatically");
+        info!("mesastream ws: server shutting down - will reconnect automatically");
     }
 
     #[instrument(skip(self), fields(guild_id = %guild_id, player_id = %player_id))]
     async fn on_voice_disconnected(&self, guild_id: Id, player_id: Id, reason: String) {
-        warn!(reason = %reason, "mesastream voice disconnected — requesting fresh voice credentials");
+        warn!(reason = %reason, "mesastream voice disconnected - requesting fresh voice credentials");
         self.handle_voice_disconnected(&guild_id).await;
     }
 
@@ -178,7 +178,7 @@ impl EventHandler {
         );
 
         let Some(&bot_id) = self.bot_id.get() else {
-            warn!("bot_id not set — cannot reconcile voice players");
+            warn!("bot_id not set - cannot reconcile voice players");
             return;
         };
 
@@ -194,7 +194,7 @@ impl EventHandler {
                 _ => {
                     warn!(
                         guild_id = %guild_id,
-                        "no cached session_id — skipping guild"
+                        "no cached session_id - skipping guild"
                     );
                     continue;
                 }
@@ -206,7 +206,7 @@ impl EventHandler {
                 _ => {
                     warn!(
                         guild_id = %guild_id,
-                        "no cached voice server credentials — skipping guild"
+                        "no cached voice server credentials - skipping guild"
                     );
                     continue;
                 }
@@ -235,7 +235,7 @@ impl EventHandler {
     #[instrument(skip(self), fields(guild_id = %guild_id))]
     async fn handle_voice_disconnected(&self, guild_id: &Id) {
         let Some(&bot_id) = self.bot_id.get() else {
-            warn!("bot_id not set — cannot handle voice disconnect");
+            warn!("bot_id not set - cannot handle voice disconnect");
             return;
         };
 
@@ -243,7 +243,7 @@ impl EventHandler {
         let channel_id = match self.get_voice_state_channel(guild_id, &bot_id).await {
             Ok(Some(ch)) => ch,
             Ok(None) => {
-                warn!(guild_id = %guild_id, "bot not in a voice channel — nothing to reconnect");
+                warn!(guild_id = %guild_id, "bot not in a voice channel - nothing to reconnect");
                 return;
             }
             Err(e) => {
@@ -255,7 +255,7 @@ impl EventHandler {
         // Clear stale cached credentials so the new VOICE_SERVER_UPDATE is used
         self.clear_cached_voice_server_creds(guild_id).await;
 
-        // Re-send voice state update for the same channel — Discord responds
+        // Re-send voice state update for the same channel - Discord responds
         // with fresh VOICE_STATE_UPDATE + VOICE_SERVER_UPDATE without the bot
         // visibly leaving the channel.
         if let Err(e) = self.send_voice_update(guild_id, Some(&channel_id)).await {
@@ -264,7 +264,7 @@ impl EventHandler {
             info!(
                 guild_id = %guild_id,
                 channel_id = %channel_id,
-                "voice state update sent — awaiting fresh credentials from Discord"
+                "voice state update sent - awaiting fresh credentials from Discord"
             );
         }
     }

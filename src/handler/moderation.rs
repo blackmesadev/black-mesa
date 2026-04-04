@@ -1,8 +1,12 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 
 use bm_lib::{
     discord::{DiscordError, DiscordResult, Id},
-    model::{Infraction, Uuid},
+    model::{
+        logging::{LogEventType, MesaLogEvent},
+        Infraction, Uuid,
+    },
     util::duration_to_unix_timestamp,
 };
 use tracing::instrument;
@@ -38,6 +42,28 @@ impl EventHandler {
         dm_result?;
         db_result?;
 
+        let mut vars = HashMap::new();
+        vars.insert("user_id".into(), user_id.to_string());
+        vars.insert("username".into(), format!("<@{}>", user_id));
+        vars.insert("moderator_id".into(), moderator_id.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        vars.insert(
+            "reason".into(),
+            reason
+                .as_ref()
+                .map(|r| r.as_ref())
+                .unwrap_or("No reason")
+                .to_string(),
+        );
+        vars.insert("infraction_id".into(), infraction.uuid.to_string());
+        let _ = self
+            .log_event(
+                guild_id,
+                &LogEventType::Mesa(MesaLogEvent::ModerationKick),
+                vars,
+            )
+            .await;
+
         Ok(infraction)
     }
 
@@ -69,6 +95,30 @@ impl EventHandler {
         dm_result?;
         db_result?;
 
+        let mut vars = HashMap::new();
+        vars.insert("user_id".into(), user_id.to_string());
+        vars.insert("username".into(), format!("<@{}>", user_id));
+        vars.insert("moderator_id".into(), moderator_id.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        vars.insert(
+            "reason".into(),
+            reason.as_deref().unwrap_or("No reason").to_string(),
+        );
+        vars.insert(
+            "duration".into(),
+            duration
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| "Permanent".into()),
+        );
+        vars.insert("infraction_id".into(), infraction.uuid.to_string());
+        let _ = self
+            .log_event(
+                guild_id,
+                &LogEventType::Mesa(MesaLogEvent::ModerationBan),
+                vars,
+            )
+            .await;
+
         Ok(infraction)
     }
 
@@ -92,6 +142,11 @@ impl EventHandler {
             true,
         );
 
+        let reason_str = reason
+            .as_ref()
+            .map(|r| r.as_ref().to_string())
+            .unwrap_or_else(|| "No reason".into());
+
         let (role_result, dm_result, db_result) = tokio::join!(
             self.rest.add_role(guild_id, user_id, mute_role, reason),
             self.send_infraction_dm(&infraction),
@@ -101,6 +156,27 @@ impl EventHandler {
         role_result?;
         dm_result?;
         db_result?;
+
+        let mut vars = HashMap::new();
+        vars.insert("user_id".into(), user_id.to_string());
+        vars.insert("username".into(), format!("<@{}>", user_id));
+        vars.insert("moderator_id".into(), moderator_id.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        vars.insert("reason".into(), reason_str);
+        vars.insert(
+            "duration".into(),
+            duration
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| "Permanent".into()),
+        );
+        vars.insert("infraction_id".into(), infraction.uuid.to_string());
+        let _ = self
+            .log_event(
+                guild_id,
+                &LogEventType::Mesa(MesaLogEvent::ModerationMute),
+                vars,
+            )
+            .await;
 
         Ok(infraction)
     }
@@ -114,6 +190,11 @@ impl EventHandler {
         duration: Option<u64>,
         reason: Option<Cow<'_, str>>,
     ) -> DiscordResult<Infraction> {
+        let reason_str = reason
+            .as_ref()
+            .map(|r| r.as_ref().to_string())
+            .unwrap_or_else(|| "No reason".into());
+
         let infraction = Infraction::new(
             *guild_id,
             *user_id,
@@ -132,6 +213,27 @@ impl EventHandler {
         dm_result?;
         db_result?;
 
+        let mut vars = HashMap::new();
+        vars.insert("user_id".into(), user_id.to_string());
+        vars.insert("username".into(), format!("<@{}>", user_id));
+        vars.insert("moderator_id".into(), moderator_id.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        vars.insert("reason".into(), reason_str);
+        vars.insert(
+            "duration".into(),
+            duration
+                .map(|d| d.to_string())
+                .unwrap_or_else(|| "Permanent".into()),
+        );
+        vars.insert("infraction_id".into(), infraction.uuid.to_string());
+        let _ = self
+            .log_event(
+                guild_id,
+                &LogEventType::Mesa(MesaLogEvent::ModerationWarn),
+                vars,
+            )
+            .await;
+
         Ok(infraction)
     }
 
@@ -143,6 +245,11 @@ impl EventHandler {
         moderator_id: &Id,
         reason: Option<Cow<'_, str>>,
     ) -> DiscordResult<()> {
+        let reason_str = reason
+            .as_ref()
+            .map(|r| r.as_ref().to_string())
+            .unwrap_or_else(|| "No reason".into());
+
         let (unban_result, infractions) = tokio::join!(
             self.rest.unban_member(&guild_id, &user_id, reason),
             self.db.get_active_infractions(
@@ -163,6 +270,20 @@ impl EventHandler {
             dm_result?;
             db_result?;
         }
+
+        let mut vars = HashMap::new();
+        vars.insert("user_id".into(), user_id.to_string());
+        vars.insert("username".into(), format!("<@{}>", user_id));
+        vars.insert("moderator_id".into(), moderator_id.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        vars.insert("reason".into(), reason_str);
+        let _ = self
+            .log_event(
+                guild_id,
+                &LogEventType::Mesa(MesaLogEvent::ModerationUnban),
+                vars,
+            )
+            .await;
 
         Ok(())
     }
@@ -194,6 +315,27 @@ impl EventHandler {
             }
         }
 
+        let mut vars = HashMap::new();
+        vars.insert("user_id".into(), user_id.to_string());
+        vars.insert("username".into(), format!("<@{}>", user_id));
+        vars.insert("moderator_id".into(), moderator_id.to_string());
+        vars.insert("guild_id".into(), guild_id.to_string());
+        vars.insert(
+            "reason".into(),
+            reason
+                .as_ref()
+                .map(|r| r.as_ref())
+                .unwrap_or("No reason")
+                .to_string(),
+        );
+        let _ = self
+            .log_event(
+                guild_id,
+                &LogEventType::Mesa(MesaLogEvent::ModerationUnmute),
+                vars,
+            )
+            .await;
+
         Ok(())
     }
 
@@ -205,9 +347,36 @@ impl EventHandler {
         moderator_id: &Id,
         reason: Option<Cow<'_, str>>,
     ) -> DiscordResult<Option<Infraction>> {
-        self.db
+        let result = self
+            .db
             .delete_infraction(guild_id, warn_id)
             .await
-            .map_err(DiscordError::from)
+            .map_err(DiscordError::from)?;
+
+        if let Some(ref infraction) = result {
+            let mut vars = HashMap::new();
+            vars.insert("user_id".into(), infraction.user_id.to_string());
+            vars.insert("username".into(), format!("<@{}>", infraction.user_id));
+            vars.insert("moderator_id".into(), moderator_id.to_string());
+            vars.insert("guild_id".into(), guild_id.to_string());
+            vars.insert(
+                "reason".into(),
+                reason
+                    .as_ref()
+                    .map(|r| r.as_ref())
+                    .unwrap_or("No reason")
+                    .to_string(),
+            );
+            vars.insert("infraction_id".into(), warn_id.to_string());
+            let _ = self
+                .log_event(
+                    guild_id,
+                    &LogEventType::Mesa(MesaLogEvent::ModerationPardon),
+                    vars,
+                )
+                .await;
+        }
+
+        Ok(result)
     }
 }

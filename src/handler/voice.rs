@@ -254,7 +254,7 @@ impl EventHandler {
             .copied()
             .ok_or(DiscordError::NotConnected)?;
 
-        // Fast-path: bot is already in the target channel — use cached
+        // Fast-path: bot is already in the target channel - use cached
         // credentials from the most recent VOICE_SERVER_UPDATE instead of
         // leaving/rejoining (which is disruptive and wastes time).
         //
@@ -274,7 +274,7 @@ impl EventHandler {
                         guild_id = %guild_id,
                         channel_id = %channel_id,
                         endpoint = %creds.endpoint,
-                        "bot already in target channel — using cached voice credentials"
+                        "bot already in target channel - using cached voice credentials"
                     );
                     return Ok(VoiceConnectionDetails {
                         guild_id: *guild_id,
@@ -290,10 +290,10 @@ impl EventHandler {
                 tracing::info!(
                     guild_id = %guild_id,
                     channel_id = %channel_id,
-                    "bot appears to be in channel (stale Redis state) but hasn't joined this session — forcing fresh gateway events"
+                    "bot appears to be in channel (stale Redis state) but hasn't joined this session - forcing fresh gateway events"
                 );
             }
-            // No cached credentials or stale session — fall through to
+            // No cached credentials or stale session - fall through to
             // leave/rejoin so Discord emits fresh VOICE_STATE_UPDATE +
             // VOICE_SERVER_UPDATE.
             tracing::info!(
@@ -527,17 +527,17 @@ impl EventHandler {
             Ok(player) => {
                 // If the player's voice transport is already healthy, don't
                 // push credentials that may be stale from a delayed
-                // VOICE_SERVER_UPDATE — the connection is fine as-is.
+                // VOICE_SERVER_UPDATE - the connection is fine as-is.
                 if player.voice_connected {
                     tracing::debug!(
                         guild_id = %guild_id,
                         player_id = %player.player_id,
-                        "mesastream player already voice-connected — skipping update_connection"
+                        "mesastream player already voice-connected - skipping update_connection"
                     );
                     return;
                 }
 
-                // Player exists but voice is disconnected — push new credentials.
+                // Player exists but voice is disconnected - push new credentials.
                 tracing::info!(
                     guild_id = %guild_id,
                     player_id = %player.player_id,
@@ -550,12 +550,12 @@ impl EventHandler {
                     tracing::warn!(
                         guild_id = %guild_id,
                         error = ?e,
-                        "update_connection failed — next user command will retry"
+                        "update_connection failed - next user command will retry"
                     );
                 }
             }
             Err(MesastreamError::Api { status: 404, .. }) => {
-                // No player in mesastream but bot is in a VC — create one so
+                // No player in mesastream but bot is in a VC - create one so
                 // playback can resume from the persisted queue.
                 tracing::info!(
                     guild_id = %guild_id,

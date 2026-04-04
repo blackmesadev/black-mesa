@@ -1,6 +1,6 @@
 [package]
 name = "black-mesa"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 authors = ["Tyler Thompson <me@dhopcs.org>"]
 description = "Black Mesa is a Discord Moderation bot designed with Performance, Reliability and Customisation in mind."
