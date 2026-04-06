@@ -1,4 +1,4 @@
-use std::{collections::Vec, time::Duration};
+use std::time::Duration;
 
 use bm_lib::{
     discord::{Channel, DiscordError, DiscordResult, Guild, Id, Member, User},

@@ -512,7 +512,7 @@ impl EventHandler {
                             offense
                                 .offending_filter
                                 .as_deref()
-                                .map(|word| {
+                                .map(|word: &str| {
                                     if word.len() <= 16 {
                                         let word_truncated = &word[..word.len().min(16)];
                                         if word_truncated.len() <= 2 {
@@ -537,7 +537,7 @@ impl EventHandler {
                     let reason = infraction
                         .reason
                         .as_deref()
-                        .map(|s| {
+                        .map(|s: &str| {
                             if s.len() <= 61 {
                                 s.to_string()
                             } else {

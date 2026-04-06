@@ -385,9 +385,12 @@ impl EventHandler {
 
             // Track which guilds have the bot in a VC for mesastream reconnect.
             if vs.channel_id.is_some() {
-                self.voice_guilds.lock().await.insert(guild_id);
+                let mut guilds = self.voice_guilds.lock().await;
+                if !guilds.contains(&guild_id) {
+                    guilds.push(guild_id);
+                }
             } else {
-                self.voice_guilds.lock().await.remove(&guild_id);
+                self.voice_guilds.lock().await.retain(|g| g != &guild_id);
             }
         }
 
