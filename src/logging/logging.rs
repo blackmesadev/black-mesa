@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use bm_lib::{
     discord::{DiscordResult, EmbedBuilder, Id},
-    model::{logging::LogEventType, LogConfig},
+    model::{logging::LogEvent, LogConfig},
 };
 use tracing::instrument;
 
@@ -63,23 +63,22 @@ impl EventHandler {
             .await;
     }
 
-    /// Main entry point: dispatch a logging event with placeholder variables.
+    /// Main entry point: dispatch a typed logging event.
     /// Checks guild config `logging_enabled`, looks up `LogConfig` for the event,
     /// renders templates, and sends the log message to the configured channel.
-    #[instrument(skip(self, vars), fields(guild_id = %guild_id, event = %event_type))]
-    pub async fn log_event(
-        &self,
-        guild_id: &Id,
-        event_type: &LogEventType,
-        vars: HashMap<String, String>,
-    ) -> DiscordResult<()> {
-        let config = self.get_config(guild_id).await?;
+    #[instrument(skip(self, event), fields(guild_id = %event.guild_id(), event = %event.event_type()))]
+    pub async fn log_event(&self, event: LogEvent) -> DiscordResult<()> {
+        let guild_id = event.guild_id().clone();
+        let event_type = event.event_type();
+
+        // Check early exits before allocating vars.
+        let config = self.get_config(&guild_id).await?;
         if !config.logging_enabled {
             return Ok(());
         }
 
         let db_key = event_type.as_db_key();
-        let log_config = match self.db.get_log_config_for_event(guild_id, db_key).await {
+        let log_config = match self.db.get_log_config_for_event(&guild_id, db_key).await {
             Ok(Some(lc)) => lc,
             Ok(None) => return Ok(()), // no config for this event
             Err(e) => {
@@ -91,14 +90,14 @@ impl EventHandler {
         let channel_id = log_config
             .channel_id
             .or(config.log_channel)
-            .unwrap_or_else(|| {
-                tracing::debug!("no log channel configured, skipping");
-                Id::new(0)
-            });
+            .unwrap_or(Id::new(0));
 
         if channel_id.get() == 0 {
             return Ok(());
         }
+
+        // Only allocate the vars map when we know we'll use it.
+        let vars = event.into_vars();
 
         if log_config.embed {
             self.send_log_embed(&channel_id, &log_config, &vars).await;

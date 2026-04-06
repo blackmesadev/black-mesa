@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use super::EventHandler;
 use bm_lib::{
     discord::{commands::Ctx, DiscordResult, Id},
@@ -20,7 +18,7 @@ impl EventHandler {
         config: &Config,
         guild_id: &Id,
         user_id: Id,
-        member_roles: &HashSet<Id>,
+        member_roles: &Vec<Id>,
     ) -> DiscordResult<Permission> {
         let mut perms = if config.inherit_discord_perms {
             let guild = self.get_guild(guild_id).await?;

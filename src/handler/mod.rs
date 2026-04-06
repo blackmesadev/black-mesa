@@ -9,7 +9,6 @@ pub mod moderation;
 pub mod permissions;
 pub mod voice;
 
-use std::collections::HashSet;
 use std::sync::{atomic::AtomicU64, Arc, OnceLock};
 
 use bm_lib::{
@@ -37,7 +36,7 @@ pub struct EventHandler {
 
     /// Guild IDs where the bot is currently in a voice channel.
     /// Used to recreate mesastream players after mesastream restarts.
-    pub voice_guilds: Arc<Mutex<HashSet<Id>>>,
+    pub voice_guilds: Arc<Mutex<Vec<Id>>>,
 }
 
 impl EventHandler {
@@ -57,7 +56,7 @@ impl EventHandler {
             bot_mention: Arc::new(OnceLock::new()),
             bot_id: Arc::new(OnceLock::new()),
             gateway: Arc::new(Mutex::new(None)),
-            voice_guilds: Arc::new(Mutex::new(HashSet::new())),
+            voice_guilds: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }

@@ -10,7 +10,7 @@ use bm_lib::{
     discord::{commands::Ctx, DiscordResult, EmbedBuilder},
     model::{
         automod::{AutomodSettings, OffenseType},
-        logging::{LogEventType, MesaLogEvent},
+        logging::LogEvent,
         Config, Infraction,
     },
 };
@@ -143,16 +143,15 @@ impl EventHandler {
             self.db.create_infraction(infraction).await?;
         }
 
-        let (event_type, reason) = if let Some(offense) = infraction.automod_offense.as_ref() {
+        let reason = if let Some(offense) = infraction.automod_offense.as_ref() {
             match &offense.typ {
                 OffenseType::Spam(typ) => {
                     let typ_str = typ.to_pretty_string();
-                    let reason = format!(
+                    format!(
                         "{typ_str} spam detection triggered: {} occurrences in {}ms",
                         offense.count.unwrap_or(0),
                         offense.interval.unwrap_or(0)
-                    );
-                    (MesaLogEvent::AutomodSpam, reason)
+                    )
                 }
                 OffenseType::Censor(typ) => {
                     let typ_str = typ.to_pretty_string();
@@ -171,7 +170,7 @@ impl EventHandler {
                         "*".repeat(offending_word.len())
                     };
 
-                    let reason = if let Some(pos) = message_content
+                    if let Some(pos) = message_content
                         .to_lowercase()
                         .find(&offending_word.to_lowercase())
                     {
@@ -182,46 +181,53 @@ impl EventHandler {
                         format!("{typ_str} censor triggered: \"...{context}...\"")
                     } else {
                         format!("{typ_str} censor triggered: {censored}")
-                    };
-                    (MesaLogEvent::AutomodCensor, reason)
+                    }
                 }
             }
         } else {
-            let reason = infraction
+            infraction
                 .reason
                 .clone()
-                .unwrap_or_else(|| "Automod action triggered".to_string());
-            (MesaLogEvent::AutomodCensor, reason)
+                .unwrap_or_else(|| "Automod action triggered".to_string())
         };
 
-        // Build placeholder vars for the logging system
-        let mut vars = HashMap::new();
-        vars.insert("user_id".into(), ctx.user.id.to_string());
-        vars.insert("username".into(), ctx.user.username.to_string());
-        vars.insert("channel_id".into(), ctx.channel_id.to_string());
-        vars.insert("guild_id".into(), ctx.guild_id.to_string());
-        vars.insert("reason".into(), reason.clone());
-
-        if let Some(offense) = infraction.automod_offense.as_ref() {
+        // Build typed log event for the logging system
+        let log_event = if let Some(offense) = infraction.automod_offense.as_ref() {
             match &offense.typ {
-                OffenseType::Spam(typ) => {
-                    vars.insert("spam_type".into(), typ.to_pretty_string());
-                    vars.insert("count".into(), offense.count.unwrap_or(0).to_string());
-                    vars.insert("interval".into(), offense.interval.unwrap_or(0).to_string());
-                }
-                OffenseType::Censor(typ) => {
-                    vars.insert("filter_type".into(), typ.to_pretty_string());
-                    vars.insert(
-                        "offending_content".into(),
-                        offense.offending_filter.clone().unwrap_or_default(),
-                    );
-                }
+                OffenseType::Spam(typ) => LogEvent::AutomodSpam {
+                    guild_id: *ctx.guild_id,
+                    user_id: ctx.user.id,
+                    username: ctx.user.username.to_string(),
+                    channel_id: *ctx.channel_id,
+                    reason: reason.clone(),
+                    spam_type: typ.to_pretty_string(),
+                    count: offense.count.unwrap_or(0),
+                    interval: offense.interval.unwrap_or(0),
+                },
+                OffenseType::Censor(typ) => LogEvent::AutomodCensor {
+                    guild_id: *ctx.guild_id,
+                    user_id: ctx.user.id,
+                    username: ctx.user.username.to_string(),
+                    channel_id: *ctx.channel_id,
+                    reason: reason.clone(),
+                    filter_type: typ.to_pretty_string(),
+                    offending_content: offense.offending_filter.clone().unwrap_or_default(),
+                },
             }
-        }
+        } else {
+            LogEvent::AutomodCensor {
+                guild_id: *ctx.guild_id,
+                user_id: ctx.user.id,
+                username: ctx.user.username.to_string(),
+                channel_id: *ctx.channel_id,
+                reason: reason.clone(),
+                filter_type: String::new(),
+                offending_content: String::new(),
+            }
+        };
 
         // Try the logging system first
-        let log_event = LogEventType::Mesa(event_type);
-        let dispatched = self.log_event(ctx.guild_id, &log_event, vars).await;
+        let dispatched = self.log_event(log_event).await;
 
         // Fallback to the legacy log_channel embed if logging system didn't send
         // (i.e. no log_config found for this event, or logging disabled)

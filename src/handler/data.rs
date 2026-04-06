@@ -1,4 +1,4 @@
-use std::{collections::HashSet, time::Duration};
+use std::{collections::Vec, time::Duration};
 
 use bm_lib::{
     discord::{Channel, DiscordError, DiscordResult, Guild, Id, Member, User},
@@ -204,9 +204,9 @@ impl EventHandler {
         &self,
         guild_id: &Id,
         user_id: &Id,
-    ) -> DiscordResult<HashSet<Id>> {
+    ) -> DiscordResult<Vec<Id>> {
         let key = roles_cache_key(guild_id, user_id);
-        if let Some(roles) = self.cache.get::<String, HashSet<Id>>(&key).await? {
+        if let Some(roles) = self.cache.get::<String, Vec<Id>>(&key).await? {
             return Ok(roles);
         }
 
@@ -221,7 +221,7 @@ impl EventHandler {
         &self,
         guild_id: &Id,
         user_id: &Id,
-        roles: &HashSet<Id>,
+        roles: &Vec<Id>,
     ) -> DiscordResult<()> {
         let key = roles_cache_key(guild_id, user_id);
         self.cache.set(&key, roles, None).await?;

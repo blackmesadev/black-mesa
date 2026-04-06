@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use bm_lib::{
     discord::{
         commands::{Arg, Args, Ctx},
@@ -96,9 +94,7 @@ impl EventHandler {
             Some(arg) => match arg {
                 Arg::Id(id) | Arg::Role(id) | Arg::User(id) => {
                     if guild.roles.iter().any(|r| r.id == *id) {
-                        let mut hashset = HashSet::new();
-                        hashset.insert(*id);
-                        (*id, hashset)
+                        (*id, vec![*id])
                     } else {
                         match self.get_member(ctx.guild_id, id).await {
                             Ok(member) => (*id, member.roles),
@@ -215,16 +211,9 @@ impl EventHandler {
             .field("Documentation", format!("[Here]({DOCS_URL})"), true)
             .build();
 
-        tracing::debug!("botinfo_command: about to call REST API");
-        let result = self
-            .rest
-            .create_message_with_embed(ctx.channel_id, &[embed])
-            .await;
-        tracing::debug!(
-            "botinfo_command: REST API call completed, result={:?}",
-            result.is_ok()
-        );
-        result?;
+        self.rest
+            .create_message_with_embed(&ctx.channel_id, &[embed])
+            .await?;
 
         Ok(())
     }
@@ -244,31 +233,23 @@ impl EventHandler {
             None => ctx.user.id,
         };
 
-        let user = match self.get_user(&lookup_id).await {
-            Ok(user) => user,
-            Err(e) => {
-                tracing::error!("Failed to fetch user: {}", e);
-                self.send_error(&ctx.channel_id, e).await?;
-                return Ok(());
-            }
-        };
+        let (user_result, member_result, guild_result) = tokio::join!(
+            self.get_user(&lookup_id),
+            self.get_member(ctx.guild_id, &lookup_id),
+            self.get_guild(ctx.guild_id),
+        );
 
-        let member = match self.get_member(ctx.guild_id, &user.id).await {
-            Ok(member) => member,
-            Err(e) => {
-                tracing::error!("Failed to fetch member: {}", e);
-                self.send_error(&ctx.channel_id, e).await?;
-                return Ok(());
-            }
+        let user = match user_result {
+            Ok(u) => u,
+            Err(e) => { self.send_error(&ctx.channel_id, e).await?; return Ok(()); }
         };
-
-        let guild = match self.get_guild(ctx.guild_id).await {
+        let member = match member_result {
+            Ok(m) => m,
+            Err(e) => { self.send_error(&ctx.channel_id, e).await?; return Ok(()); }
+        };
+        let guild = match guild_result {
             Ok(g) => g,
-            Err(e) => {
-                tracing::error!("Failed to fetch guild for userinfo: {}", e);
-                self.send_error(&ctx.channel_id, e).await?;
-                return Ok(());
-            }
+            Err(e) => { self.send_error(&ctx.channel_id, e).await?; return Ok(()); }
         };
 
         let created_at = util::snowflake_to_timestamp(user.id) / 1000;
@@ -325,30 +306,9 @@ impl EventHandler {
 
     #[instrument(skip(self, ctx), fields(guild_id = %ctx.guild_id, user_id = %ctx.user.id))]
     pub async fn help_command(&self, ctx: &Ctx<'_>) -> DiscordResult<()> {
-        match self
-            .rest
-            .create_message(&ctx.channel_id, &HELP_STRING)
-            .await
-        {
-            Ok(_) => {
-                self.rest
-                    .create_message(
-                        &ctx.channel_id,
-                        &format!("{} Help has been sent to your DMs", Emoji::Check),
-                    )
-                    .await?;
-            }
-            Err(e) => {
-                tracing::warn!(error = ?e, "Failed to send help message");
-                self.rest
-                    .create_message(
-                        &ctx.channel_id,
-                        &format!("{} Failed to send help message to DM", Emoji::Cross),
-                    )
-                    .await?;
-            }
-        }
-
+        self.rest
+            .create_message(&ctx.channel_id, &format!("{HELP_STRING}{DOCS_URL}"))
+            .await?;
         Ok(())
     }
 }

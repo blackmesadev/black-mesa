@@ -8,7 +8,7 @@ use bm_lib::discord::{
     GuildMember, GuildMemberRemove, GuildRoleDeleteEvent, GuildRoleEvent, Id, InviteCreateEvent,
     InviteDeleteEvent, Message, MessageDelete, Ready, ResumeState, ShardConfig,
 };
-use bm_lib::model::logging::{DiscordLogEvent, LogEventType};
+use bm_lib::model::logging::LogEvent;
 use tracing::instrument;
 
 use super::EventHandler;
@@ -150,16 +150,12 @@ impl EventHandler {
                 Event::GuildMemberAdd(member) => {
                     self.on_member_update(member).await?;
                     // Log member add event
-                    let mut vars = std::collections::HashMap::new();
-                    vars.insert("user_id".into(), member.user.id.to_string());
-                    vars.insert("username".into(), member.user.username.to_string());
-                    vars.insert("guild_id".into(), member.guild_id.to_string());
                     let _ = self
-                        .log_event(
-                            &member.guild_id,
-                            &LogEventType::Discord(DiscordLogEvent::GuildMemberAdd),
-                            vars,
-                        )
+                        .log_event(LogEvent::GuildMemberAdd {
+                            guild_id: member.guild_id,
+                            user_id: member.user.id,
+                            username: member.user.username.to_string(),
+                        })
                         .await;
                 }
                 Event::GuildMemberUpdate(member) => self.on_member_update(member).await?,
@@ -435,7 +431,7 @@ impl EventHandler {
                 // Populate voice_guilds so mesastream reconnect reconciliation
                 // knows the bot is in a VC even if only GUILD_CREATE has fired.
                 if vs.channel_id.is_some() {
-                    self.voice_guilds.lock().await.insert(guild.id);
+                    self.voice_guilds.lock().await.push(guild.id);
                 }
 
                 tracing::debug!(
@@ -477,16 +473,11 @@ impl EventHandler {
     async fn on_guild_update(&self, guild: &Guild) -> DiscordResult<()> {
         self.set_guild(guild).await?;
 
-        // Log guild update event
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("guild_id".into(), guild.id.to_string());
-        vars.insert("guild_name".into(), guild.name.to_string());
         let _ = self
-            .log_event(
-                &guild.id,
-                &LogEventType::Discord(DiscordLogEvent::GuildUpdate),
-                vars,
-            )
+            .log_event(LogEvent::GuildUpdate {
+                guild_id: guild.id,
+                guild_name: guild.name.to_string(),
+            })
             .await;
 
         Ok(())
@@ -509,26 +500,13 @@ impl EventHandler {
             tracing::warn!(error = ?e, "Failed to update member guilds cache");
         }
 
-        // Log guild member update event
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("user_id".into(), member_update.user.id.to_string());
-        vars.insert("username".into(), member_update.user.username.to_string());
-        vars.insert("guild_id".into(), member_update.guild_id.to_string());
-        vars.insert(
-            "roles".into(),
-            member_update
-                .roles
-                .iter()
-                .map(|r| r.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
-        );
         let _ = self
-            .log_event(
-                &member_update.guild_id,
-                &LogEventType::Discord(DiscordLogEvent::GuildMemberUpdate),
-                vars,
-            )
+            .log_event(LogEvent::GuildMemberUpdate {
+                guild_id: member_update.guild_id,
+                user_id: member_update.user.id,
+                username: member_update.user.username.to_string(),
+                roles: member_update.roles.clone(),
+            })
             .await;
 
         Ok(())
@@ -544,17 +522,12 @@ impl EventHandler {
             tracing::warn!(error = ?e, "Failed to remove from member guilds cache");
         }
 
-        // Log member remove event
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("user_id".into(), member_remove.user.id.to_string());
-        vars.insert("username".into(), member_remove.user.username.to_string());
-        vars.insert("guild_id".into(), member_remove.guild_id.to_string());
         let _ = self
-            .log_event(
-                &member_remove.guild_id,
-                &LogEventType::Discord(DiscordLogEvent::GuildMemberRemove),
-                vars,
-            )
+            .log_event(LogEvent::GuildMemberRemove {
+                guild_id: member_remove.guild_id,
+                user_id: member_remove.user.id,
+                username: member_remove.user.username.to_string(),
+            })
             .await;
 
         Ok(())
@@ -572,17 +545,12 @@ impl EventHandler {
             self.set_channels(&guild_id, &channels).await?;
         }
 
-        // Log channel create event
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("channel_id".into(), channel.id.to_string());
-        vars.insert("channel_name".into(), channel.name.to_string());
-        vars.insert("guild_id".into(), guild_id.to_string());
         let _ = self
-            .log_event(
-                &guild_id,
-                &LogEventType::Discord(DiscordLogEvent::ChannelCreate),
-                vars,
-            )
+            .log_event(LogEvent::ChannelCreate {
+                guild_id,
+                channel_id: channel.id,
+                channel_name: channel.name.to_string(),
+            })
             .await;
 
         Ok(())
@@ -602,17 +570,12 @@ impl EventHandler {
             }
         }
 
-        // Log channel update event
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("channel_id".into(), channel.id.to_string());
-        vars.insert("channel_name".into(), channel.name.to_string());
-        vars.insert("guild_id".into(), guild_id.to_string());
         let _ = self
-            .log_event(
-                &guild_id,
-                &LogEventType::Discord(DiscordLogEvent::ChannelUpdate),
-                vars,
-            )
+            .log_event(LogEvent::ChannelUpdate {
+                guild_id,
+                channel_id: channel.id,
+                channel_name: channel.name.to_string(),
+            })
             .await;
 
         Ok(())
@@ -630,17 +593,12 @@ impl EventHandler {
             self.set_channels(&guild_id, &channels).await?;
         }
 
-        // Log channel delete event
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("channel_id".into(), channel.id.to_string());
-        vars.insert("channel_name".into(), channel.name.to_string());
-        vars.insert("guild_id".into(), guild_id.to_string());
         let _ = self
-            .log_event(
-                &guild_id,
-                &LogEventType::Discord(DiscordLogEvent::ChannelDelete),
-                vars,
-            )
+            .log_event(LogEvent::ChannelDelete {
+                guild_id,
+                channel_id: channel.id,
+                channel_name: channel.name.to_string(),
+            })
             .await;
 
         Ok(())
@@ -652,16 +610,12 @@ impl EventHandler {
             return Ok(()); // Ignore DM messages
         };
 
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("message_id".into(), message_delete.id.to_string());
-        vars.insert("channel_id".into(), message_delete.channel_id.to_string());
-        vars.insert("guild_id".into(), guild_id.to_string());
         let _ = self
-            .log_event(
-                &guild_id,
-                &LogEventType::Discord(DiscordLogEvent::MessageDelete),
-                vars,
-            )
+            .log_event(LogEvent::MessageDelete {
+                guild_id,
+                channel_id: message_delete.channel_id,
+                message_id: message_delete.id,
+            })
             .await;
 
         Ok(())
@@ -669,16 +623,12 @@ impl EventHandler {
 
     #[tracing::instrument(skip(self, role_event), fields(guild_id = %role_event.guild_id, role_id = %role_event.role.id))]
     async fn on_guild_role_create(&self, role_event: &GuildRoleEvent) -> DiscordResult<()> {
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("role_id".into(), role_event.role.id.to_string());
-        vars.insert("role_name".into(), role_event.role.name.to_string());
-        vars.insert("guild_id".into(), role_event.guild_id.to_string());
         let _ = self
-            .log_event(
-                &role_event.guild_id,
-                &LogEventType::Discord(DiscordLogEvent::RoleCreate),
-                vars,
-            )
+            .log_event(LogEvent::RoleCreate {
+                guild_id: role_event.guild_id,
+                role_id: role_event.role.id,
+                role_name: role_event.role.name.to_string(),
+            })
             .await;
 
         Ok(())
@@ -686,16 +636,12 @@ impl EventHandler {
 
     #[tracing::instrument(skip(self, role_event), fields(guild_id = %role_event.guild_id, role_id = %role_event.role.id))]
     async fn on_guild_role_update(&self, role_event: &GuildRoleEvent) -> DiscordResult<()> {
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("role_id".into(), role_event.role.id.to_string());
-        vars.insert("role_name".into(), role_event.role.name.to_string());
-        vars.insert("guild_id".into(), role_event.guild_id.to_string());
         let _ = self
-            .log_event(
-                &role_event.guild_id,
-                &LogEventType::Discord(DiscordLogEvent::RoleUpdate),
-                vars,
-            )
+            .log_event(LogEvent::RoleUpdate {
+                guild_id: role_event.guild_id,
+                role_id: role_event.role.id,
+                role_name: role_event.role.name.to_string(),
+            })
             .await;
 
         Ok(())
@@ -703,16 +649,11 @@ impl EventHandler {
 
     #[tracing::instrument(skip(self, role_delete), fields(guild_id = %role_delete.guild_id, role_id = %role_delete.role_id))]
     async fn on_guild_role_delete(&self, role_delete: &GuildRoleDeleteEvent) -> DiscordResult<()> {
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("role_id".into(), role_delete.role_id.to_string());
-        vars.insert("role_name".into(), String::new()); // name unavailable in delete event
-        vars.insert("guild_id".into(), role_delete.guild_id.to_string());
         let _ = self
-            .log_event(
-                &role_delete.guild_id,
-                &LogEventType::Discord(DiscordLogEvent::RoleDelete),
-                vars,
-            )
+            .log_event(LogEvent::RoleDelete {
+                guild_id: role_delete.guild_id,
+                role_id: role_delete.role_id,
+            })
             .await;
 
         Ok(())
@@ -720,16 +661,12 @@ impl EventHandler {
 
     #[tracing::instrument(skip(self, ban_event), fields(guild_id = %ban_event.guild_id, user_id = %ban_event.user.id))]
     async fn on_guild_ban_add(&self, ban_event: &GuildBanEvent) -> DiscordResult<()> {
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("user_id".into(), ban_event.user.id.to_string());
-        vars.insert("username".into(), ban_event.user.username.to_string());
-        vars.insert("guild_id".into(), ban_event.guild_id.to_string());
         let _ = self
-            .log_event(
-                &ban_event.guild_id,
-                &LogEventType::Discord(DiscordLogEvent::GuildBanAdd),
-                vars,
-            )
+            .log_event(LogEvent::GuildBanAdd {
+                guild_id: ban_event.guild_id,
+                user_id: ban_event.user.id,
+                username: ban_event.user.username.to_string(),
+            })
             .await;
 
         Ok(())
@@ -737,16 +674,12 @@ impl EventHandler {
 
     #[tracing::instrument(skip(self, ban_event), fields(guild_id = %ban_event.guild_id, user_id = %ban_event.user.id))]
     async fn on_guild_ban_remove(&self, ban_event: &GuildBanEvent) -> DiscordResult<()> {
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("user_id".into(), ban_event.user.id.to_string());
-        vars.insert("username".into(), ban_event.user.username.to_string());
-        vars.insert("guild_id".into(), ban_event.guild_id.to_string());
         let _ = self
-            .log_event(
-                &ban_event.guild_id,
-                &LogEventType::Discord(DiscordLogEvent::GuildBanRemove),
-                vars,
-            )
+            .log_event(LogEvent::GuildBanRemove {
+                guild_id: ban_event.guild_id,
+                user_id: ban_event.user.id,
+                username: ban_event.user.username.to_string(),
+            })
             .await;
 
         Ok(())
@@ -758,24 +691,13 @@ impl EventHandler {
             return Ok(()); // Ignore DM invites
         };
 
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("channel_id".into(), invite.channel_id.to_string());
-        vars.insert("code".into(), invite.code.to_string());
-        vars.insert("guild_id".into(), guild_id.to_string());
-        vars.insert(
-            "inviter_id".into(),
-            invite
-                .inviter
-                .as_ref()
-                .map(|u| u.id.to_string())
-                .unwrap_or_default(),
-        );
         let _ = self
-            .log_event(
-                &guild_id,
-                &LogEventType::Discord(DiscordLogEvent::InviteCreate),
-                vars,
-            )
+            .log_event(LogEvent::InviteCreate {
+                guild_id,
+                channel_id: invite.channel_id,
+                code: invite.code.to_string(),
+                inviter_id: invite.inviter.as_ref().map(|u| u.id),
+            })
             .await;
 
         Ok(())
@@ -787,16 +709,12 @@ impl EventHandler {
             return Ok(()); // Ignore DM invites
         };
 
-        let mut vars = std::collections::HashMap::new();
-        vars.insert("channel_id".into(), invite.channel_id.to_string());
-        vars.insert("code".into(), invite.code.to_string());
-        vars.insert("guild_id".into(), guild_id.to_string());
         let _ = self
-            .log_event(
-                &guild_id,
-                &LogEventType::Discord(DiscordLogEvent::InviteDelete),
-                vars,
-            )
+            .log_event(LogEvent::InviteDelete {
+                guild_id,
+                channel_id: invite.channel_id,
+                code: invite.code.to_string(),
+            })
             .await;
 
         Ok(())

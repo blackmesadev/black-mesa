@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use bm_lib::{
     discord::{DiscordResult, Id},
     model::{Config, PermissionGroup},
@@ -97,7 +95,7 @@ impl EventHandler {
     ) -> DiscordResult<&'a Config> {
         if let Some(groups) = config.permission_groups.as_mut() {
             if let Some(group) = groups.iter_mut().find(|group| group.name == group_name) {
-                group.users.insert(*user_id);
+                group.users.push(*user_id);
             }
         }
 
@@ -130,7 +128,7 @@ impl EventHandler {
         &self,
         config: &'a Config,
         group_name: &str,
-    ) -> DiscordResult<Option<&'a HashSet<Id>>> {
+    ) -> DiscordResult<Option<&'a Vec<Id>>> {
         if let Some(groups) = &config.permission_groups {
             if let Some(group) = groups.iter().find(|group| group.name == group_name) {
                 return Ok(Some(&group.users));
@@ -150,7 +148,7 @@ impl EventHandler {
     ) -> DiscordResult<&'a Config> {
         if let Some(groups) = config.permission_groups.as_mut() {
             if let Some(group) = groups.iter_mut().find(|group| group.name == group_name) {
-                group.roles.insert(*role_id);
+                group.roles.push(*role_id);
             }
         }
 
@@ -183,7 +181,7 @@ impl EventHandler {
         &self,
         config: &'a Config,
         group_name: &str,
-    ) -> DiscordResult<Option<&'a HashSet<Id>>> {
+    ) -> DiscordResult<Option<&'a Vec<Id>>> {
         if let Some(groups) = &config.permission_groups {
             if let Some(group) = groups.iter().find(|group| group.name == group_name) {
                 return Ok(Some(&group.roles));
