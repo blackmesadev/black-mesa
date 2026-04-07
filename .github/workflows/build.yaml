@@ -95,3 +95,18 @@ jobs:
           docker buildx imagetools create \
             $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(cat /tmp/digests/*)
+
+  deploy:
+    needs: merge
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - name: Trigger deployment
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ secrets.DEPLOY_JWT }}" \
+            -H "Content-Type: application/json" \
+            -d '{"service": "black-mesa"}' \
+            "${{ secrets.DEPLOY_URL }}"
